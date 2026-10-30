@@ -1,0 +1,14 @@
+# Adam Himawan portfolio — local copy
+
+Run:  python3 server.py   ->  http://localhost:8000
+
+- index.html      main page (works gallery). Site overrides live in one block: <style id="site-overrides"> + the About-panel script
+- about.html      About content, shown inside the right-side panel. Overrides: <style id="about-overrides"> + one script (nav handling, ASCII animation)
+- fuc/sites/...   Framer runtime and page chunks (.mjs, minified). Edited chunks:
+    QHQX…mjs        gallery component (modes, Forward mode, Paper motion, 3D tilt, edge fades)
+    shared-lib…mjs  navbar (clock format, clock + Book a call grouping)
+    3rk2…mjs        About page content
+- fuc/assets/     Inter / Inter Display fonts, Latin subset only
+- fuc/images/     project images
+- _original/      the two pages exactly as first downloaded from Framer
+- build.py        makes build/page.html for the Claude artifact and lists the files to publish with it
