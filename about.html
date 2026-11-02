@@ -100,6 +100,12 @@ html,body{background:#ff2d20}
 #__framer-badge-container{display:none!important}
 .in-panel nav{visibility:hidden}
 .ascii-live{-webkit-mask-image:linear-gradient(transparent,transparent);mask-image:linear-gradient(transparent,transparent)}
+.ab-type{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:400!important;text-transform:uppercase;font-size:22px!important;letter-spacing:0!important;line-height:1.15!important;color:#0b0b0b!important}
+.ab-label{width:auto!important;min-width:82px}
+a.ab-type{min-height:0!important}
+div.ab-type{flex-wrap:wrap;white-space:normal!important;row-gap:4px}
+a .ab-letter{animation:none!important;transform:none!important}
+.ab-letter.ab-scrambling{opacity:.45}
 h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:400!important;text-transform:uppercase;letter-spacing:0!important;line-height:1.05!important}
 </style>
 <script>
@@ -121,6 +127,36 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
       var c=getComputedStyle(d);return c.whiteSpace==="pre"&&c.fontFamily.indexOf("monospace")>-1;
     });
     if(rows.length<20)return setTimeout(start,400);
+    /* Trusted by / Discover in Anton caps at full opacity, and one hover effect for every text link:
+       letters dissolve into random ASCII and resolve back left to right */
+    var GLYPHS="!<>-_\\/[]{}=+*^?#%@&$01";
+    [].forEach.call(document.querySelectorAll("p"),function(el){
+      var t=el.textContent.trim();
+      if(t!=="Trusted by"&&t!=="Discover")return;
+      el.classList.add("ab-type","ab-label");
+      var next=el.nextElementSibling; if(next)next.classList.add("ab-type");
+      if(next)[].forEach.call(next.querySelectorAll("a"),function(a){a.classList.add("ab-type");});
+    });
+    [].forEach.call(document.querySelectorAll("a[href]"),function(a){
+      if(a.closest("nav"))return;
+      var timer=null;
+      a.addEventListener("mouseenter",function(){
+        var spans=[].filter.call(a.querySelectorAll("span"),function(s){return !s.children.length&&s.textContent.length===1;});
+        if(!spans.length||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+        var orig=spans.map(function(s){return s.textContent;}), t0=performance.now();
+        spans.forEach(function(s){s.classList.add("ab-letter");});
+        cancelAnimationFrame(timer);
+        (function step(now){
+          var done=0;
+          spans.forEach(function(s,i){
+            if(orig[i]===" "){done++;return;}
+            if(now-t0>140+i*28){s.textContent=orig[i];s.classList.remove("ab-scrambling");done++;}
+            else{s.textContent=GLYPHS[Math.random()*GLYPHS.length|0];s.classList.add("ab-scrambling");}
+          });
+          if(done<spans.length)timer=requestAnimationFrame(step);
+        })(t0);
+      });
+    });
     var boxes=rows.map(function(r){return r.parentElement;}).filter(function(b,i,a){return a.indexOf(b)===i;});
     boxes.forEach(function(b){b.classList.add("ascii-live");});
     /* liquid reveal: two soft blobs on springs. The lead blob stretches along its direction of travel and wobbles,
