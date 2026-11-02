@@ -98,16 +98,15 @@
 html,body{background:#0b0b0b}
 #__framer-badge-container{display:none!important}
 .in-panel nav{visibility:hidden}
-.ascii-live{opacity:.9}
+.ascii-live{opacity:.9;--fade:rgba(0,0,0,.3);-webkit-mask-image:radial-gradient(circle var(--r,1px) at var(--mx,50%) var(--my,50%),#000 40%,var(--fade) 100%);mask-image:radial-gradient(circle var(--r,1px) at var(--mx,50%) var(--my,50%),#000 40%,var(--fade) 100%)}
 .ascii-row{animation:asciiWave 5.5s ease-in-out infinite;animation-delay:var(--d,0s)}
-.ascii-row.flick{animation:none;opacity:.2}
 .paused .ascii-row{animation-play-state:paused}
 @keyframes asciiWave{0%,100%{opacity:1}50%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){.ascii-row{animation:none}}
 </style>
 <script>
 (function(){
-  var root=document.documentElement, embedded=window.parent!==window, active=!embedded;
+  var root=document.documentElement, embedded=window.parent!==window;
   /* nav links: inside the About panel they close it; on the standalone page "/" goes home */
   document.addEventListener("click",function(e){
     var a=e.target.closest&&e.target.closest("a[href]"); if(!a)return;
@@ -121,26 +120,33 @@ html,body{background:#0b0b0b}
     /* follow the parent's panel state so the ASCII animation only runs while the panel is open */
     try{
       var pr=parent.document.documentElement;
-      var sync=function(){active=pr.classList.contains("about-open");root.classList.toggle("paused",!active);};
+      var sync=function(){root.classList.toggle("paused",!pr.classList.contains("about-open"));};
       new MutationObserver(sync).observe(pr,{attributes:true,attributeFilter:["class"]});sync();
-    }catch(err){active=true;}
+    }catch(err){}
   }
-  /* ASCII portrait: 10% lighter, a slow opacity wave down the rows, a few rows flickering at random */
+  /* ASCII portrait: a slow opacity wave down the rows, and a soft spotlight that reveals it under the pointer */
   function start(){
     var rows=[].filter.call(document.querySelectorAll("div"),function(d){
       if(d.childElementCount)return false;
       var c=getComputedStyle(d);return c.whiteSpace==="pre"&&c.fontFamily.indexOf("monospace")>-1;
     });
     if(rows.length<20)return setTimeout(start,400);
-    rows[0].parentElement.classList.add("ascii-live");
+    var boxes=rows.map(function(r){return r.parentElement;}).filter(function(b,i,a){return a.indexOf(b)===i;});
+    boxes.forEach(function(b){b.classList.add("ascii-live");});
     rows.forEach(function(r,i){r.classList.add("ascii-row");r.style.setProperty("--d",-i*.06+"s");});
-    if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
-    setInterval(function(){
-      if(!active||document.hidden)return;
-      for(var k=0;k<3;k++)(function(r){
-        r.classList.add("flick");setTimeout(function(){r.classList.remove("flick");},90+Math.random()*220);
-      })(rows[Math.random()*rows.length|0]);
-    },260);
+    var x=0, y=0, r=0, tx=0, ty=0, tr=0, run=false, snap=true;
+    function tick(){
+      x+=(tx-x)*.14; y+=(ty-y)*.14; r+=(tr-r)*.08;
+      boxes.forEach(function(b){var o=b.getBoundingClientRect();b.style.setProperty("--mx",(x-o.left).toFixed(1)+"px");b.style.setProperty("--my",(y-o.top).toFixed(1)+"px");b.style.setProperty("--r",Math.max(1,r).toFixed(1)+"px");});
+      if(Math.abs(tx-x)+Math.abs(ty-y)+Math.abs(tr-r)>.5)requestAnimationFrame(tick);else run=false;
+    }
+    addEventListener("pointermove",function(e){
+      var inside=boxes.some(function(b){var o=b.getBoundingClientRect();return e.clientX>o.left-60&&e.clientX<o.right+60&&e.clientY>o.top-60&&e.clientY<o.bottom+60;});
+      tx=e.clientX; ty=e.clientY; tr=inside?260:0;
+      if(snap&&inside){x=tx;y=ty;snap=false;} if(!inside)snap=r<1;
+      if(!run){run=true;requestAnimationFrame(tick);}
+    },{passive:true});
+    document.addEventListener("pointerleave",function(){tr=0;if(!run){run=true;requestAnimationFrame(tick);}});
   }
   addEventListener("load",function(){setTimeout(start,800);});
 })();
