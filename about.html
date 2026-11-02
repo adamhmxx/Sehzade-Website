@@ -155,49 +155,44 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     });
     var boxes=rows.map(function(r){return r.parentElement;}).filter(function(b,i,a){return a.indexOf(b)===i;});
     boxes.forEach(function(b){b.classList.add("ascii-live");});
-    /* liquid reveal: an organic blob drawn into a tiny canvas and used, scaled up, as the mask. Its outline is
-       a sum of moving sine waves, it stretches along its direction of travel, two smaller blobs trail it on
-       springs, and small droplets break off when it moves fast, so the revealed area keeps changing shape */
-    var blobs=[{x:0,y:0,vx:0,vy:0},{x:0,y:0,vx:0,vy:0},{x:0,y:0,vx:0,vy:0}], drops=[];
-    var r=0, tx=0, ty=0, base=0, run=false, snap=true, hover=false;
-    var cv=document.createElement("canvas"), cx=cv.getContext("2d"), CW=110, HIDDEN="linear-gradient(transparent,transparent)";
-    function blob(x,y,R,t,seed,stretch,ang){
-      cx.beginPath();
-      for(var i=0;i<=36;i++){
-        var th=i/36*Math.PI*2,
-            n=1+.16*Math.sin(3*th+t*.0013+seed)+.1*Math.sin(5*th-t*.0009+seed*2)+.06*Math.sin(8*th+t*.0021+seed*3),
-            d=Math.cos(th-ang), rr=R*n*(1+stretch*d*d);
-        cx[i?"lineTo":"moveTo"](x+Math.cos(th)*rr,y+Math.sin(th)*rr);
-      }
-      cx.fill();
+    /* liquid reveal: a stream that flows behind the pointer. A chain of points follows the cursor like a rope,
+       each drawn as a soft radial dab that gets narrower and fainter toward the tail, so the revealed area is
+       widest under the cursor and tapers off smoothly, with no hard edge anywhere */
+    var N=26, chain=[], r=0, tx=0, ty=0, base=0, run=false, snap=true, hover=false;
+    for(var ci=0;ci<N;ci++)chain.push({x:0,y:0});
+    var head={x:0,y:0,vx:0,vy:0};
+    var cv=document.createElement("canvas"), cx=cv.getContext("2d"), CW=120, HIDDEN="linear-gradient(transparent,transparent)";
+    function dab(x,y,rad,alpha){
+      if(rad<.3||alpha<.01)return;
+      var g=cx.createRadialGradient(x,y,0,x,y,rad);
+      g.addColorStop(0,"rgba(0,0,0,"+alpha+")");
+      g.addColorStop(.45,"rgba(0,0,0,"+(alpha*.8)+")");
+      g.addColorStop(.75,"rgba(0,0,0,"+(alpha*.35)+")");
+      g.addColorStop(1,"rgba(0,0,0,0)");
+      cx.fillStyle=g; cx.beginPath(); cx.arc(x,y,rad,0,Math.PI*2); cx.fill();
     }
     function tick(t){
-      var a=blobs[0];
-      a.vx=(a.vx+(tx-a.x)*.05)*.84; a.vy=(a.vy+(ty-a.y)*.05)*.84; a.x+=a.vx; a.y+=a.vy;
-      for(var i=1;i<blobs.length;i++){var p=blobs[i],q=blobs[i-1];p.vx=(p.vx+(q.x-p.x)*(.1-i*.02))*.76;p.vy=(p.vy+(q.y-p.y)*(.1-i*.02))*.76;p.x+=p.vx;p.y+=p.vy;}
-      var speed=Math.hypot(a.vx,a.vy);
-      r+=(base+(hover?Math.min(50,speed*1.6):0)-r)*.07;
-      if(hover&&speed>6&&Math.random()<.25)drops.push({x:a.x,y:a.y,vx:-a.vx*.15+(Math.random()-.5)*2,vy:-a.vy*.15+(Math.random()-.5)*2,r:r*(.12+Math.random()*.14),life:1});
-      drops=drops.filter(function(d){d.x+=d.vx;d.y+=d.vy;d.vx*=.94;d.vy*=.94;d.life-=.025;return d.life>0;});
-      var moving=drops.length;
-      blobs.forEach(function(p){moving+=Math.abs(p.vx)+Math.abs(p.vy);});
+      head.vx=(head.vx+(tx-head.x)*.2)*.68; head.vy=(head.vy+(ty-head.y)*.2)*.68; head.x+=head.vx; head.y+=head.vy;
+      chain[0].x=head.x; chain[0].y=head.y;
+      var moving=Math.abs(head.vx)+Math.abs(head.vy);
+      for(var i=1;i<N;i++){var p=chain[i],q=chain[i-1],dx=q.x-p.x,dy=q.y-p.y;p.x+=dx*.32;p.y+=dy*.32;moving+=Math.abs(dx)+Math.abs(dy)>.5?.1:0;}
+      r+=(base-r)*.06;
       var b0=boxes[0], o=b0.getBoundingClientRect();
-      if(r<1&&!drops.length){boxes.forEach(function(b){b.style.webkitMaskImage=b.style.maskImage=HIDDEN;});}
+      if(r<1){boxes.forEach(function(b){b.style.webkitMaskImage=b.style.maskImage=HIDDEN;});}
       else{
-        /* canvas works in the art's own unscaled space, shrunk to CW px wide */
-        var k=o.width/(b0.offsetWidth||o.width)||1, s=CW/(b0.offsetWidth||o.width), CH=Math.round(CW*(b0.offsetHeight||o.height)/(b0.offsetWidth||o.width));
+        var ow=b0.offsetWidth||o.width, oh=b0.offsetHeight||o.height, k=o.width/ow||1, s=CW/ow, CH=Math.round(CW*oh/ow);
         if(cv.width!==CW||cv.height!==CH){cv.width=CW;cv.height=CH;}
-        cx.clearRect(0,0,CW,CH); cx.fillStyle="#000"; cx.filter="blur(2px)";
-        var L=function(v,off){return (v-off)/k*s;}, ang=Math.atan2(a.vy,a.vx), st=Math.min(.7,speed*.03);
-        blob(L(a.x,o.left),L(a.y,o.top),r/k*s,t,0,st,ang);
-        blob(L(blobs[1].x,o.left),L(blobs[1].y,o.top),r*.62/k*s,t,1.7,st*.5,ang);
-        blob(L(blobs[2].x,o.left),L(blobs[2].y,o.top),r*.4/k*s,t,3.1,0,0);
-        drops.forEach(function(d){cx.globalAlpha=d.life;blob(L(d.x,o.left),L(d.y,o.top),d.r/k*s,t,d.r,0,0);});
-        cx.globalAlpha=1;
+        cx.clearRect(0,0,CW,CH);
+        var L=function(v,off){return (v-off)/k*s;}, R=r/k*s, wob=1+.05*Math.sin(t/420);
+        /* tail first, head last, so the head sits on top */
+        for(var j=N-1;j>=0;j--){
+          var f=j/(N-1), taper=Math.pow(1-f,1.35);
+          dab(L(chain[j].x,o.left),L(chain[j].y,o.top),R*(.18+.82*taper)*(j?1:wob),Math.pow(1-f,1.6));
+        }
         var m="url("+cv.toDataURL()+")";
         boxes.forEach(function(b){b.style.webkitMaskImage=b.style.maskImage=m;b.style.webkitMaskSize=b.style.maskSize="100% 100%";b.style.webkitMaskRepeat=b.style.maskRepeat="no-repeat";});
       }
-      if(hover||moving+Math.abs(base-r)>.3)requestAnimationFrame(tick);else run=false;
+      if(hover||moving>.3||Math.abs(base-r)>.3)requestAnimationFrame(tick);else run=false;
     }
     /* only reveal while the pointer is over the drawn figure, not anywhere in its (much larger) bounding box */
     function overArt(x,y){
@@ -215,7 +210,7 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     addEventListener("pointermove",function(e){
       hover=overArt(e.clientX,e.clientY);
       tx=e.clientX; ty=e.clientY; base=hover?Math.max(70,Math.min(130,boxes[0].getBoundingClientRect().width*.15)):0;
-      if(snap&&hover){blobs.forEach(function(p){p.x=tx;p.y=ty;p.vx=p.vy=0;});snap=false;} if(!hover)snap=r<1;
+      if(snap&&hover){head.x=tx;head.y=ty;head.vx=head.vy=0;chain.forEach(function(p){p.x=tx;p.y=ty;});snap=false;} if(!hover)snap=r<1;
       kick();
     },{passive:true});
     document.addEventListener("pointerleave",function(){hover=false;base=0;kick();});
