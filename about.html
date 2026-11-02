@@ -175,16 +175,29 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
           lead=[Math.max(.5,r*w1*(1+sx-sy*.4)),Math.max(.5,r*w2*(1+sy-sx*.4))],
           tail=Math.max(.5,r*.62*w2);
       boxes.forEach(function(b){
-        var o=b.getBoundingClientRect(),
-            m=grad(a.x-o.left,a.y-o.top,lead[0],lead[1])+","+grad(c.x-o.left,c.y-o.top,tail,tail);
+        /* the art is scaled by its parent, and mask coordinates are in the element's own unscaled space */
+        var o=b.getBoundingClientRect(), k=o.width/(b.offsetWidth||o.width)||1,
+            m=grad((a.x-o.left)/k,(a.y-o.top)/k,lead[0]/k,lead[1]/k)+","+grad((c.x-o.left)/k,(c.y-o.top)/k,tail/k,tail/k);
         b.style.webkitMaskImage=m; b.style.maskImage=m;
       });
       if(hover||Math.abs(a.vx)+Math.abs(a.vy)+Math.abs(c.vx)+Math.abs(c.vy)+Math.abs(base-r)>.3)requestAnimationFrame(tick);else run=false;
     }
+    /* only reveal while the pointer is over the drawn figure, not anywhere in its (much larger) bounding box */
+    function overArt(x,y){
+      for(var i=0;i<rows.length;i++){
+        var b=rows[i].getBoundingClientRect();
+        if(y<b.top-14||y>b.bottom+14)continue;
+        var t=rows[i].textContent, first=t.search(/\S/);
+        if(first<0)continue;
+        var last=t.replace(/\s+$/,"").length, cw=b.width/t.length;
+        if(x>b.left+first*cw-28&&x<b.left+last*cw+28)return true;
+      }
+      return false;
+    }
     function kick(){if(!run){run=true;requestAnimationFrame(tick);}}
     addEventListener("pointermove",function(e){
-      hover=boxes.some(function(b){var o=b.getBoundingClientRect();return e.clientX>o.left-60&&e.clientX<o.right+60&&e.clientY>o.top-60&&e.clientY<o.bottom+60;});
-      tx=e.clientX; ty=e.clientY; base=hover?250:0;
+      hover=overArt(e.clientX,e.clientY);
+      tx=e.clientX; ty=e.clientY; base=hover?Math.max(70,Math.min(130,boxes[0].getBoundingClientRect().width*.15)):0;
       if(snap&&hover){blobs.forEach(function(p){p.x=tx;p.y=ty;p.vx=p.vy=0;});snap=false;} if(!hover)snap=r<1;
       kick();
     },{passive:true});
