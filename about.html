@@ -98,7 +98,7 @@
 html,body{background:#0b0b0b}
 #__framer-badge-container{display:none!important}
 .in-panel nav{visibility:hidden}
-.ascii-live{opacity:.9;--fade:rgba(0,0,0,.3);-webkit-mask-image:radial-gradient(circle var(--r,1px) at var(--mx,50%) var(--my,50%),#000 40%,var(--fade) 100%);mask-image:radial-gradient(circle var(--r,1px) at var(--mx,50%) var(--my,50%),#000 40%,var(--fade) 100%)}
+.ascii-live{opacity:.9;--fade:rgba(0,0,0,.3);-webkit-mask-image:radial-gradient(circle var(--r,1px) at var(--mx,50%) var(--my,50%),#000 0%,rgba(0,0,0,.94) 28%,rgba(0,0,0,.72) 52%,rgba(0,0,0,.48) 74%,var(--fade) 100%);mask-image:radial-gradient(circle var(--r,1px) at var(--mx,50%) var(--my,50%),#000 0%,rgba(0,0,0,.94) 28%,rgba(0,0,0,.72) 52%,rgba(0,0,0,.48) 74%,var(--fade) 100%)}
 .ascii-row{animation:asciiWave 5.5s ease-in-out infinite;animation-delay:var(--d,0s)}
 .paused .ascii-row{animation-play-state:paused}
 @keyframes asciiWave{0%,100%{opacity:1}50%{opacity:.5}}
@@ -134,19 +134,23 @@ html,body{background:#0b0b0b}
     var boxes=rows.map(function(r){return r.parentElement;}).filter(function(b,i,a){return a.indexOf(b)===i;});
     boxes.forEach(function(b){b.classList.add("ascii-live");});
     rows.forEach(function(r,i){r.classList.add("ascii-row");r.style.setProperty("--d",-i*.06+"s");});
-    var x=0, y=0, r=0, tx=0, ty=0, tr=0, run=false, snap=true;
-    function tick(){
-      x+=(tx-x)*.14; y+=(ty-y)*.14; r+=(tr-r)*.08;
+    /* spring-driven spotlight: it trails the pointer with a little inertia, swells with speed and breathes while hovered */
+    var x=0, y=0, vx=0, vy=0, r=0, tx=0, ty=0, base=0, run=false, snap=true, hover=false;
+    function tick(t){
+      vx=(vx+(tx-x)*.045)*.84; vy=(vy+(ty-y)*.045)*.84; x+=vx; y+=vy;
+      var speed=Math.min(90,Math.hypot(vx,vy)*2.2), breathe=hover?Math.sin(t/900)*10:0;
+      r+=(base+(hover?speed+breathe:0)-r)*.07;
       boxes.forEach(function(b){var o=b.getBoundingClientRect();b.style.setProperty("--mx",(x-o.left).toFixed(1)+"px");b.style.setProperty("--my",(y-o.top).toFixed(1)+"px");b.style.setProperty("--r",Math.max(1,r).toFixed(1)+"px");});
-      if(Math.abs(tx-x)+Math.abs(ty-y)+Math.abs(tr-r)>.5)requestAnimationFrame(tick);else run=false;
+      if(hover||Math.abs(tx-x)+Math.abs(ty-y)+Math.abs(base-r)+Math.abs(vx)+Math.abs(vy)>.3)requestAnimationFrame(tick);else run=false;
     }
+    function kick(){if(!run){run=true;requestAnimationFrame(tick);}}
     addEventListener("pointermove",function(e){
-      var inside=boxes.some(function(b){var o=b.getBoundingClientRect();return e.clientX>o.left-60&&e.clientX<o.right+60&&e.clientY>o.top-60&&e.clientY<o.bottom+60;});
-      tx=e.clientX; ty=e.clientY; tr=inside?260:0;
-      if(snap&&inside){x=tx;y=ty;snap=false;} if(!inside)snap=r<1;
-      if(!run){run=true;requestAnimationFrame(tick);}
+      hover=boxes.some(function(b){var o=b.getBoundingClientRect();return e.clientX>o.left-60&&e.clientX<o.right+60&&e.clientY>o.top-60&&e.clientY<o.bottom+60;});
+      tx=e.clientX; ty=e.clientY; base=hover?260:0;
+      if(snap&&hover){x=tx;y=ty;vx=vy=0;snap=false;} if(!hover)snap=r<1;
+      kick();
     },{passive:true});
-    document.addEventListener("pointerleave",function(){tr=0;if(!run){run=true;requestAnimationFrame(tick);}});
+    document.addEventListener("pointerleave",function(){hover=false;base=0;kick();});
   }
   addEventListener("load",function(){setTimeout(start,800);});
 })();
