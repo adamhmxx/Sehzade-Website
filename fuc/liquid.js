@@ -189,14 +189,24 @@
       '#liquid-ui input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-5px;border-radius:50%;border:0;background:#f2f2f2;transition:transform .3s}' +
       '#liquid-ui input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;border:0;background:#f2f2f2}' +
       '#liquid-ui input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.25)}' +
-      '#liquid-ui .lq-actions{display:flex;gap:8px;margin-top:4px}' +
-      '#liquid-ui .lq-actions button{flex:1;padding:7px 0;border:1px solid rgba(242,242,242,.18);border-radius:999px;background:transparent;color:inherit;font-size:11px;cursor:pointer;transition:border-color .4s,background .4s}' +
+      '#liquid-ui .lq-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}' +
+      '#liquid-ui .lq-actions button{padding:7px 0;border:1px solid rgba(242,242,242,.18);border-radius:999px;background:transparent;color:inherit;font-size:11px;cursor:pointer;transition:border-color .4s,background .4s}' +
       '#liquid-ui .lq-actions button:hover{border-color:rgba(242,242,242,.5);background:rgba(242,242,242,.08)}' +
       '#liquid-ui :focus-visible{outline:1px solid rgba(242,242,242,.7);outline-offset:3px}' +
       '@media (max-width:600px){#liquid-ui .lq-card{width:min(250px,calc(100vw - 32px))}}';
     document.head.appendChild(css);
 
     var ui = document.createElement("div"); ui.id = "liquid-ui";
+    /* hidden by default. Shift+L (or adding #liquid to the address) shows it again; the settings are kept either way */
+    var UIKEY = KEY + "-ui";
+    function showUI(v) { ui.style.display = v ? "" : "none"; try { localStorage.setItem(UIKEY, v ? "1" : "0"); } catch (e) {} if (!v) ui.classList.remove("open"); }
+    var shown = false;
+    try { shown = localStorage.getItem(UIKEY) === "1"; } catch (e) {}
+    if (/liquid/.test(location.hash)) shown = true;
+    ui.style.display = shown ? "" : "none";
+    addEventListener("keydown", function (e) {
+      if (e.shiftKey && (e.key === "L" || e.key === "l") && !/INPUT|TEXTAREA/.test((e.target || {}).tagName || "")) { showUI(ui.style.display === "none"); if (ui.style.display !== "none") ui.classList.add("open"); }
+    });
     var card = document.createElement("div"); card.className = "lq-card"; card.setAttribute("role", "group"); card.setAttribute("aria-label", "Liquid hover settings");
     card.innerHTML = '<div class="lq-title"><span>Liquid hover</span></div>';
     var inputs = {};
@@ -217,15 +227,21 @@
     var toggle = document.createElement("button"); toggle.type = "button"; toggle.textContent = own.on ? "Turn off" : "Turn on";
     toggle.onclick = function () { own.on = own.on ? 0 : 1; toggle.textContent = own.on ? "Turn off" : "Turn on"; ui.classList.toggle("off", !own.on); save(); kick(); };
     ui.classList.toggle("off", !own.on);
-    actions.append(reset, toggle); card.appendChild(actions);
+    var copy = document.createElement("button"); copy.type = "button"; copy.textContent = "Copy values";
+    copy.onclick = function () {
+      var txt = JSON.stringify({ radius: own.radius, softness: own.softness, brightness: own.brightness, trail: own.trail, distort: own.distort, blur: own.blur, reach: own.reach });
+      var done = function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy values"; }, 1400); };
+      try { navigator.clipboard.writeText(txt).then(done, function () { copy.textContent = txt.slice(0, 18) + "…"; }); } catch (e) { copy.textContent = "Not allowed"; }
+    };
+    var hide = document.createElement("button"); hide.type = "button"; hide.textContent = "Save & hide";
+    hide.onclick = function () { save(); showUI(false); };
+    actions.append(reset, toggle, copy, hide); card.appendChild(actions);
     var btn = document.createElement("button"); btn.type = "button"; btn.className = "lq-btn"; btn.setAttribute("aria-expanded", "false");
     btn.innerHTML = '<span class="lq-dot"></span><span>Liquid</span>';
     btn.onclick = function () { var o = ui.classList.toggle("open"); btn.setAttribute("aria-expanded", o); };
     addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.classList.contains("open")) { ui.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); } });
     if (!ENABLED) { var note = document.createElement("div"); note.style.cssText = "margin-top:8px;font-size:10px;color:rgba(242,242,242,.55);line-height:1.3"; note.textContent = "Hover effects need a mouse and motion enabled on this device."; card.appendChild(note); }
     ui.append(card, btn); document.body.appendChild(ui);
-    /* open once on the first visit so the panel is easy to find, then remember that it has been seen */
-    try { if (!localStorage.getItem(KEY + "-seen")) { localStorage.setItem(KEY + "-seen", "1"); setTimeout(function () { ui.classList.add("open"); btn.setAttribute("aria-expanded", "true"); }, 900); } } catch (e) {}
   }
 
   if (document.body) start(); else addEventListener("DOMContentLoaded", start);
