@@ -12,3 +12,7 @@ Run:  python3 server.py   ->  http://localhost:8000
 - fuc/images/     project images
 - _original/      the two pages exactly as first downloaded from Framer
 - build.py        makes build/page.html for the Claude artifact and lists the files to publish with it
+
+## Interaction scripts (fuc/)
+- liquid.js   liquid hover: a soft blob under the cursor plus a light blur on nearby components, with a control panel (bottom right, settings kept in localStorage). Shared by index.html and about.html.
+- linkfx.js   one hover effect for every text link, tab and button: letters slide in from both edges with a motion blur.

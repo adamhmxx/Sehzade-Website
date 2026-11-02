@@ -10,7 +10,7 @@
     'a[href]>span[aria-hidden="true"]{display:none!important}' +
     'a[href] span,#about-close span,[role="tab"] span{animation:none!important}' +
     /* the letters travel outside their own box while sliding in, so the box must not clip them */
-    'a[href]>span:first-child,[role="tab"]>span:first-child,#about-close{overflow:visible!important;padding:0 3px;margin:0 -3px}';
+    'a[href]>span:first-child,[role="tab"]>span:first-child{overflow:visible!important;padding:0 3px;margin:0 -3px}#about-close{overflow:visible!important}';
   document.head.appendChild(css);
 
   function letters(el) {
