@@ -99,7 +99,7 @@
 html,body{background:#ff2d20}
 #__framer-badge-container{display:none!important}
 .in-panel nav{visibility:hidden}
-.ascii-live{--fade:rgba(0,0,0,0);-webkit-mask-image:radial-gradient(circle var(--r,1px) at var(--mx,50%) var(--my,50%),#000 0%,#000 45%,rgba(0,0,0,.6) 70%,rgba(0,0,0,.2) 88%,var(--fade) 100%);mask-image:radial-gradient(circle var(--r,1px) at var(--mx,50%) var(--my,50%),#000 0%,#000 45%,rgba(0,0,0,.6) 70%,rgba(0,0,0,.2) 88%,var(--fade) 100%)}
+.ascii-live{-webkit-mask-image:linear-gradient(transparent,transparent);mask-image:linear-gradient(transparent,transparent)}
 h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:400!important;text-transform:uppercase;letter-spacing:0!important;line-height:1.05!important}
 </style>
 <script>
@@ -123,20 +123,33 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     if(rows.length<20)return setTimeout(start,400);
     var boxes=rows.map(function(r){return r.parentElement;}).filter(function(b,i,a){return a.indexOf(b)===i;});
     boxes.forEach(function(b){b.classList.add("ascii-live");});
-    /* spring-driven spotlight: it trails the pointer with a little inertia, swells with speed and breathes while hovered */
-    var x=0, y=0, vx=0, vy=0, r=0, tx=0, ty=0, base=0, run=false, snap=true, hover=false;
+    /* liquid reveal: two soft blobs on springs. The lead blob stretches along its direction of travel and wobbles,
+       the second trails behind it, so the spotlight moves like a drop of liquid instead of a rigid circle */
+    var blobs=[{x:0,y:0,vx:0,vy:0},{x:0,y:0,vx:0,vy:0}];
+    var r=0, tx=0, ty=0, base=0, run=false, snap=true, hover=false;
+    function grad(x,y,rx,ry){return "radial-gradient("+rx.toFixed(1)+"px "+ry.toFixed(1)+"px at "+x.toFixed(1)+"px "+y.toFixed(1)+"px,#000 0%,#000 42%,rgba(0,0,0,.55) 68%,rgba(0,0,0,0) 100%)";}
     function tick(t){
-      vx=(vx+(tx-x)*.045)*.84; vy=(vy+(ty-y)*.045)*.84; x+=vx; y+=vy;
-      var speed=Math.min(90,Math.hypot(vx,vy)*2.2), breathe=hover?Math.sin(t/900)*10:0;
-      r+=(base+(hover?speed+breathe:0)-r)*.07;
-      boxes.forEach(function(b){var o=b.getBoundingClientRect();b.style.setProperty("--mx",(x-o.left).toFixed(1)+"px");b.style.setProperty("--my",(y-o.top).toFixed(1)+"px");b.style.setProperty("--r",Math.max(1,r).toFixed(1)+"px");});
-      if(hover||Math.abs(tx-x)+Math.abs(ty-y)+Math.abs(base-r)+Math.abs(vx)+Math.abs(vy)>.3)requestAnimationFrame(tick);else run=false;
+      var a=blobs[0], c=blobs[1];
+      a.vx=(a.vx+(tx-a.x)*.05)*.84; a.vy=(a.vy+(ty-a.y)*.05)*.84; a.x+=a.vx; a.y+=a.vy;
+      c.vx=(c.vx+(a.x-c.x)*.09)*.74; c.vy=(c.vy+(a.y-c.y)*.09)*.74; c.x+=c.vx; c.y+=c.vy;
+      var speed=Math.hypot(a.vx,a.vy);
+      r+=(base+(hover?Math.min(70,speed*2):0)-r)*.07;
+      var w1=1+.06*Math.sin(t/380), w2=1+.06*Math.cos(t/310),
+          sx=Math.min(.6,Math.abs(a.vx)*.025), sy=Math.min(.6,Math.abs(a.vy)*.025),
+          lead=[Math.max(.5,r*w1*(1+sx-sy*.4)),Math.max(.5,r*w2*(1+sy-sx*.4))],
+          tail=Math.max(.5,r*.62*w2);
+      boxes.forEach(function(b){
+        var o=b.getBoundingClientRect(),
+            m=grad(a.x-o.left,a.y-o.top,lead[0],lead[1])+","+grad(c.x-o.left,c.y-o.top,tail,tail);
+        b.style.webkitMaskImage=m; b.style.maskImage=m;
+      });
+      if(hover||Math.abs(a.vx)+Math.abs(a.vy)+Math.abs(c.vx)+Math.abs(c.vy)+Math.abs(base-r)>.3)requestAnimationFrame(tick);else run=false;
     }
     function kick(){if(!run){run=true;requestAnimationFrame(tick);}}
     addEventListener("pointermove",function(e){
       hover=boxes.some(function(b){var o=b.getBoundingClientRect();return e.clientX>o.left-60&&e.clientX<o.right+60&&e.clientY>o.top-60&&e.clientY<o.bottom+60;});
-      tx=e.clientX; ty=e.clientY; base=hover?260:0;
-      if(snap&&hover){x=tx;y=ty;vx=vy=0;snap=false;} if(!hover)snap=r<1;
+      tx=e.clientX; ty=e.clientY; base=hover?250:0;
+      if(snap&&hover){blobs.forEach(function(p){p.x=tx;p.y=ty;p.vx=p.vy=0;});snap=false;} if(!hover)snap=r<1;
       kick();
     },{passive:true});
     document.addEventListener("pointerleave",function(){hover=false;base=0;kick();});
