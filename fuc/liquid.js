@@ -180,14 +180,17 @@
     ];
     var css = document.createElement("style");
     css.textContent =
-      '#liquid-ui{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
+      '#liquid-ui{position:fixed;right:var(--lm,32px);bottom:var(--lm,32px);z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
       '#liquid-ui *{box-sizing:border-box;font-family:inherit;text-transform:inherit;letter-spacing:inherit}' +
       '#liquid-ui .lq-btn{display:flex;align-items:center;gap:8px;margin-left:auto;padding:8px 13px;border:1px solid rgba(242,242,242,.16);border-radius:999px;background:rgba(14,14,14,.62);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:inherit;font-size:12px;cursor:pointer;transition:border-color .5s,background .5s}' +
       '#liquid-ui .lq-btn:hover{border-color:rgba(242,242,242,.4);background:rgba(14,14,14,.8)}' +
       '#liquid-ui .lq-dot{width:8px;height:8px;border-radius:50%;background:#f2f2f2;box-shadow:0 0 10px rgba(242,242,242,.55);opacity:.9;transition:opacity .5s}' +
       '#liquid-ui.off .lq-dot{opacity:.25;box-shadow:none}' +
-      '#liquid-ui .lq-card{width:260px;max-height:calc(100vh - 96px);overflow:auto;margin-bottom:10px;padding:16px 16px 12px;border:1px solid rgba(242,242,242,.14);border-radius:16px;background:rgba(14,14,14,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);visibility:hidden;pointer-events:none;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1),visibility 0s .7s}' +
+      '#liquid-ui .lq-card{width:calc(3 * (100vw - 2 * var(--lm,32px) - 176px) / 12 + 32px);max-height:calc(100vh - 96px);overflow:auto;margin-bottom:10px;padding:16px 16px 12px;border:1px solid rgba(242,242,242,.14);border-radius:16px;background:rgba(14,14,14,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);visibility:hidden;pointer-events:none;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1),visibility 0s .7s}' +
       '#liquid-ui.open .lq-card{opacity:1;transform:none;visibility:visible;pointer-events:auto;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}' +
+      '#liquid-ui .lq-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:14px;padding:3px;border:1px solid rgba(242,242,242,.14);border-radius:999px}' +
+      '#liquid-ui .lq-tabs button{padding:6px 0;border:0;border-radius:999px;background:none;color:rgba(242,242,242,.7);font-size:11px;cursor:pointer;transition:background .4s,color .4s}' +
+      '#liquid-ui .lq-tabs button.on{background:#f2f2f2;color:#0b0b0b}' +
       '#liquid-ui .lq-sec{margin:16px 0 10px;padding-top:12px;border-top:1px solid rgba(242,242,242,.12);font-size:11px;color:rgba(242,242,242,.5)}' +
       '#liquid-ui .lq-demo{display:inline-block;margin:0 0 12px;font-size:16px;color:#f2f2f2;text-decoration:none;cursor:pointer}' +
       '#liquid-ui .lq-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:13px}' +
@@ -203,7 +206,7 @@
       '#liquid-ui .lq-actions button{padding:7px 0;border:1px solid rgba(242,242,242,.18);border-radius:999px;background:transparent;color:inherit;font-size:11px;cursor:pointer;transition:border-color .4s,background .4s}' +
       '#liquid-ui .lq-actions button:hover{border-color:rgba(242,242,242,.5);background:rgba(242,242,242,.08)}' +
       '#liquid-ui :focus-visible{outline:1px solid rgba(242,242,242,.7);outline-offset:3px}' +
-      '@media (max-width:600px){#liquid-ui .lq-card{width:min(250px,calc(100vw - 32px))}}';
+      '@media (max-width:1439.98px){#liquid-ui{--lm:24px}#liquid-ui .lq-card{width:calc(4 * (100vw - 2 * var(--lm) - 112px) / 8 + 48px)}}@media (max-width:809.98px){#liquid-ui{--lm:16px}#liquid-ui .lq-card{width:calc(100vw - 32px)}}#liquid-ui .lq-actions button:last-child:nth-child(odd){grid-column:1/-1}';
     document.head.appendChild(css);
 
     var ui = document.createElement("div"); ui.id = "liquid-ui";
@@ -219,15 +222,25 @@
     });
     var card = document.createElement("div"); card.className = "lq-card"; card.setAttribute("role", "group"); card.setAttribute("aria-label", "Liquid hover settings");
     card.innerHTML = '<div class="lq-title"><span>Liquid hover</span></div>';
-    var inputs = {};
+    var inputs = {}, pages = {}, tabs = document.createElement("div"), cur = null;
+    tabs.className = "lq-tabs";
+    [["Cursor", "Cursor"], ["Link hover", "Links"], ["About popup", "Popup"]].forEach(function (t) {
+      var pg = document.createElement("div"); pg.className = "lq-page"; pages[t[0]] = pg;
+      var tb = document.createElement("button"); tb.type = "button"; tb.textContent = t[1]; tb.dataset.page = t[0];
+      tb.onclick = function () { setPage(t[0]); try { localStorage.setItem(KEY + "-tab", t[0]); } catch (e) {} };
+      tabs.appendChild(tb);
+    });
+    function setPage(n) { cur = n; [].forEach.call(tabs.children, function (b) { b.classList.toggle("on", b.dataset.page === n); }); Object.keys(pages).forEach(function (k) { pages[k].style.display = k === n ? "" : "none"; }); }
+    card.appendChild(tabs); Object.keys(pages).forEach(function (k) { card.appendChild(pages[k]); });
+    var host = pages["Cursor"];
     ROWS.forEach(function (r) {
       if (r[0] === "#") {
-        var h = document.createElement("div"); h.className = "lq-sec"; h.textContent = r[1]; card.appendChild(h);
+        host = pages[r[1]];
         if (r[1] === "Link hover") {
           var demo = document.createElement("a"); demo.href = "#"; demo.className = "lq-demo";
           "Hover to preview".split("").forEach(function (ch) { var sp = document.createElement("span"); sp.style.cssText = "display:inline-block;white-space:pre"; sp.textContent = ch; demo.appendChild(sp); });
           demo.onclick = function (e) { e.preventDefault(); if (window.__linkfxPlay) window.__linkfxPlay(demo); };
-          card.appendChild(demo);
+          host.appendChild(demo);
         }
         return;
       }
@@ -239,8 +252,10 @@
       inp.value = own[r[0]]; show();
       inp.addEventListener("input", function () { own[r[0]] = +inp.value; show(); save(); kick(); });
       inputs[r[0]] = [inp, show];
-      row.append(name, val, inp); card.appendChild(row);
+      row.append(name, val, inp); host.appendChild(row);
     });
+    var savedTab = "Cursor"; try { savedTab = localStorage.getItem(KEY + "-tab") || "Cursor"; } catch (e) {}
+    setPage(pages[savedTab] ? savedTab : "Cursor");
     var actions = document.createElement("div"); actions.className = "lq-actions";
     var reset = document.createElement("button"); reset.type = "button"; reset.textContent = "Reset";
     reset.onclick = function () { Object.keys(DEF).forEach(function (k) { own[k] = DEF[k]; if (inputs[k]) { inputs[k][0].value = DEF[k]; inputs[k][1](); } }); ui.classList.remove("off"); save(); kick(); };
@@ -249,13 +264,14 @@
     ui.classList.toggle("off", !own.on);
     var copy = document.createElement("button"); copy.type = "button"; copy.textContent = "Copy values";
     copy.onclick = function () {
-      var txt = JSON.stringify({ radius: own.radius, softness: own.softness, brightness: own.brightness, trail: own.trail, distort: own.distort, blur: own.blur, reach: own.reach });
+      var txt = JSON.stringify({ radius: own.radius, softness: own.softness, brightness: own.brightness, trail: own.trail, distort: own.distort, blur: own.blur, reach: own.reach, ldur: own.ldur, ldist: own.ldist, lblur: own.lblur, lstag: own.lstag, pliq: own.pliq });
       var done = function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy values"; }, 1400); };
       try { navigator.clipboard.writeText(txt).then(done, function () { copy.textContent = txt.slice(0, 18) + "…"; }); } catch (e) { copy.textContent = "Not allowed"; }
     };
     var hide = document.createElement("button"); hide.type = "button"; hide.textContent = "Save & hide";
     hide.onclick = function () { save(); showUI(false); };
-    actions.append(reset, toggle, copy, hide); card.appendChild(actions);
+    var cmsBtn = document.createElement("button"); cmsBtn.type = "button"; cmsBtn.textContent = "Open CMS"; cmsBtn.onclick = function () { location.href = "cms.html"; };
+    actions.append(reset, toggle, copy, hide, cmsBtn); card.appendChild(actions);
     var btn = document.createElement("button"); btn.type = "button"; btn.className = "lq-btn"; btn.setAttribute("aria-expanded", "false");
     btn.innerHTML = '<span class="lq-dot"></span><span>Liquid</span>';
     btn.onclick = function () { var o = ui.classList.toggle("open"); btn.setAttribute("aria-expanded", o); };

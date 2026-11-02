@@ -108,6 +108,7 @@ a:focus-visible,button:focus-visible,[role=tab]:focus-visible{outline:1px solid 
 html,body{background:#ff2d20}
 #__framer-badge-container{display:none!important}
 .in-panel nav{visibility:hidden}
+.in-panel,.in-panel body{cursor:grab;user-select:none;-webkit-user-select:none}.in-panel a,.in-panel button{cursor:pointer}
 .ascii-live{-webkit-mask-image:linear-gradient(transparent,transparent);mask-image:linear-gradient(transparent,transparent)}
 .ab-type{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:400!important;text-transform:uppercase;font-size:16px!important;letter-spacing:0!important;line-height:1.15!important;color:#0b0b0b!important}
 .ab-label{width:auto!important;min-width:82px}
@@ -131,6 +132,18 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     if(embedded)parent.postMessage("about-panel:close","*");else if(home)location.href="./";
   },true);
   if(embedded)root.classList.add("in-panel");
+  /* inside the card, dragging on any empty part of the page moves the whole card (the card reports it to the parent) */
+  if(embedded){
+    var dragging=false;
+    function send(phase,e){parent.postMessage({about:"drag",phase:phase,sx:e.screenX,sy:e.screenY},"*");}
+    addEventListener("pointerdown",function(e){
+      if(e.button||e.pointerType!=="mouse"||(e.target.closest&&e.target.closest("a,button,input,textarea,[role=tab]")))return;
+      dragging=true;e.preventDefault();try{root.setPointerCapture(e.pointerId);}catch(x){}send("start",e);
+    });
+    addEventListener("pointermove",function(e){if(dragging)send("move",e);});
+    function stop(e){if(dragging){dragging=false;send("end",e);}}
+    addEventListener("pointerup",stop);addEventListener("pointercancel",stop);
+  }
   /* ASCII portrait: hidden at rest, revealed at full opacity by a soft spotlight under the pointer */
   function start(){
     var rows=[].filter.call(document.querySelectorAll("div"),function(d){

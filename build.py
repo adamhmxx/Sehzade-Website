@@ -2,7 +2,7 @@
 """Make the Claude artifact version from index.html.
 
 The artifact host wraps the main page in its own <html>/<head>/<body>, so build/page.html
-holds index.html without that shell. about.html and fuc/ are published unchanged next to it.
+holds index.html without that shell. about.html, cms.html and fuc/ are published unchanged next to it.
 Run: python3 build.py   (prints the files to publish alongside build/page.html)
 """
 import os, re
@@ -17,7 +17,7 @@ def main():
     os.makedirs(os.path.join(ROOT, "build"), exist_ok=True)
     with open(os.path.join(ROOT, "build", "page.html"), "w", encoding="utf8") as f:
         f.write(head.strip() + "\n" + body)
-    files = ["about.html"] + sorted(
+    files = ["about.html", "cms.html"] + sorted(
         os.path.relpath(os.path.join(d, n), ROOT)
         for d, _, names in os.walk(os.path.join(ROOT, "fuc")) for n in names)
     print("\n".join(files))

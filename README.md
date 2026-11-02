@@ -16,4 +16,4 @@ Run:  python3 server.py   ->  http://localhost:8000
 ## Interaction scripts (fuc/)
 - liquid.js   liquid hover: a soft blob, distortion and blur near the cursor, plus a control panel for it, link hover and the About popup (Shift+L; settings kept in localStorage). Shared by index.html and about.html.
 - linkfx.js   one hover effect for every text link, tab and button: letters slide in from both edges with a motion blur.
-- cms.js      simple CMS (bottom left "CMS" button, Shift+C toggles it): projects, About text, links, JSON export/import. Saved in the browser's localStorage.
+- cms.js + cms.html   the CMS as its own page (Shift+C on the site, or open cms.html): projects, About text, links, JSON export/import. Saved in the browser's localStorage.

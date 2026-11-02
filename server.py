@@ -2,7 +2,7 @@
 """Local server for the downloaded Framer site. Run: python3 server.py  ->  http://localhost:8000"""
 import http.server, socketserver, os, sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
-PAGES = {"/": "index.html", "/about": "about.html", "/about/": "about.html"}
+PAGES = {"/": "index.html", "/about": "about.html", "/about/": "about.html", "/cms": "cms.html"}
 class H(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k): super().__init__(*a, directory=ROOT, **k)
     def translate_path(self, path):
