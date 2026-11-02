@@ -159,28 +159,49 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     });
     var boxes=rows.map(function(r){return r.parentElement;}).filter(function(b,i,a){return a.indexOf(b)===i;});
     boxes.forEach(function(b){b.classList.add("ascii-live");});
-    /* liquid reveal: two soft blobs on springs. The lead blob stretches along its direction of travel and wobbles,
-       the second trails behind it, so the spotlight moves like a drop of liquid instead of a rigid circle */
-    var blobs=[{x:0,y:0,vx:0,vy:0},{x:0,y:0,vx:0,vy:0}];
+    /* liquid reveal: an organic blob drawn into a tiny canvas and used, scaled up, as the mask. Its outline is
+       a sum of moving sine waves, it stretches along its direction of travel, two smaller blobs trail it on
+       springs, and small droplets break off when it moves fast, so the revealed area keeps changing shape */
+    var blobs=[{x:0,y:0,vx:0,vy:0},{x:0,y:0,vx:0,vy:0},{x:0,y:0,vx:0,vy:0}], drops=[];
     var r=0, tx=0, ty=0, base=0, run=false, snap=true, hover=false;
-    function grad(x,y,rx,ry){return "radial-gradient("+rx.toFixed(1)+"px "+ry.toFixed(1)+"px at "+x.toFixed(1)+"px "+y.toFixed(1)+"px,#000 0%,#000 42%,rgba(0,0,0,.55) 68%,rgba(0,0,0,0) 100%)";}
+    var cv=document.createElement("canvas"), cx=cv.getContext("2d"), CW=110, HIDDEN="linear-gradient(transparent,transparent)";
+    function blob(x,y,R,t,seed,stretch,ang){
+      cx.beginPath();
+      for(var i=0;i<=36;i++){
+        var th=i/36*Math.PI*2,
+            n=1+.16*Math.sin(3*th+t*.0013+seed)+.1*Math.sin(5*th-t*.0009+seed*2)+.06*Math.sin(8*th+t*.0021+seed*3),
+            d=Math.cos(th-ang), rr=R*n*(1+stretch*d*d);
+        cx[i?"lineTo":"moveTo"](x+Math.cos(th)*rr,y+Math.sin(th)*rr);
+      }
+      cx.fill();
+    }
     function tick(t){
-      var a=blobs[0], c=blobs[1];
+      var a=blobs[0];
       a.vx=(a.vx+(tx-a.x)*.05)*.84; a.vy=(a.vy+(ty-a.y)*.05)*.84; a.x+=a.vx; a.y+=a.vy;
-      c.vx=(c.vx+(a.x-c.x)*.09)*.74; c.vy=(c.vy+(a.y-c.y)*.09)*.74; c.x+=c.vx; c.y+=c.vy;
+      for(var i=1;i<blobs.length;i++){var p=blobs[i],q=blobs[i-1];p.vx=(p.vx+(q.x-p.x)*(.1-i*.02))*.76;p.vy=(p.vy+(q.y-p.y)*(.1-i*.02))*.76;p.x+=p.vx;p.y+=p.vy;}
       var speed=Math.hypot(a.vx,a.vy);
-      r+=(base+(hover?Math.min(70,speed*2):0)-r)*.07;
-      var w1=1+.06*Math.sin(t/380), w2=1+.06*Math.cos(t/310),
-          sx=Math.min(.6,Math.abs(a.vx)*.025), sy=Math.min(.6,Math.abs(a.vy)*.025),
-          lead=[Math.max(.5,r*w1*(1+sx-sy*.4)),Math.max(.5,r*w2*(1+sy-sx*.4))],
-          tail=Math.max(.5,r*.62*w2);
-      boxes.forEach(function(b){
-        /* the art is scaled by its parent, and mask coordinates are in the element's own unscaled space */
-        var o=b.getBoundingClientRect(), k=o.width/(b.offsetWidth||o.width)||1,
-            m=grad((a.x-o.left)/k,(a.y-o.top)/k,lead[0]/k,lead[1]/k)+","+grad((c.x-o.left)/k,(c.y-o.top)/k,tail/k,tail/k);
-        b.style.webkitMaskImage=m; b.style.maskImage=m;
-      });
-      if(hover||Math.abs(a.vx)+Math.abs(a.vy)+Math.abs(c.vx)+Math.abs(c.vy)+Math.abs(base-r)>.3)requestAnimationFrame(tick);else run=false;
+      r+=(base+(hover?Math.min(50,speed*1.6):0)-r)*.07;
+      if(hover&&speed>6&&Math.random()<.25)drops.push({x:a.x,y:a.y,vx:-a.vx*.15+(Math.random()-.5)*2,vy:-a.vy*.15+(Math.random()-.5)*2,r:r*(.12+Math.random()*.14),life:1});
+      drops=drops.filter(function(d){d.x+=d.vx;d.y+=d.vy;d.vx*=.94;d.vy*=.94;d.life-=.025;return d.life>0;});
+      var moving=drops.length;
+      blobs.forEach(function(p){moving+=Math.abs(p.vx)+Math.abs(p.vy);});
+      var b0=boxes[0], o=b0.getBoundingClientRect();
+      if(r<1&&!drops.length){boxes.forEach(function(b){b.style.webkitMaskImage=b.style.maskImage=HIDDEN;});}
+      else{
+        /* canvas works in the art's own unscaled space, shrunk to CW px wide */
+        var k=o.width/(b0.offsetWidth||o.width)||1, s=CW/(b0.offsetWidth||o.width), CH=Math.round(CW*(b0.offsetHeight||o.height)/(b0.offsetWidth||o.width));
+        if(cv.width!==CW||cv.height!==CH){cv.width=CW;cv.height=CH;}
+        cx.clearRect(0,0,CW,CH); cx.fillStyle="#000"; cx.filter="blur(2px)";
+        var L=function(v,off){return (v-off)/k*s;}, ang=Math.atan2(a.vy,a.vx), st=Math.min(.7,speed*.03);
+        blob(L(a.x,o.left),L(a.y,o.top),r/k*s,t,0,st,ang);
+        blob(L(blobs[1].x,o.left),L(blobs[1].y,o.top),r*.62/k*s,t,1.7,st*.5,ang);
+        blob(L(blobs[2].x,o.left),L(blobs[2].y,o.top),r*.4/k*s,t,3.1,0,0);
+        drops.forEach(function(d){cx.globalAlpha=d.life;blob(L(d.x,o.left),L(d.y,o.top),d.r/k*s,t,d.r,0,0);});
+        cx.globalAlpha=1;
+        var m="url("+cv.toDataURL()+")";
+        boxes.forEach(function(b){b.style.webkitMaskImage=b.style.maskImage=m;b.style.webkitMaskSize=b.style.maskSize="100% 100%";b.style.webkitMaskRepeat=b.style.maskRepeat="no-repeat";});
+      }
+      if(hover||moving+Math.abs(base-r)>.3)requestAnimationFrame(tick);else run=false;
     }
     /* only reveal while the pointer is over the drawn figure, not anywhere in its (much larger) bounding box */
     function overArt(x,y){
