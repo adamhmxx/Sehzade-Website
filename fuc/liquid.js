@@ -13,10 +13,15 @@
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
   var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, distort: 9, reach: 200, on: 1,
-              ldur: 900, ldist: 14, lblur: 3, lstag: 110, pliq: 60 };
+              ldur: 1500, ldist: 10, lblur: 2, lstag: 220, pliq: 60 };
   var KEY = "liquid-cfg-v1";
   function load() {
-    try { return Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || "{}")); }
+    try {
+      var sv = JSON.parse(localStorage.getItem(KEY) || "{}");
+      /* link hover defaults were retuned (slower, softer): drop link values saved by older versions once */
+      if (sv.lv !== 2) { delete sv.ldur; delete sv.ldist; delete sv.lblur; delete sv.lstag; sv.lv = 2; }
+      return Object.assign({}, DEF, sv);
+    }
     catch (e) { return Object.assign({}, DEF); }
   }
   var own = load();

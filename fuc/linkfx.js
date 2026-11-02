@@ -27,7 +27,7 @@
   }
 
   /* settings come from the control panel (main page); the About page reads them from its parent */
-  var LD = { ldur: 900, ldist: 14, lblur: 3, lstag: 110 };
+  var LD = { ldur: 1500, ldist: 10, lblur: 2, lstag: 220 };
   function cfg() {
     var c = null;
     try { c = window.__liquidCfg || (window.parent !== window && window.parent.__liquidCfg); } catch (e) {}
@@ -43,9 +43,9 @@
       var off = dir * c.ldist * (.57 + far);
       n.animate([
         { transform: "translateX(" + off + "px)", filter: "blur(" + c.lblur + "px)", opacity: 0, offset: 0 },
-        { transform: "translateX(" + off * .4 + "px)", filter: "blur(" + c.lblur * .4 + "px)", opacity: .75, offset: .5 },
+        { transform: "translateX(" + off * .45 + "px)", filter: "blur(" + c.lblur * .5 + "px)", opacity: .55, offset: .45 },
         { transform: "translateX(0)", filter: "blur(0)", opacity: 1, offset: 1 }
-      ], { duration: c.ldur, delay: Math.pow(1 - far, 1.3) * c.lstag, easing: "cubic-bezier(.25,.8,.25,1)", fill: "backwards" });
+      ], { duration: c.ldur, delay: Math.pow(1 - far, 1.2) * c.lstag, easing: "cubic-bezier(.33,.1,.2,1)", fill: "backwards" });
     });
   }
   window.__linkfxPlay = play;

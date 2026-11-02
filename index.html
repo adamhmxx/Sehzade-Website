@@ -116,6 +116,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 #about-panel.dragging,#about-panel.dragging #about-grip{cursor:grabbing}
 #about-panel iframe{flex:1;min-height:0;width:100%;border:0;display:block;background:transparent}
 #about-panel.dragging iframe{pointer-events:none}
+#about-panel::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.22),rgba(255,255,255,0) 38%,rgba(0,0,0,.2));opacity:var(--sh,0)}
 #about-close{padding:4px 0;border:0;background:none;color:#0b0b0b;font:400 16px/1.2 "Anton","Inter Display",sans-serif;text-transform:uppercase;letter-spacing:0;cursor:pointer}
 #about-name{flex:none;padding:8px 16px 16px;overflow:hidden;white-space:nowrap;font:400 100px/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;user-select:none;-webkit-user-select:none}
 .about-open #about-backdrop{opacity:1;pointer-events:auto}
@@ -131,7 +132,7 @@ html.show-grid #grid-overlay{display:grid}
 /* About opens as a sheet of paper that rises from the bottom centre, can be dragged anywhere, and sinks back to the bottom centre on close */
 (function(){
   var root=document.documentElement, card, frame, grip, nameEl, nameTxt, backdrop, raf=0, last=0, drag=null, open_=false, W=0, H=0;
-  var S={x:0,y:0,r:0,s:1}, V={x:0,y:0,r:0,s:0}, T={x:0,y:0,r:0,s:1};
+  var S={x:0,y:0,r:0,s:1,rx:0,ry:0}, V={x:0,y:0,r:0,s:0,rx:0,ry:0}, T={x:0,y:0,r:0,s:1,rx:0,ry:0}, fl=0, liqRun=false;
   var reduce=matchMedia("(prefers-reduced-motion: reduce)");
   /* card size = whole columns of the page grid */
   function dims(){
@@ -139,27 +140,40 @@ html.show-grid #grid-overlay{display:grid}
         col=(vw-2*m-(cols-1)*g)/cols, span=vw>=1440?5:vw>=810?(vw>=1100?4:5):cols;
     W=span*col+(span-1)*g; H=vw<810?vh-2*m:Math.min(vh-2*m, W*1.4);
   }
-  function hiddenPose(){return{x:0,y:innerHeight/2+H/2+70,r:-3,s:.9};}
+  function hiddenPose(){return{x:0,y:innerHeight/2+H/2+70,r:-3,s:.9,rx:42,ry:0};}
   function clampT(){
     var vw=innerWidth,vh=innerHeight, cx=(vw-W)/2, cy=(vh-H)/2;
     T.x=Math.max(-(W-110)-cx,Math.min(vw-110-cx,T.x)); T.y=Math.max(-cy,Math.min(vh-60-cy,T.y));
   }
   function paint(){
-    card.style.transform="translate3d("+((innerWidth-W)/2+S.x).toFixed(2)+"px,"+((innerHeight-H)/2+S.y).toFixed(2)+"px,0) rotate("+S.r.toFixed(3)+"deg) scale("+S.s.toFixed(4)+")";
+    card.style.transform="perspective(1500px) translate3d("+((innerWidth-W)/2+S.x).toFixed(2)+"px,"+((innerHeight-H)/2+S.y).toFixed(2)+"px,0) rotateX("+S.rx.toFixed(2)+"deg) rotateY("+S.ry.toFixed(2)+"deg) rotate("+S.r.toFixed(3)+"deg) scale("+S.s.toFixed(4)+")";
+    card.style.setProperty("--sh",Math.min(1,(Math.abs(S.rx)+Math.abs(S.ry))/18).toFixed(3));
   }
   function step(now){
     var dt=Math.min(.033,(now-last)/1000||.016); last=now; var calm=true;
-    ["x","y","r","s"].forEach(function(k){
-      var K=k==="r"?90:k==="s"?120:open_?(drag?0:62):70, D=2*Math.sqrt(K)*(k==="r"?.8:.92);
+    ["x","y","r","s","rx","ry"].forEach(function(k){
+      var K=k==="r"?90:k==="s"?120:(k==="rx"||k==="ry")?55:open_?62:70, D=2*Math.sqrt(K)*(k==="r"?.8:(k==="rx"||k==="ry")?.5:.92);
       if(drag&&(k==="x"||k==="y"))return;
       V[k]+=((T[k]-S[k])*K-V[k]*D)*dt; S[k]+=V[k]*dt;
-      if(Math.abs(T[k]-S[k])>(k==="r"||k==="s"?.01:.4)||Math.abs(V[k])>(k==="r"||k==="s"?.02:.5))calm=false;
+      var tiny=k==="x"||k==="y"?.4:.02;
+      if(Math.abs(T[k]-S[k])>tiny||Math.abs(V[k])>tiny*1.5)calm=false;
     });
-    if(!drag){T.r=0;T.s=1;}
-    if(open_&&!drag){T.r=Math.max(-5,Math.min(5,V.x*.006))*(Math.abs(V.x)>40?1:0);}
+    if(drag){V.x*=.88;V.y*=.88;}
+    if(open_){
+      /* the sheet leans against its own motion, like paper moving through air, and wobbles back when it stops */
+      var pitch=Math.max(-18,Math.min(18,-V.y*.014)), yaw=Math.max(-18,Math.min(18,V.x*.014));
+      T.rx=pitch; T.ry=yaw; T.r=Math.max(-6,Math.min(6,V.x*.005)); T.s=drag?1.012:1;
+    }
+    /* flutter: a travelling ripple bends the sheet while it moves (the same SVG filter as the liquid appear) */
+    var sp=Math.hypot(V.x,V.y)+(Math.abs(V.rx)+Math.abs(V.ry))*8;
+    fl+=(Math.min(24,sp*.02)-fl)*.18;
+    if(!liqRun){
+      if(fl>.7&&!reduce.matches){warpInit();card.style.filter="url(#about-liquid)";wmap.setAttribute("scale",fl.toFixed(2));woff.setAttribute("dy",(-now*.06).toFixed(1));wmap.blur.setAttribute("stdDeviation",(fl/30).toFixed(2));calm=false;}
+      else if(card.style.filter){card.style.filter="";}
+    }
     paint();
     if(!calm||drag){raf=requestAnimationFrame(step);}
-    else{raf=0;if(!open_){card.style.visibility="hidden";}else{S.x=T.x;S.y=T.y;S.r=0;S.s=1;paint();}}
+    else{raf=0;if(!open_){card.style.visibility="hidden";card.style.filter="";}else{S.x=T.x;S.y=T.y;S.r=0;S.s=1;S.rx=0;S.ry=0;paint();}}
   }
   function run(){if(!raf){last=performance.now();raf=requestAnimationFrame(step);}}
   /* the name at the bottom of the card is scaled so it exactly fills the card width */
@@ -221,7 +235,8 @@ html.show-grid #grid-overlay{display:grid}
   function liquid(opening){
     var amp=strength();
     cancelAnimationFrame(wraf);
-    if(!card||!amp||matchMedia("(prefers-reduced-motion: reduce)").matches){if(card)card.style.filter="";return;}
+    if(!card||!amp||matchMedia("(prefers-reduced-motion: reduce)").matches){liqRun=false;return;}
+    liqRun=true;
     warpInit();
     var t0=performance.now(),dur=opening?1250:900;
     card.style.filter="url(#about-liquid)";
@@ -231,21 +246,21 @@ html.show-grid #grid-overlay{display:grid}
       wmap.setAttribute("scale",(amp*Math.max(0,k)).toFixed(2));
       woff.setAttribute("dy",(-t*260).toFixed(1));
       wmap.blur.setAttribute("stdDeviation",(Math.max(0,k)*amp/16).toFixed(2));
-      if(t<1)wraf=requestAnimationFrame(f);else{card.style.filter="";}
+      if(t<1)wraf=requestAnimationFrame(f);else{liqRun=false;card.style.filter="";}
     })(t0);
   }
   function open(){
     build(); layout();
     if(open_)return; open_=true;
     card.style.visibility="visible";
-    var h=hiddenPose(); S.x=h.x;S.y=h.y;S.r=h.r;S.s=h.s;V.x=V.y=V.r=V.s=0; T={x:0,y:0,r:0,s:1};
-    if(reduce.matches){S.x=0;S.y=0;S.r=0;S.s=1;}
+    var h=hiddenPose(); S.x=h.x;S.y=h.y;S.r=h.r;S.s=h.s;S.rx=h.rx;S.ry=0;V.x=V.y=V.r=V.s=V.rx=V.ry=0; T={x:0,y:0,r:0,s:1,rx:0,ry:0};
+    if(reduce.matches){S.x=0;S.y=0;S.r=0;S.s=1;S.rx=0;}
     paint(); root.classList.add("about-open"); run(); liquid(true);
   }
   function close(){
     if(!open_)return; open_=false; drag=null; if(card)card.classList.remove("dragging");
     root.classList.remove("about-open");
-    T=hiddenPose(); T.r=2.5; V.r=0;
+    T=hiddenPose(); V.r=0;
     if(reduce.matches){S=hiddenPose();paint();card.style.visibility="hidden";return;}
     run(); liquid(false);
   }
