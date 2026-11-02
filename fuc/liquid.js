@@ -6,11 +6,13 @@
 (function () {
   if (window.__liquid) return;
   window.__liquid = 1;
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(pointer: fine)").matches) return;
-
-  var TOP = window.parent === window;
+  var ENABLED = !matchMedia("(prefers-reduced-motion: reduce)").matches && matchMedia("(pointer: fine)").matches;
   var ABOUT = !!document.getElementById("about-overrides");
-  var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, reach: 200, on: 1 };
+  /* the main page owns the settings. The About page follows it when it is shown inside the main page; the main
+     page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
+  var TOP = !ABOUT;
+  if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
+  var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, distort: 9, reach: 200, on: 1 };
   var KEY = "liquid-cfg-v1";
   function load() {
     try { return Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || "{}")); }
@@ -77,6 +79,27 @@
     }
     els = list.filter(function (e) { return !e.closest("#liquid-ui") && (!e.querySelector("p,h1,h2") || e.matches("a,span")); });
   }
+  var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
+  function makeWarp(el, b) {
+    if (!defs) {
+      var svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("width", "0"); svg.setAttribute("height", "0"); svg.setAttribute("aria-hidden", "true");
+      svg.style.cssText = "position:absolute;width:0;height:0;pointer-events:none";
+      defs = document.createElementNS(NS, "defs"); svg.appendChild(defs); document.body.appendChild(svg);
+    }
+    var id = "lq-w" + (fid++), f = document.createElementNS(NS, "filter");
+    f.setAttribute("id", id); f.setAttribute("x", "-30%"); f.setAttribute("y", "-60%"); f.setAttribute("width", "160%"); f.setAttribute("height", "220%");
+    f.setAttribute("color-interpolation-filters", "sRGB");
+    /* wavelength follows the size of the element, so small text ripples as clearly as a large card */
+    var fq = Math.max(.004, Math.min(.05, 3.2 / Math.max(60, Math.max(b.width, b.height))));
+    f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="' + fq.toFixed(4) + ' ' + (fq * 1.5).toFixed(4) + '" numOctaves="1" seed="' + (fid % 7 + 2) + '" result="n"/>' +
+      '<feOffset in="n" dx="0" dy="0" result="o"/>' +
+      '<feDisplacementMap in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G" result="w"/>' +
+      '<feGaussianBlur in="w" stdDeviation="0.45"/>';
+    defs.appendChild(f);
+    /* small text gets a fraction of the strength a large card gets, so every component distorts to the same degree visually */
+    return { id: id, off: f.children[1], map: f.children[2], k: Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
+  }
   function spring(st, key, target, k, damp) { st["v" + key] = (st["v" + key] + (target - st[key]) * k) * damp; st[key] += st["v" + key]; }
 
   function step(now) {
@@ -95,13 +118,26 @@
       var el = els[n], b = el.getBoundingClientRect();
       if (b.bottom < -reach || b.top > innerHeight + reach || b.right < -reach || b.left > innerWidth + reach || b.width === 0) continue;
       var st = states.get(el);
-      if (!st) { st = { b: 0, vb: 0, set: 0 }; states.set(el, st); }
+      if (!st) { st = { b: 0, vb: 0, d: 0, vd: 0, set: 0, warp: null }; states.set(el, st); }
       var dx = b.left + b.width / 2 - mx, dy = b.top + b.height / 2 - my, dist = Math.hypot(dx, dy);
       var edge = Math.max(0, dist - Math.min(b.width, 260) / 2), f = inside && c.on ? Math.exp(-Math.pow(edge / reach, 2) * 1.8) : 0;
       spring(st, "b", f * c.blur * (.55 + sp * .9), .09, .82);
+      spring(st, "d", f * c.distort * (.7 + sp * .6), .08, .84);
       var tgt = el.__fxt || (el.__fxt = el.style.zIndex && el.firstElementChild && el.style.position === "absolute" && el.style.top === "50%" ? el.firstElementChild : el);
-      if (st.b > .03) { active++; st.set = 1; tgt.style.filter = "blur(" + st.b.toFixed(2) + "px)"; }
-      else if (st.set) { tgt.style.filter = ""; st.set = 0; }
+      var warp = st.d > .15;
+      if (warp || st.b > .03) {
+        active++; st.set = 1;
+        var fl = "";
+        if (warp) {
+          if (!st.warp) st.warp = makeWarp(el, b);
+          /* the noise field slides with the cursor, so the distortion flows like liquid instead of pulsing */
+          st.warp.map.setAttribute("scale", (st.d * st.warp.k).toFixed(2));
+          st.warp.off.setAttribute("dx", (-dx * .35).toFixed(1)); st.warp.off.setAttribute("dy", (-dy * .35).toFixed(1));
+          fl = "url(#" + st.warp.id + ") ";
+        }
+        if (st.b > .03) fl += "blur(" + st.b.toFixed(2) + "px)";
+        tgt.style.filter = fl;
+      } else if (st.set) { tgt.style.filter = ""; st.set = 0; }
     }
     idle = active || inside ? 0 : idle + 1;
     if (inside || active || idle < 40) requestAnimationFrame(step); else run = false;
@@ -109,6 +145,7 @@
   function kick() { if (!run) { run = true; requestAnimationFrame(step); } }
 
   function start() {
+    if (!ENABLED) { if (TOP) panel(); return; }
     document.body.appendChild(cv);
     addEventListener("pointermove", function (e) {
       if (e.pointerType === "touch") return;
@@ -129,6 +166,7 @@
       ["softness", "Edge softness", 0, 1, .01, ""],
       ["brightness", "Brightness", 0, .3, .005, ""],
       ["trail", "Trail", 0, 1.4, .02, ""],
+      ["distort", "Distortion", 0, 30, .5, "px"],
       ["blur", "Component blur", 0, 4, .1, "px"],
       ["reach", "Blur reach", 60, 420, 5, "px"]
     ];
@@ -155,7 +193,7 @@
       '#liquid-ui .lq-actions button{flex:1;padding:7px 0;border:1px solid rgba(242,242,242,.18);border-radius:999px;background:transparent;color:inherit;font-size:11px;cursor:pointer;transition:border-color .4s,background .4s}' +
       '#liquid-ui .lq-actions button:hover{border-color:rgba(242,242,242,.5);background:rgba(242,242,242,.08)}' +
       '#liquid-ui :focus-visible{outline:1px solid rgba(242,242,242,.7);outline-offset:3px}' +
-      '@media (max-width:600px){#liquid-ui{display:none}}';
+      '@media (max-width:600px){#liquid-ui .lq-card{width:min(250px,calc(100vw - 32px))}}';
     document.head.appendChild(css);
 
     var ui = document.createElement("div"); ui.id = "liquid-ui";
@@ -184,7 +222,10 @@
     btn.innerHTML = '<span class="lq-dot"></span><span>Liquid</span>';
     btn.onclick = function () { var o = ui.classList.toggle("open"); btn.setAttribute("aria-expanded", o); };
     addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.classList.contains("open")) { ui.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); } });
+    if (!ENABLED) { var note = document.createElement("div"); note.style.cssText = "margin-top:8px;font-size:10px;color:rgba(242,242,242,.55);line-height:1.3"; note.textContent = "Hover effects need a mouse and motion enabled on this device."; card.appendChild(note); }
     ui.append(card, btn); document.body.appendChild(ui);
+    /* open once on the first visit so the panel is easy to find, then remember that it has been seen */
+    try { if (!localStorage.getItem(KEY + "-seen")) { localStorage.setItem(KEY + "-seen", "1"); setTimeout(function () { ui.classList.add("open"); btn.setAttribute("aria-expanded", "true"); }, 900); } } catch (e) {}
   }
 
   if (document.body) start(); else addEventListener("DOMContentLoaded", start);

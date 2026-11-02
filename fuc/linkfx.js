@@ -9,6 +9,10 @@
     'a[href],#about-close{text-decoration:none!important}' +
     'a[href]>span[aria-hidden="true"]{display:none!important}' +
     'a[href] span,#about-close span,[role="tab"] span{animation:none!important}' +
+    /* clickable text links carry a fine underline, so they read as links and plain text does not */
+    'a[href]:not(:has(img)){position:relative}' +
+    'a[href]:not(:has(img))::after,#about-close::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1px;background:currentColor;opacity:.55;pointer-events:none;transition:opacity .7s cubic-bezier(.22,1,.36,1)}' +
+    'a[href]:not(:has(img)):hover::after,#about-close:hover::after{opacity:1}' +
     /* the letters travel outside their own box while sliding in, so the box must not clip them */
     'a[href]>span:first-child,[role="tab"]>span:first-child{overflow:visible!important;padding:0 3px;margin:0 -3px}#about-close{overflow:visible!important}';
   document.head.appendChild(css);
