@@ -9,10 +9,6 @@
     'a[href],#about-close{text-decoration:none!important}' +
     'a[href]>span[aria-hidden="true"]{display:none!important}' +
     'a[href] span,#about-close span,[role="tab"] span{animation:none!important}' +
-    /* clickable text links carry a fine underline, so they read as links and plain text does not */
-    'a[href]:not(:has(img)){position:relative}' +
-    'a[href]:not(:has(img))::after,#about-close::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1px;background:currentColor;opacity:.55;pointer-events:none;transition:opacity .7s cubic-bezier(.22,1,.36,1)}' +
-    'a[href]:not(:has(img)):hover::after,#about-close:hover::after{opacity:1}' +
     /* the letters travel outside their own box while sliding in, so the box must not clip them */
     'a[href]>span:first-child,[role="tab"]>span:first-child{overflow:visible!important;padding:0 3px;margin:0 -3px}#about-close{overflow:visible!important}';
   document.head.appendChild(css);
@@ -30,20 +26,29 @@
     return s;
   }
 
+  /* settings come from the control panel (main page); the About page reads them from its parent */
+  var LD = { ldur: 900, ldist: 14, lblur: 3, lstag: 110 };
+  function cfg() {
+    var c = null;
+    try { c = window.__liquidCfg || (window.parent !== window && window.parent.__liquidCfg); } catch (e) {}
+    return Object.assign({}, LD, c || {});
+  }
+
   function play(el) {
     var s = letters(el);
     if (!s.length || !s[0].animate) return;
-    var mid = (s.length - 1) / 2;
+    var c = cfg(), mid = (s.length - 1) / 2;
     s.forEach(function (n, i) {
       var d = i - mid, dir = d < 0 ? -1 : d > 0 ? 1 : 0, far = Math.abs(d) / (mid || 1);
-      var off = dir * (8 + far * 14);
+      var off = dir * c.ldist * (.57 + far);
       n.animate([
-        { transform: "translateX(" + off + "px)", filter: "blur(3px)", opacity: 0, offset: 0 },
-        { transform: "translateX(" + off * .4 + "px)", filter: "blur(1.2px)", opacity: .75, offset: .5 },
+        { transform: "translateX(" + off + "px)", filter: "blur(" + c.lblur + "px)", opacity: 0, offset: 0 },
+        { transform: "translateX(" + off * .4 + "px)", filter: "blur(" + c.lblur * .4 + "px)", opacity: .75, offset: .5 },
         { transform: "translateX(0)", filter: "blur(0)", opacity: 1, offset: 1 }
-      ], { duration: 900, delay: Math.pow(1 - far, 1.3) * 110, easing: "cubic-bezier(.25,.8,.25,1)", fill: "backwards" });
+      ], { duration: c.ldur, delay: Math.pow(1 - far, 1.3) * c.lstag, easing: "cubic-bezier(.25,.8,.25,1)", fill: "backwards" });
     });
   }
+  window.__linkfxPlay = play;
 
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   var cur = null;

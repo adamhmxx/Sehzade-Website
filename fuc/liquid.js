@@ -12,7 +12,8 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, distort: 9, reach: 200, on: 1 };
+  var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, distort: 9, reach: 200, on: 1,
+              ldur: 900, ldist: 14, lblur: 3, lstag: 110, pliq: 60 };
   var KEY = "liquid-cfg-v1";
   function load() {
     try { return Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || "{}")); }
@@ -168,7 +169,14 @@
       ["trail", "Trail", 0, 1.4, .02, ""],
       ["distort", "Distortion", 0, 30, .5, "px"],
       ["blur", "Component blur", 0, 4, .1, "px"],
-      ["reach", "Blur reach", 60, 420, 5, "px"]
+      ["reach", "Blur reach", 60, 420, 5, "px"],
+      ["#", "Link hover"],
+      ["ldur", "Duration", 300, 2000, 10, "ms"],
+      ["ldist", "Slide distance", 0, 60, 1, "px"],
+      ["lblur", "Link blur", 0, 10, .5, "px"],
+      ["lstag", "Stagger", 0, 300, 5, "ms"],
+      ["#", "About popup"],
+      ["pliq", "Liquid appear", 0, 120, 1, "px"]
     ];
     var css = document.createElement("style");
     css.textContent =
@@ -178,8 +186,10 @@
       '#liquid-ui .lq-btn:hover{border-color:rgba(242,242,242,.4);background:rgba(14,14,14,.8)}' +
       '#liquid-ui .lq-dot{width:8px;height:8px;border-radius:50%;background:#f2f2f2;box-shadow:0 0 10px rgba(242,242,242,.55);opacity:.9;transition:opacity .5s}' +
       '#liquid-ui.off .lq-dot{opacity:.25;box-shadow:none}' +
-      '#liquid-ui .lq-card{width:250px;margin-bottom:10px;padding:16px 16px 12px;border:1px solid rgba(242,242,242,.14);border-radius:16px;background:rgba(14,14,14,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);visibility:hidden;pointer-events:none;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1),visibility 0s .7s}' +
+      '#liquid-ui .lq-card{width:260px;max-height:calc(100vh - 96px);overflow:auto;margin-bottom:10px;padding:16px 16px 12px;border:1px solid rgba(242,242,242,.14);border-radius:16px;background:rgba(14,14,14,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);visibility:hidden;pointer-events:none;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1),visibility 0s .7s}' +
       '#liquid-ui.open .lq-card{opacity:1;transform:none;visibility:visible;pointer-events:auto;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}' +
+      '#liquid-ui .lq-sec{margin:16px 0 10px;padding-top:12px;border-top:1px solid rgba(242,242,242,.12);font-size:11px;color:rgba(242,242,242,.5)}' +
+      '#liquid-ui .lq-demo{display:inline-block;margin:0 0 12px;font-size:16px;color:#f2f2f2;text-decoration:none;cursor:pointer}' +
       '#liquid-ui .lq-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:13px}' +
       '#liquid-ui .lq-row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin-bottom:11px;font-size:11px;color:rgba(242,242,242,.72)}' +
       '#liquid-ui .lq-row b{font-weight:400;color:#f2f2f2;font-variant-numeric:tabular-nums}' +
@@ -211,6 +221,16 @@
     card.innerHTML = '<div class="lq-title"><span>Liquid hover</span></div>';
     var inputs = {};
     ROWS.forEach(function (r) {
+      if (r[0] === "#") {
+        var h = document.createElement("div"); h.className = "lq-sec"; h.textContent = r[1]; card.appendChild(h);
+        if (r[1] === "Link hover") {
+          var demo = document.createElement("a"); demo.href = "#"; demo.className = "lq-demo";
+          "Hover to preview".split("").forEach(function (ch) { var sp = document.createElement("span"); sp.style.cssText = "display:inline-block;white-space:pre"; sp.textContent = ch; demo.appendChild(sp); });
+          demo.onclick = function (e) { e.preventDefault(); if (window.__linkfxPlay) window.__linkfxPlay(demo); };
+          card.appendChild(demo);
+        }
+        return;
+      }
       var row = document.createElement("label"); row.className = "lq-row";
       var name = document.createElement("span"); name.textContent = r[1];
       var val = document.createElement("b");

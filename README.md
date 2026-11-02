@@ -14,5 +14,6 @@ Run:  python3 server.py   ->  http://localhost:8000
 - build.py        makes build/page.html for the Claude artifact and lists the files to publish with it
 
 ## Interaction scripts (fuc/)
-- liquid.js   liquid hover: a soft blob under the cursor plus a light blur on nearby components, with a control panel (bottom right, settings kept in localStorage). Shared by index.html and about.html.
+- liquid.js   liquid hover: a soft blob, distortion and blur near the cursor, plus a control panel for it, link hover and the About popup (Shift+L; settings kept in localStorage). Shared by index.html and about.html.
 - linkfx.js   one hover effect for every text link, tab and button: letters slide in from both edges with a motion blur.
+- cms.js      simple CMS (bottom left "CMS" button, Shift+C toggles it): projects, About text, links, JSON export/import. Saved in the browser's localStorage.
