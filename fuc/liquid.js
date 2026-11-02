@@ -2,14 +2,14 @@
    1) A gooey blob trails the cursor over the background.
    2) Every nearby component (text, links, tabs, project cards) is dragged along with the cursor on springs,
       swells slightly and wobbles back, like objects floating in water. Only the individual CSS transform
-      properties (translate / scale / rotate) are used, so the components' own transforms are left alone. */
+      properties (translate / scale) and a light blur are used, so the components' own transforms are left alone. */
 (function () {
   if (window.__liquid) return;
   window.__liquid = 1;
   if (matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(pointer: fine)").matches) return;
 
   var ABOUT = !!document.getElementById("about-overrides");
-  var INK = ABOUT ? "11,11,11" : "242,242,242", ALPHA = ABOUT ? 0.2 : 0.14, BLEND = ABOUT ? "multiply" : "screen";
+  var INK = ABOUT ? "11,11,11" : "242,242,242", ALPHA = ABOUT ? 0.12 : 0.08, BLEND = ABOUT ? "multiply" : "screen";
   var R = 230, SCALE = 5;                       /* influence radius (px) and canvas downscale */
   var mx = -9999, my = -9999, cvx = 0, cvy = 0, lastX = 0, lastY = 0, inside = false, run = false, idle = 0;
 
@@ -25,7 +25,7 @@
     var W = cv.width, H = cv.height, s = 1 / SCALE;
     cx.clearRect(0, 0, W, H);
     if (!inside && Math.abs(head.vx) + Math.abs(head.vy) < .05 && idle > 40) return;
-    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, rad = 70 * s;
+    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, rad = 56 * s;
     for (var j = N - 1; j >= 0; j--) {
       var f = j / (N - 1), p = chain[j], r = rad * (.3 + .7 * Math.pow(1 - f, 1.2)), a = Math.pow(1 - f, 1.3);
       var x = p.x * s, y = p.y * s;
@@ -82,24 +82,30 @@
       var el = els[n], b = el.getBoundingClientRect();
       if (b.bottom < -R || b.top > innerHeight + R || b.right < -R || b.left > innerWidth + R || b.width === 0) continue;
       var st = states.get(el);
-      if (!st) { st = { x: 0, y: 0, s: 1, r: 0, vx: 0, vy: 0, vs: 0, vr: 0 }; states.set(el, st); }
+      if (!st) { st = { x: 0, y: 0, s: 1, b: 0, sx: 0, sy: 0, vx: 0, vy: 0, vs: 0, vb: 0, vsx: 0, vsy: 0 }; states.set(el, st); }
       var ox = st.x, oy = st.y;
       /* distance from the cursor to the element's un-displaced centre */
       var ccx = b.left + b.width / 2 - ox, ccy = b.top + b.height / 2 - oy;
       var dx = ccx - mx, dy = ccy - my, dist = Math.hypot(dx, dy) || 1;
       var reach = R + Math.min(b.width, 320) / 2, f = inside ? Math.exp(-Math.pow(dist / reach, 2) * 1.6) : 0;
-      var push = f * 7 / dist;
-      spring(st, "x", dx * push + cvx * f * .45, .1, .78);
-      spring(st, "y", dy * push + cvy * f * .45, .1, .78);
-      spring(st, "s", 1 + f * .045, .1, .8);
-      spring(st, "r", Math.max(-3, Math.min(3, cvx * f * .05)), .1, .8);
-      var moving = Math.abs(st.vx) + Math.abs(st.vy) + Math.abs(st.vs) * 50 + Math.abs(st.vr) + Math.abs(st.x) + Math.abs(st.y) + Math.abs(st.s - 1) * 50;
+      /* subtle on purpose: a gentle drift away from the cursor, a hair of swelling, and a light blur that
+         grows with how close and how fast the cursor is. The stretch follows the motion like a droplet. */
+      var push = f * 2.2 / dist;
+      spring(st, "x", dx * push + cvx * f * .1, .08, .82);
+      spring(st, "y", dy * push + cvy * f * .1, .08, .82);
+      spring(st, "s", 1 + f * .012, .08, .84);
+      var sp = Math.min(1, Math.hypot(cvx, cvy) / 40);
+      spring(st, "b", f * (.5 + sp * 1.1), .1, .8);
+      spring(st, "sx", Math.min(.03, Math.abs(cvx) * f * .0007), .08, .84);
+      spring(st, "sy", Math.min(.03, Math.abs(cvy) * f * .0007), .08, .84);
+      var moving = Math.abs(st.vx) + Math.abs(st.vy) + Math.abs(st.vs) * 50 + Math.abs(st.x) + Math.abs(st.y) + Math.abs(st.s - 1) * 50 + st.b;
+      var tgt = el.__fxt || (el.__fxt = el.style.zIndex && el.firstElementChild && el.style.position === "absolute" && el.style.top === "50%" ? el.firstElementChild : el);
       if (moving > .02) {
         active++;
         el.style.translate = st.x.toFixed(2) + "px " + st.y.toFixed(2) + "px";
-        el.style.scale = st.s.toFixed(4);
-        el.style.rotate = st.r.toFixed(3) + "deg";
-      } else if (st.set) { el.style.translate = el.style.scale = el.style.rotate = ""; st.set = 0; continue; }
+        el.style.scale = (st.s + st.sx).toFixed(4) + " " + (st.s + st.sy).toFixed(4);
+        tgt.style.filter = st.b > .04 ? "blur(" + st.b.toFixed(2) + "px)" : "";
+      } else if (st.set) { el.style.translate = el.style.scale = ""; tgt.style.filter = ""; st.set = 0; continue; }
       st.set = 1;
     }
     idle = active || inside ? 0 : idle + 1;

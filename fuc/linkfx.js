@@ -8,7 +8,9 @@
   css.textContent =
     'a[href],#about-close{text-decoration:none!important}' +
     'a[href]>span[aria-hidden="true"]{display:none!important}' +
-    'a[href] span,#about-close span,[role="tab"] span{animation:none!important}';
+    'a[href] span,#about-close span,[role="tab"] span{animation:none!important}' +
+    /* the letters travel outside their own box while sliding in, so the box must not clip them */
+    'a[href]>span:first-child,[role="tab"]>span:first-child,#about-close{overflow:visible!important;padding:0 3px;margin:0 -3px}';
   document.head.appendChild(css);
 
   function letters(el) {
@@ -30,11 +32,12 @@
     var mid = (s.length - 1) / 2;
     s.forEach(function (n, i) {
       var d = i - mid, dir = d < 0 ? -1 : d > 0 ? 1 : 0, far = Math.abs(d) / (mid || 1);
+      var off = dir * (8 + far * 14);
       n.animate([
-        { transform: "translateX(" + dir * (10 + far * 22) + "px)", filter: "blur(4px)", opacity: 0, offset: 0 },
-        { transform: "translateX(" + dir * (10 + far * 22) * .35 + "px)", filter: "blur(1.5px)", opacity: .7, offset: .45 },
+        { transform: "translateX(" + off + "px)", filter: "blur(3px)", opacity: 0, offset: 0 },
+        { transform: "translateX(" + off * .4 + "px)", filter: "blur(1.2px)", opacity: .75, offset: .5 },
         { transform: "translateX(0)", filter: "blur(0)", opacity: 1, offset: 1 }
-      ], { duration: 780, delay: Math.pow(1 - far, 1.4) * 90, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" });
+      ], { duration: 900, delay: Math.pow(1 - far, 1.3) * 110, easing: "cubic-bezier(.25,.8,.25,1)", fill: "backwards" });
     });
   }
 
