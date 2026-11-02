@@ -31,9 +31,10 @@
     s.forEach(function (n, i) {
       var d = i - mid, dir = d < 0 ? -1 : d > 0 ? 1 : 0, far = Math.abs(d) / (mid || 1);
       n.animate([
-        { transform: "translateX(" + dir * (18 + far * 26) + "px)", filter: "blur(6px)", opacity: 0 },
-        { transform: "translateX(0)", filter: "blur(0)", opacity: 1 }
-      ], { duration: 520, delay: (1 - far) * 60, easing: "cubic-bezier(.16,1,.3,1)", fill: "backwards" });
+        { transform: "translateX(" + dir * (10 + far * 22) + "px)", filter: "blur(4px)", opacity: 0, offset: 0 },
+        { transform: "translateX(" + dir * (10 + far * 22) * .35 + "px)", filter: "blur(1.5px)", opacity: .7, offset: .45 },
+        { transform: "translateX(0)", filter: "blur(0)", opacity: 1, offset: 1 }
+      ], { duration: 780, delay: Math.pow(1 - far, 1.4) * 90, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" });
     });
   }
 
