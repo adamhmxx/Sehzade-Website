@@ -27,6 +27,8 @@
   var own = load();
   if (TOP) window.__liquidCfg = own;
   /* the About page lives in an iframe of the main page, so it follows the main page's panel */
+  /* no component distortion while the About card is being dragged: the text under the cursor would shimmer as the card moves */
+  function dragging() { try { return !!(TOP ? window : parent).__abDragging; } catch (e) { return false; } }
   function C() { if (TOP) return own; try { return parent.__liquidCfg || own; } catch (e) { return own; } }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(own)); } catch (e) {} }
 
@@ -121,13 +123,13 @@
     for (var i = 1; i < N; i++) { chain[i].x += (chain[i - 1].x - chain[i].x) * follow; chain[i].y += (chain[i - 1].y - chain[i].y) * follow; }
     drawBlob(c);
 
-    var reach = c.reach, near = [];
+    var reach = c.reach, near = [], drag_ = dragging();
     for (var n = 0; n < els.length; n++) {
       var el = els[n], b = el.getBoundingClientRect(), st = states.get(el);
       if (b.bottom < -reach || b.top > innerHeight + reach || b.right < -reach || b.left > innerWidth + reach || b.width === 0) { if (st && st.set) near.push({ el: el, b: b, vs: 1, f: 0, dx: 0, dy: 0 }); continue; }
       var dx = b.left + b.width / 2 - mx, dy = b.top + b.height / 2 - my, dist = Math.hypot(dx, dy);
       var edge = Math.max(0, dist - Math.min(b.width, 260) / 2), tg = el.__fxt || (el.__fxt = el.style.zIndex && el.firstElementChild && el.style.position === "absolute" && el.style.top === "50%" ? el.firstElementChild : el);
-      near.push({ el: el, b: b, vs: tg === el ? 1 : Math.max(.3, Math.min(1.2, b.width / (tg.offsetWidth || b.width))), dx: dx, dy: dy, f: inside && c.on ? Math.exp(-Math.pow(edge / reach, 2) * 1.8) : 0 });
+      near.push({ el: el, b: b, vs: tg === el ? 1 : Math.max(.3, Math.min(1.2, b.width / (tg.offsetWidth || b.width))), dx: dx, dy: dy, f: inside && c.on && !drag_ ? Math.exp(-Math.pow(edge / reach, 2) * 1.8) : 0 });
     }
     /* filters are expensive: only the few components closest to the cursor get one, the rest relax back to normal */
     near.sort(function (a, z) { return z.f - a.f; });

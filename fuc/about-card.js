@@ -26,7 +26,7 @@
   css.textContent =
     '#about-backdrop{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .9s cubic-bezier(.4,0,.2,1)}' +
     '.about-open #about-backdrop{opacity:1;pointer-events:auto}' +
-    '#about-sheet{position:fixed;left:0;top:0;z-index:2147483001;visibility:hidden;pointer-events:none;transform-style:preserve-3d;will-change:transform}' +
+    '#about-sheet{position:fixed;left:0;top:0;transform-origin:50% 0;z-index:2147483001;visibility:hidden;pointer-events:none;transform-style:preserve-3d;will-change:transform}' +
     '.ab-shadow{position:absolute;inset:0;border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,.35),0 40px 90px rgba(0,0,0,.55)}' +
     '.ab-card,.ab-page{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;border-radius:2px;background:#ff2d20;color:#0b0b0b}' +
     '.ab-card{pointer-events:auto;touch-action:none}' +
@@ -176,10 +176,10 @@
   }
   /* every strip replays the motion of the one above it a little later, so the bend travels down the sheet like a wave */
   function bendFrame(now, amp) {
-    var n = hx.length, wave = Math.min(1.1, Math.hypot(V.x, V.y) * .0006) * amp;
+    var n = hx.length;
     for (var i = 0; i < strips.length; i++) {
       var j = n - 1 - Math.min(n - 1, Math.round(i * .9)), vy = hy[j], vx = hx[j],
-          a = clamp(-vy * .00105, -2.1, 2.1) * amp + wave * Math.sin(now * .011 - i * .32), g = clamp(vx * .00085, -1.7, 1.7) * amp;
+          a = clamp(-vy * .00105, -2.1, 2.1) * amp, g = clamp(vx * .00085, -1.7, 1.7) * amp;
       var st = strips[i]; st.a += (a - st.a) * .35; st.g += (g - st.g) * .35;
       st.s.style.transform = "rotateX(" + st.a.toFixed(2) + "deg) rotateZ(" + st.g.toFixed(2) + "deg)";
     }
@@ -190,7 +190,7 @@
   function step(now) {
     var raw = (now - last) / 1000 || .016, dt = Math.min(.033, raw); last = now; var calm = true;
     /* velocity as the tilt and bend see it: smoothed in time, so jittery pointer events never make the sheet shake */
-    var fs = 1 - Math.exp(-dt * 16); sv.x += (V.x - sv.x) * fs; sv.y += (V.y - sv.y) * fs;
+    var fs = 1 - Math.exp(-dt * 9); sv.x += (V.x - sv.x) * fs; sv.y += (V.y - sv.y) * fs;
     if (drag && now - drag.t > 40) { var dk = Math.exp(-dt * 18); V.x *= dk; V.y *= dk; }
     if (glide) {
       /* after a throw the sheet coasts and slows down with friction; it never bounces or springs back */
@@ -208,11 +208,11 @@
       var tiny = k === "x" || k === "y" ? .4 : .02;
       if (Math.abs(T[k] - S[k]) > tiny || Math.abs(V[k]) > tiny * 1.5) calm = false;
     });
-    if (open_) { T.rx = clamp(-sv.y * .007, -9, 9); T.ry = clamp(sv.x * .007, -9, 9); T.r = clamp(sv.x * .003, -4, 4); T.s = drag ? 1.012 : 1; }
+    if (open_) { var tl = touchy ? 0 : 1; T.rx = clamp(-sv.y * .004, -5, 5) * tl; T.ry = clamp(sv.x * .004, -5, 5) * tl; T.r = clamp(sv.x * .0012, -1.5, 1.5) * tl; T.s = drag ? 1.008 : 1; }
     var lx = hx.length ? hx[hx.length - 1] : 0, ly = hy.length ? hy[hy.length - 1] : 0; hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
     /* on a device that cannot keep up the bend is switched off, so the card still moves smoothly (tilt only) */
-    if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 30) { var med = dts.slice().sort(function (a, b) { return a - b; })[15]; if (med > .024) { slow = true; try { localStorage.setItem(SLOWKEY, "1"); } catch (e) {} } dts = []; } }
+    if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 30) { var med = dts.slice().sort(function (a, b) { return a - b; })[15]; if (med > .024 && !window.__aboutNoAuto) { slow = true; try { localStorage.setItem(SLOWKEY, "1"); } catch (e) {} } dts = []; } }
     var amp = slow || touchy || !strips.length || quality() !== builtQ ? 0 : ampNow(), moving = !calm || drag || energy > 8;
     if (moving && amp > 0 && !reduce.matches) { if (!bending) setBending(true); if (bending) bendFrame(now, amp); }
     else if (bending) setBending(false);
@@ -298,13 +298,20 @@
   }
 
   /* dragging: from the title strip, or from anywhere on the page inside the card (it reports its own coordinates) */
-  function begin(px, py, grab) { glide = false; drag = { px: px, py: py, x0: S.x, y0: S.y, t: performance.now(), vx: 0, vy: 0 }; card.classList.add("dragging"); if (grab) card.classList.add("grip-drag"); V.x = V.y = 0; run(); }
+  function begin(px, py, grab) { window.__abDragging = true; glide = false; drag = { px: px, py: py, x0: S.x, y0: S.y, t: performance.now(), vx: 0, vy: 0 }; card.classList.add("dragging"); if (grab) card.classList.add("grip-drag"); V.x = V.y = 0; run(); }
   function move(px, py) {
     if (!drag) return; var now = performance.now(), dt = Math.max(8, now - drag.t), nx = drag.x0 + px - drag.px, ny = drag.y0 + py - drag.py;
     drag.vx = drag.vx * .55 + ((nx - S.x) / dt * 1000) * .45; drag.vy = drag.vy * .55 + ((ny - S.y) / dt * 1000) * .45;
     S.x = nx; S.y = ny; V.x = drag.vx; V.y = drag.vy; drag.t = now;
   }
+  /* relative movement: what the page reports when the pointer moves inside it. The page itself moves, tilts and scales with the card,
+     so absolute coordinates measured inside it would feed back into the motion and shake it; movement deltas cannot */
+  function moveBy(dx, dy) {
+    if (!drag || (!dx && !dy)) return; var now = performance.now(), dt = Math.max(8, now - drag.t);
+    S.x += dx; S.y += dy; drag.vx = drag.vx * .55 + (dx / dt * 1000) * .45; drag.vy = drag.vy * .55 + (dy / dt * 1000) * .45; V.x = drag.vx; V.y = drag.vy; drag.t = now;
+  }
   function end() {
+    window.__abDragging = false;
     if (!drag) return; var v = drag, idle = performance.now() - v.t; drag = null; card.classList.remove("dragging", "grip-drag");
     /* released while still moving: coast; released after a pause: just stay where it is */
     var live = Math.exp(-idle / 1000 * 9);
@@ -338,7 +345,7 @@
     var d = e.data; if (d === "about-panel:close") return close();
     if (!d || d.about !== "drag" || !card || e.source !== frame.contentWindow) return;
     var r = frame.getBoundingClientRect(), k = r.width / (frame.offsetWidth || r.width) || 1, px = r.left + d.cx * k, py = r.top + d.cy * k; /* the page reports its own coordinates; screenX is unreliable on phones */
-    if (d.phase === "start") begin(px, py); else if (d.phase === "move") { if (d.up) end(); else move(px, py); } else end();
+    if (d.phase === "start") begin(px, py); else if (d.phase === "move") { if (d.up) end(); else if (d.dx != null) moveBy(d.dx * k, d.dy * k); else move(px, py); } else end();
   });
   document.addEventListener("click", function (e) {
     var a = e.target.closest && e.target.closest("a[href]");

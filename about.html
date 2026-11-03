@@ -134,7 +134,7 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
   /* inside the card, dragging on any empty part of the page moves the whole card (the card reports it to the parent) */
   if(embedded){
     var dragging=false;
-    function send(phase,e){parent.postMessage({about:"drag",phase:phase,cx:e.clientX,cy:e.clientY,up:e.pointerType==="mouse"&&!e.buttons},"*");}
+    function send(phase,e){parent.postMessage({about:"drag",phase:phase,cx:e.clientX,cy:e.clientY,dx:e.pointerType==="mouse"?e.movementX:null,dy:e.pointerType==="mouse"?e.movementY:null,up:e.pointerType==="mouse"&&!e.buttons},"*");}
     addEventListener("pointerdown",function(e){
       if(e.button||(e.target.closest&&e.target.closest("a,button,input,textarea,[role=tab]")))return;
       dragging=true;e.preventDefault();try{root.setPointerCapture(e.pointerId);}catch(x){}send("start",e);
