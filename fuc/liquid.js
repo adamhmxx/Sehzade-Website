@@ -13,7 +13,7 @@
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
   var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, distort: 9, reach: 200, on: 1,
-              ldur: 1000, ldist: 10, lblur: 2, lstag: 148, pliq: 60 };
+              ldur: 1000, ldist: 10, lblur: 2, lstag: 148, pliq: 60, pq: 1 };
   var KEY = "liquid-cfg-v1";
   function load() {
     try {
@@ -189,7 +189,8 @@
       ["lblur", "Link blur", 0, 10, .5, "px"],
       ["lstag", "Stagger", 0, 300, 5, "ms"],
       ["#", "About popup"],
-      ["pliq", "Liquid appear", 0, 120, 1, "px"]
+      ["pliq", "Liquid appear", 0, 120, 1, "px"],
+      ["pq", "Paper bend: 0 off, 1 light, 2 full", 0, 2, 1, ""]
     ];
     var css = document.createElement("style");
     css.textContent =
@@ -277,7 +278,7 @@
     ui.classList.toggle("off", !own.on);
     var copy = document.createElement("button"); copy.type = "button"; copy.textContent = "Copy values";
     copy.onclick = function () {
-      var txt = JSON.stringify({ radius: own.radius, softness: own.softness, brightness: own.brightness, trail: own.trail, distort: own.distort, blur: own.blur, reach: own.reach, ldur: own.ldur, ldist: own.ldist, lblur: own.lblur, lstag: own.lstag, pliq: own.pliq });
+      var txt = JSON.stringify({ radius: own.radius, softness: own.softness, brightness: own.brightness, trail: own.trail, distort: own.distort, blur: own.blur, reach: own.reach, ldur: own.ldur, ldist: own.ldist, lblur: own.lblur, lstag: own.lstag, pliq: own.pliq, pq: own.pq });
       var done = function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy values"; }, 1400); };
       try { navigator.clipboard.writeText(txt).then(done, function () { copy.textContent = txt.slice(0, 18) + "…"; }); } catch (e) { copy.textContent = "Not allowed"; }
     };

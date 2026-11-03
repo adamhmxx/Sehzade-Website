@@ -9,10 +9,16 @@
   /* touch phones: dozens of 3D layers at 3x pixel density overwhelm the GPU, so the card only tilts there (no strip bend) */
   var touchy = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && Math.min(innerWidth, innerHeight) < 820);
   var sheet, card, frame, grip, nameEl, nameTxt, backdrop, bend, shadow, strips = [], sharedSheet = null, dirty = true, bending = false;
-  var FK = 1, FW = 0, raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56, N = 24;
+  var FK = 1, FW = 0, raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56;
   var S = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }, V = { x: 0, y: 0, r: 0, s: 0, rx: 0, ry: 0 }, T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 };
-  var hx = [], hy = [], dts = [], slow = false, glide = false, sv = { x: 0, y: 0 };
+  var hx = [], hy = [], dts = [], slow = false, fpsOn = false, glide = false, sv = { x: 0, y: 0 };
   var PROPS = ["x", "y", "r", "s", "rx", "ry"];
+  /* bend quality from the control panel: 0 = off (plain tilting sheet), 1 = light (10 strips), 2 = full (24 strips) */
+  function quality() { var c = window.__liquidCfg, q = c && c.pq != null ? +c.pq : 1; return q < .5 ? 0 : q < 1.5 ? 1 : 2; }
+  var SLOWKEY = "about-bend-slow", builtQ = -1;
+  try { slow = localStorage.getItem(SLOWKEY) === "1"; } catch (e) {}
+  var lastQ;
+  function nStrips() { return [0, 10, 24][quality()]; }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function mk(tag, cls, css) { var n = document.createElement(tag); if (cls) n.className = cls; if (css) n.style.cssText = css; return n; }
 
@@ -127,14 +133,15 @@
     }).observe(win.document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["style", "class"] });
   }
   function buildStrips() {
+    builtQ = quality();
     try { builtSig = sig(frame.contentWindow); } catch (e) {}
     frameFit(); dirty = false;
-    if (touchy) return; strips = []; bend.textContent = "";
+    if (touchy || !builtQ) return; strips = []; bend.textContent = "";
     var win; try { win = frame.contentWindow; } catch (e) { return; }
     if (!win || !win.document || !win.document.getElementById("main")) { dirty = true; return; }
     var tpl = template(win); if (!tpl) { dirty = true; return; }
     try { sharedSheet = new CSSStyleSheet(); sharedSheet.replaceSync(collectCSS(win)); } catch (e) { return; }
-    var k = FK, avail = H - GRIP - nameEl.offsetHeight, h = Math.max(20, Math.round(H / N)), n = Math.ceil(H / h), parent = bend; /* whole-pixel strips: composited layers snap to the pixel grid */
+    var k = FK, avail = H - GRIP - nameEl.offsetHeight, h = Math.max(20, Math.round(H / nStrips())), n = Math.ceil(H / h), parent = bend; /* whole-pixel strips: composited layers snap to the pixel grid */
     bend.style.width = W + "px"; bend.style.height = H + "px";
     for (var i = 0; i < n; i++) {
       var sh = i === n - 1 ? H - i * h : h, s = mk("div", "ab-strip", "top:" + (i ? h : 0) + "px;width:" + W + "px;height:" + sh + "px");
@@ -205,8 +212,8 @@
     var lx = hx.length ? hx[hx.length - 1] : 0, ly = hy.length ? hy[hy.length - 1] : 0; hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
     /* on a device that cannot keep up the bend is switched off, so the card still moves smoothly (tilt only) */
-    if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 45) { var med = dts.slice().sort(function (a, b) { return a - b; })[22]; if (med > .036) slow = true; dts = []; } }
-    var amp = slow || touchy ? 0 : ampNow(), moving = !calm || drag || energy > 8;
+    if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 30) { var med = dts.slice().sort(function (a, b) { return a - b; })[15]; if (med > .024) { slow = true; try { localStorage.setItem(SLOWKEY, "1"); } catch (e) {} } dts = []; } }
+    var amp = slow || touchy || !strips.length || quality() !== builtQ ? 0 : ampNow(), moving = !calm || drag || energy > 8;
     if (moving && amp > 0 && !reduce.matches) { if (!bending) setBending(true); if (bending) bendFrame(now, amp); }
     else if (bending) setBending(false);
     paint();
@@ -306,6 +313,7 @@
   }
   function open() {
     build(); layout();
+    var q = quality(); if (q !== lastQ) { if (lastQ !== undefined) { slow = false; try { localStorage.removeItem(SLOWKEY); } catch (e) {} } lastQ = q; dirty = true; scheduleBuild(200); }
     if (open_) return; open_ = true;
     sheet.style.visibility = "visible"; pauseFrame(false);
     glide = false; var h = hiddenPose(); S.x = h.x; S.y = h.y; S.r = h.r; S.s = h.s; S.rx = h.rx; S.ry = 0;
@@ -337,6 +345,19 @@
     if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey) return;
     if (/^(\.?\/)?about(\.html)?\/?$/.test(a.getAttribute("href"))) { e.preventDefault(); e.stopImmediatePropagation(); open(); }
   }, true);
+  /* Shift+F: a small frame-rate readout, to see how the card runs on this device */
+  var fpsEl = null, fpsN = 0, fpsT = 0;
+  function fpsTick(now) {
+    if (!fpsOn) return; fpsN++;
+    if (now - fpsT > 500) { fpsEl.textContent = Math.round(fpsN * 1000 / (now - fpsT)) + " fps \u00b7 bend " + (slow ? "auto-off (slow device)" : touchy ? "off (touch)" : quality() ? ["", "light", "full"][quality()] : "off"); fpsN = 0; fpsT = now; }
+    requestAnimationFrame(fpsTick);
+  }
+  addEventListener("keydown", function (e) {
+    if (!(e.shiftKey && (e.key === "F" || e.key === "f")) || /INPUT|TEXTAREA/.test((e.target || {}).tagName || "")) return;
+    fpsOn = !fpsOn;
+    if (!fpsEl) { fpsEl = mk("div", "", "position:fixed;left:12px;bottom:12px;z-index:2147483647;padding:6px 10px;border-radius:8px;background:rgba(0,0,0,.75);color:#fff;font:12px/1.2 monospace;pointer-events:none"); document.body.appendChild(fpsEl); }
+    fpsEl.style.display = fpsOn ? "" : "none"; if (fpsOn) { fpsN = 0; fpsT = performance.now(); requestAnimationFrame(fpsTick); }
+  });
   var go = mk("div"); go.id = "grid-overlay"; for (var i = 0; i < 12; i++) go.appendChild(document.createElement("i"));
   function ready() { document.body.appendChild(go); if (/grid/.test(location.hash)) root.classList.add("show-grid"); /* warm up the card when the browser is idle, so it never competes with the first paint */ (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(build, { timeout: 4000 }); }
   if (document.readyState === "complete") ready(); else addEventListener("load", ready);
