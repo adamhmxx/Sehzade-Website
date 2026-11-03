@@ -13,13 +13,13 @@
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
   var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, distort: 9, reach: 200, on: 1,
-              ldur: 1250, ldist: 10, lblur: 2, lstag: 185, pliq: 60 };
+              ldur: 1000, ldist: 10, lblur: 2, lstag: 148, pliq: 60 };
   var KEY = "liquid-cfg-v1";
   function load() {
     try {
       var sv = JSON.parse(localStorage.getItem(KEY) || "{}");
       /* link hover defaults were retuned (slower, softer): drop link values saved by older versions once */
-      if (sv.lv !== 3) { delete sv.ldur; delete sv.ldist; delete sv.lblur; delete sv.lstag; sv.lv = 3; }
+      if (sv.lv !== 4) { delete sv.ldur; delete sv.ldist; delete sv.lblur; delete sv.lstag; sv.lv = 4; }
       return Object.assign({}, DEF, sv);
     }
     catch (e) { return Object.assign({}, DEF); }
@@ -83,6 +83,8 @@
         else if (st.zIndex === "7000") [].forEach.call(d.children, function (c) { list.push(c); });           /* project caption */
       });
     }
+    /* forget components React has removed, together with their filters */
+    states.forEach(function (st, el) { if (!el.isConnected) { if (st.warp) { var f = document.getElementById(st.warp.id); if (f) f.remove(); } states.delete(el); } });
     els = list.filter(function (e) { return !e.closest("#liquid-ui") && (!e.querySelector("p,h1,h2") || e.matches("a,span")); });
   }
   var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
@@ -104,7 +106,7 @@
       '<feGaussianBlur in="w" stdDeviation="0.45"/>';
     defs.appendChild(f);
     /* small text gets a fraction of the strength a large card gets, so every component distorts to the same degree visually */
-    return { id: id, off: f.children[1], map: f.children[2], k: Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
+    return { id: id, off: f.children[1], map: f.children[2], k: el.__fxt && el.__fxt !== el ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
   }
   function spring(st, key, target, k, damp) { st["v" + key] = (st["v" + key] + (target - st[key]) * k) * damp; st[key] += st["v" + key]; }
 
@@ -119,17 +121,23 @@
     for (var i = 1; i < N; i++) { chain[i].x += (chain[i - 1].x - chain[i].x) * follow; chain[i].y += (chain[i - 1].y - chain[i].y) * follow; }
     drawBlob(c);
 
-    var reach = c.reach;
+    var reach = c.reach, near = [];
     for (var n = 0; n < els.length; n++) {
-      var el = els[n], b = el.getBoundingClientRect();
-      if (b.bottom < -reach || b.top > innerHeight + reach || b.right < -reach || b.left > innerWidth + reach || b.width === 0) continue;
+      var el = els[n], b = el.getBoundingClientRect(), st = states.get(el);
+      if (b.bottom < -reach || b.top > innerHeight + reach || b.right < -reach || b.left > innerWidth + reach || b.width === 0) { if (st && st.set) near.push({ el: el, b: b, vs: 1, f: 0, dx: 0, dy: 0 }); continue; }
+      var dx = b.left + b.width / 2 - mx, dy = b.top + b.height / 2 - my, dist = Math.hypot(dx, dy);
+      var edge = Math.max(0, dist - Math.min(b.width, 260) / 2), tg = el.__fxt || (el.__fxt = el.style.zIndex && el.firstElementChild && el.style.position === "absolute" && el.style.top === "50%" ? el.firstElementChild : el);
+      near.push({ el: el, b: b, vs: tg === el ? 1 : Math.max(.3, Math.min(1.2, b.width / (tg.offsetWidth || b.width))), dx: dx, dy: dy, f: inside && c.on ? Math.exp(-Math.pow(edge / reach, 2) * 1.8) : 0 });
+    }
+    /* filters are expensive: only the few components closest to the cursor get one, the rest relax back to normal */
+    near.sort(function (a, z) { return z.f - a.f; });
+    for (var q = 0; q < near.length; q++) {
+      var it = near[q], el = it.el, b = it.b, dx = it.dx, dy = it.dy, f = q < 6 ? it.f : 0;
       var st = states.get(el);
       if (!st) { st = { b: 0, vb: 0, d: 0, vd: 0, set: 0, warp: null }; states.set(el, st); }
-      var dx = b.left + b.width / 2 - mx, dy = b.top + b.height / 2 - my, dist = Math.hypot(dx, dy);
-      var edge = Math.max(0, dist - Math.min(b.width, 260) / 2), f = inside && c.on ? Math.exp(-Math.pow(edge / reach, 2) * 1.8) : 0;
-      spring(st, "b", f * c.blur * (.55 + sp * .9), .09, .82);
-      spring(st, "d", f * c.distort * (.7 + sp * .6), .08, .84);
-      var tgt = el.__fxt || (el.__fxt = el.style.zIndex && el.firstElementChild && el.style.position === "absolute" && el.style.top === "50%" ? el.firstElementChild : el);
+      var tgt = el.__fxt || el, vs = it.vs; /* the filter works in the element's own pixels: far (small) cards get the matching boost, so every mode shows the panel's on-screen strength */
+      spring(st, "b", f * c.blur * (.55 + sp * .9) / vs, .09, .82);
+      spring(st, "d", f * c.distort * (.7 + sp * .6) / vs, .08, .84);
       var warp = st.d > .15;
       if (warp || st.b > .03) {
         active++; st.set = 1;

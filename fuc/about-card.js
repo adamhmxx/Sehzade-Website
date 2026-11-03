@@ -67,7 +67,11 @@
         out.push(r.cssText);
       });
     })([].concat.apply([], [].map.call(win.document.styleSheets, function (s) { try { return [].slice.call(s.cssRules); } catch (e) { return []; } })));
-    return out.join("\n").replace(/(^|[}\s,>])(html|body|:root)(?=[\s,{.:>\[])/g, function (m, a, b) { return a + (b === "body" ? ".sb" : ":host"); });
+    return vu(out.join("\n"), win).replace(/(^|[}\s,>])(html|body|:root)(?=[\s,{.:>\[])/g, function (m, a, b) { return a + (b === "body" ? ".sb" : ":host"); });
+  }
+  /* vh / vw inside the copy would measure the main window, not the page's own viewport, so they become pixels */
+  function vu(str, win) {
+    return str.replace(/(-?\d*\.?\d+)(vh|vw|dvh|svh|lvh)\b/g, function (m, n, u) { return (parseFloat(n) * (u === "vw" ? win.innerWidth : win.innerHeight) / 100).toFixed(2) + "px"; });
   }
   /* copy of the page with the nodes that are hidden in this layout already removed (they depend on the page's own viewport) */
   function template(win) {
@@ -76,11 +80,19 @@
     while (a.length) {
       var l = a.pop(), c = b.pop();
       for (var i = l.children.length - 1; i >= 0; i--) {
-        if (win.getComputedStyle(l.children[i]).display === "none") c.removeChild(c.children[i]);
-        else { a.push(l.children[i]); b.push(c.children[i]); }
+        var cs = win.getComputedStyle(l.children[i]), cc = c.children[i];
+        if (cs.display === "none") { c.removeChild(cc); continue; }
+        /* entrance animations run on the live page without touching its inline style: copy their current result */
+        if (cc.style) {
+          if (cs.opacity !== (cc.style.opacity || "1")) cc.style.opacity = cs.opacity;
+          if (cs.transform !== "none" && cs.transform !== (cc.style.transform || "none")) cc.style.transform = cs.transform;
+          if (cs.filter === "none" && cc.style.filter) cc.style.filter = "";
+        }
+        a.push(l.children[i]); b.push(cc);
       }
     }
     [].forEach.call(copy.querySelectorAll("script,nav"), function (n) { n.remove(); });
+    [].forEach.call(copy.querySelectorAll('[style*="vh"],[style*="vw"]'), function (n) { n.setAttribute("style", vu(n.getAttribute("style"), win)); });
     [].forEach.call(copy.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
     copy.removeAttribute("id");
     return copy;
@@ -97,17 +109,33 @@
     page.append(g, host, n);
     return page;
   }
+  /* a cheap fingerprint of what the live page shows; when it changes (content appears, text is edited) the copy is rebuilt */
+  var builtSig = "";
+  function sig(win) {
+    var d = win.document, m = d.getElementById("main"); if (!m) return "";
+    return m.getElementsByTagName("*").length + ":" + (m.innerText || "").length + ":" + d.querySelectorAll('[style*="opacity: 0;"],[style*="opacity:0"]').length + ":" + d.querySelectorAll(".ab-type").length;
+  }
+  var watchTimer = 0;
+  function watchFrame() {
+    var win; try { win = frame.contentWindow; if (!win.document.body) return; } catch (e) { return; }
+    new MutationObserver(function (list) {
+      if (list.every(function (m) { return m.target.nodeType === 1 && m.target.classList && m.target.classList.contains("ascii-live"); })) return;
+      clearTimeout(watchTimer);
+      watchTimer = setTimeout(function () { var w; try { w = frame.contentWindow; } catch (e) { return; } if (sig(w) !== builtSig) { dirty = true; scheduleBuild(300); } }, 600);
+    }).observe(win.document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["style", "class"] });
+  }
   function buildStrips() {
     dirty = false; strips = []; bend.textContent = "";
     var win; try { win = frame.contentWindow; } catch (e) { return; }
     if (!win || !win.document || !win.document.getElementById("main")) { dirty = true; return; }
+    builtSig = sig(win);
     var tpl = template(win); if (!tpl) { dirty = true; return; }
     try { sharedSheet = new CSSStyleSheet(); sharedSheet.replaceSync(collectCSS(win)); } catch (e) { return; }
-    var k = Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, h = H / N, parent = bend;
+    var k = Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, h = Math.max(20, Math.round(H / N)), n = Math.ceil(H / h), parent = bend; /* whole-pixel strips: composited layers snap to the pixel grid */
     bend.style.width = W + "px"; bend.style.height = H + "px";
-    for (var i = 0; i < N; i++) {
-      var s = mk("div", "ab-strip", "top:" + (i ? h : 0) + "px;width:" + W + "px;height:" + h + "px");
-      var clip = mk("div", "ab-clip", "width:" + W + "px;height:" + (h + 2) + "px;background:#ff2d20");
+    for (var i = 0; i < n; i++) {
+      var sh = i === n - 1 ? H - i * h : h, s = mk("div", "ab-strip", "top:" + (i ? h : 0) + "px;width:" + W + "px;height:" + sh + "px");
+      var clip = mk("div", "ab-clip", "width:" + W + "px;height:" + (i === n - 1 ? sh : sh + 2) + "px;background:#ff2d20");
       clip.appendChild(makePage(tpl, k, avail, i * h));
       s.appendChild(clip); parent.appendChild(s); parent = s;
       strips.push({ s: s, a: 0, g: 0 });
@@ -120,8 +148,8 @@
     buildTimer = setTimeout(function () { if (raf || bending) return scheduleBuild(600); if (dirty) buildStrips(); }, delay || 350);
   }
   function strip() {
-    if (dirty) buildStrips();
-    return strips.length === N;
+    if (dirty) { scheduleBuild(200); return false; }
+    return strips.length > 0;
   }
   function syncScroll() {
     var st = 0; try { st = frame.contentWindow.scrollY || 0; } catch (e) {}
@@ -207,7 +235,7 @@
     sheet.append(shadow, bend, card); document.body.append(backdrop, sheet);
     layout(); S = hiddenPose(); paint();
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
-    frame.addEventListener("load", function () { dirty = true; scheduleBuild(1600); });
+    frame.addEventListener("load", function () { dirty = true; watchFrame(); scheduleBuild(1600); });
     addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
     addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); layout(); dirty = true; scheduleBuild(500); } });
     grip.addEventListener("pointerdown", function (e) { if (e.button || e.target.closest("button")) return; e.preventDefault(); grip.setPointerCapture(e.pointerId); begin(e.clientX, e.clientY); });
