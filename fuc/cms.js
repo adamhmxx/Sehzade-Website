@@ -18,10 +18,13 @@
     x: "https://x.com/adamhmwn", behance: "https://www.behance.net/adamhimawan", linkedin: "https://www.linkedin.com/in/adamhimawan/",
     dribbble: "https://dribbble.com/adamhmwn", instagram: "https://www.instagram.com/adamhmwn/"
   };
+  var DEF_SITE = { logo: "Sehzade", aboutLabel: "About", callLabel: "Book a call", clock: "ID (WIB)", cardName: "Adam Himawan", title: "Adam Himawan Portfolio",
+                   modes: ["Space", "Cross", "Globe", "Grid", "Paper"] };
   var SOCIALS = [["x", "X"], ["behance", "Behance"], ["linkedin", "LinkedIn"], ["dribbble", "Dribbble"], ["instagram", "Instagram"]];
 
   function read() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
   var data = read() || { items: null, about: {} };
+  function site() { var o = Object.assign({}, DEF_SITE, (data && data.site) || {}); o.modes = DEF_SITE.modes.map(function (d, i) { return ((data.site || {}).modes || [])[i] || d; }); return o; }
   function about() { return Object.assign({}, DEF_ABOUT, data.about || {}); }
   var saveTimer = 0, statusEl = null;
   function setStatus(t, bad) { if (statusEl) { statusEl.textContent = t; statusEl.style.color = bad ? "#ff6b5e" : "rgba(242,242,242,.55)"; } }
@@ -61,7 +64,19 @@
     box.textContent = "";
     for (var i = 0; i < text.length; i++) { var s = document.createElement("span"); s.style.cssText = "display:inline-block;white-space:pre"; s.textContent = text[i]; box.appendChild(s); }
   }
+  function applySite() {
+    var o = site();
+    if (document.title !== o.title && !ABOUT) document.title = o.title;
+    var nav = document.querySelector("nav"); if (!nav) return;
+    var links = nav.querySelectorAll("a"); /* logo, About, Book a call */
+    if (links[0] && links[0].getAttribute("href") === "/") setLetters(links[0], o.logo);
+    if (links[1]) setLetters(links[1], o.aboutLabel);
+    if (links[2]) setLetters(links[2], o.callLabel);
+    [].forEach.call(nav.querySelectorAll("span"), function (sp) { if (!sp.children.length && /^ID \(|^[A-Z]{2} \(/.test(sp.textContent) && sp.textContent !== o.clock) sp.textContent = o.clock; });
+    [].forEach.call(document.querySelectorAll('[role="tab"]'), function (t, i) { if (o.modes[i]) setLetters(t, o.modes[i]); });
+  }
   function applyAbout() {
+    applySite();
     var a = about();
     [].forEach.call(document.querySelectorAll("a[target=_blank]"), function (el) {
       if (/cal\.com|\/book/i.test(el.href) || (el.closest("nav") && /book/i.test(el.textContent))) { if (a.call && el.getAttribute("href") !== a.call) el.setAttribute("href", a.call); }
@@ -150,7 +165,7 @@
   function render() {
     body.textContent = "";
     [].forEach.call(tabsEl.children, function (t) { t.classList.toggle("on", t.dataset.tab === tab); });
-    if (tab === "portfolio") renderPortfolio(); else if (tab === "about") renderAbout(); else renderData();
+    if (tab === "portfolio") renderPortfolio(); else if (tab === "about") renderAbout(); else if (tab === "site") renderSite(); else renderData();
   }
   function ask(btn, label, run) {
     btn.addEventListener("click", function (e) {
@@ -231,10 +246,24 @@
     body.append(c1, c2);
   }
 
+  function renderSite() {
+    var o = site();
+    function set(k) { return function (v) { data.site = data.site || {}; data.site[k] = v; changed(); }; }
+    function setMode(i) { return function (v) { data.site = data.site || {}; var m = (data.site.modes || []).slice(); while (m.length < 5) m.push(""); m[i] = v; data.site.modes = m; changed(); }; }
+    var c1 = el("div", { class: "cp-col6" }), c2 = el("div", { class: "cp-col6" });
+    c1.append(el("div", { class: "cp-label" }, "Navigation and page"),
+      field("Logo (top left)", o.logo, set("logo")), field("About menu (centre)", o.aboutLabel, set("aboutLabel")),
+      field("Book a call button", o.callLabel, set("callLabel")), field("Clock label", o.clock, set("clock")),
+      field("Name on the About card", o.cardName, set("cardName")), field("Browser tab title", o.title, set("title")));
+    c2.appendChild(el("div", { class: "cp-label" }, "Gallery mode names"));
+    o.modes.forEach(function (m, i) { c2.appendChild(field("Mode " + (i + 1), m, setMode(i))); });
+    c2.appendChild(el("p", { class: "cp-hint" }, "Projects are on the Portfolio tab, the About text and links on the About tab. Changes show on the site straight away."));
+    body.append(c1, c2);
+  }
   function renderData() {
     seedItems();
     var ta = el("textarea", { rows: 12, readonly: "readonly" });
-    ta.value = JSON.stringify({ items: data.items, about: data.about }, null, 1);
+    ta.value = JSON.stringify({ items: data.items, about: data.about, site: data.site }, null, 1);
     var imp = el("textarea", { rows: 8, placeholder: "Paste exported JSON here" });
     var c1 = el("div", { class: "cp-col6" }), c2 = el("div", { class: "cp-col6" });
     c1.append(el("div", { class: "cp-label" }, "Export"), ta,
@@ -246,7 +275,7 @@
     ask(rs, "Reset all content", function () { data = { items: null, about: {} }; try { localStorage.removeItem(KEY); } catch (e) {} window.dispatchEvent(new Event("cms-change")); sel = null; render(); setStatus("Back to the original content"); });
     c2.append(el("div", { class: "cp-label" }, "Import"), imp,
       el("div", { class: "cp-actions" }, [el("button", { type: "button", class: "cp-btn", onclick: function () {
-        try { var j = JSON.parse(imp.value); if (!j || typeof j !== "object") throw 0; data = { items: Array.isArray(j.items) ? j.items : data.items, about: j.about || {} }; changed(true); render(); setStatus("Imported"); } catch (e) { setStatus("That is not valid JSON.", true); }
+        try { var j = JSON.parse(imp.value); if (!j || typeof j !== "object") throw 0; data = { items: Array.isArray(j.items) ? j.items : data.items, about: j.about || {}, site: j.site || {} }; changed(true); render(); setStatus("Imported"); } catch (e) { setStatus("That is not valid JSON.", true); }
       } }, "Apply import")]),
       el("div", { class: "cp-label", style: "margin-top:32px" }, "Reset"), rs);
     body.append(c1, c2);
@@ -306,7 +335,7 @@
   function build() {
     document.head.appendChild(el("style", {}, CSS));
     statusEl = el("span", { id: "cp-status" }, "Saved");
-    tabsEl = el("div", { class: "cp-tabs" }, [["portfolio", "Portfolio"], ["about", "About"], ["data", "Data"]].map(function (t) {
+    tabsEl = el("div", { class: "cp-tabs" }, [["portfolio", "Portfolio"], ["about", "About"], ["site", "Site"], ["data", "Data"]].map(function (t) {
       return el("button", { type: "button", class: "cp-tab", "data-tab": t[0], onclick: function () { tab = t[0]; render(); window.scrollTo(0, 0); } }, t[1]);
     }));
     body = el("div", { class: "cp-grid cp-body" });

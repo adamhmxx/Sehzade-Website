@@ -27,7 +27,7 @@
   }
 
   /* settings come from the control panel (main page); the About page reads them from its parent */
-  var LD = { ldur: 1500, ldist: 10, lblur: 2, lstag: 220 };
+  var LD = { ldur: 1250, ldist: 10, lblur: 2, lstag: 185 };
   function cfg() {
     var c = null;
     try { c = window.__liquidCfg || (window.parent !== window && window.parent.__liquidCfg); } catch (e) {}
