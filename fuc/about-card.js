@@ -158,10 +158,12 @@
     var st = 0; try { st = frame.contentWindow.scrollY || 0; } catch (e) {}
     [].forEach.call(bend.querySelectorAll(".sb"), function (w) { w.firstChild.style.transform = st ? "translateY(" + -st + "px)" : ""; });
   }
+  /* the portrait's wobble loop inside the page is paused whenever the card is hidden or being shown as strips */
+  function pauseFrame(v) { try { frame.contentWindow.__abPaused = v; } catch (e) {} }
   function setBending(on) {
     if (on === bending) return;
     if (on) { if (!strip()) return; syncScroll(); }
-    bending = on;
+    bending = on; pauseFrame(on || !open_);
     bend.style.opacity = on ? "1" : ""; card.style.opacity = on ? "0" : "";
     if (!on) for (var i = 0; i < strips.length; i++) { strips[i].a = strips[i].g = 0; strips[i].s.style.transform = ""; }
   }
@@ -200,7 +202,7 @@
     if (moving) raf = requestAnimationFrame(step);
     else {
       raf = 0;
-      if (!open_) sheet.style.visibility = "hidden";
+      if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); }
       else { S.x = T.x; S.y = T.y; S.r = 0; S.s = 1; S.rx = 0; S.ry = 0; paint(); }
     }
   }
@@ -269,7 +271,7 @@
     sheet.append(shadow, bend, card); document.body.append(backdrop, sheet);
     layout(); S = hiddenPose(); paint();
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
-    frame.addEventListener("load", function () { dirty = true; watchFrame(); scheduleBuild(1600); });
+    frame.addEventListener("load", function () { pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
     addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
     addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); layout(); dirty = true; scheduleBuild(500); } });
     grip.addEventListener("pointerdown", function (e) { if (e.button || e.target.closest("button")) return; e.preventDefault(); grip.setPointerCapture(e.pointerId); begin(e.clientX, e.clientY); });
@@ -291,7 +293,7 @@
   function open() {
     build(); layout();
     if (open_) return; open_ = true;
-    sheet.style.visibility = "visible";
+    sheet.style.visibility = "visible"; pauseFrame(false);
     var h = hiddenPose(); S.x = h.x; S.y = h.y; S.r = h.r; S.s = h.s; S.rx = h.rx; S.ry = 0;
     V.x = V.y = V.r = V.s = V.rx = V.ry = 0; T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }; hx = []; hy = [];
     if (reduce.matches) { S.x = 0; S.y = 0; S.r = 0; S.s = 1; S.rx = 0; }
@@ -320,6 +322,6 @@
     if (/^(\.?\/)?about(\.html)?\/?$/.test(a.getAttribute("href"))) { e.preventDefault(); e.stopImmediatePropagation(); open(); }
   }, true);
   var go = mk("div"); go.id = "grid-overlay"; for (var i = 0; i < 12; i++) go.appendChild(document.createElement("i"));
-  function ready() { document.body.appendChild(go); if (/grid/.test(location.hash)) root.classList.add("show-grid"); setTimeout(build, 1200); }
+  function ready() { document.body.appendChild(go); if (/grid/.test(location.hash)) root.classList.add("show-grid"); /* warm up the card when the browser is idle, so it never competes with the first paint */ (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(build, { timeout: 4000 }); }
   if (document.readyState === "complete") ready(); else addEventListener("load", ready);
 })();
