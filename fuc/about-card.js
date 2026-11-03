@@ -11,7 +11,7 @@
   var sheet, card, frame, grip, nameEl, nameTxt, backdrop, bend, shadow, strips = [], sharedSheet = null, dirty = true, bending = false;
   var FK = 1, FW = 0, raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56, N = 24;
   var S = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }, V = { x: 0, y: 0, r: 0, s: 0, rx: 0, ry: 0 }, T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 };
-  var hx = [], hy = [], dts = [], slow = false;
+  var hx = [], hy = [], dts = [], slow = false, glide = false, sv = { x: 0, y: 0 };
   var PROPS = ["x", "y", "r", "s", "rx", "ry"];
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function mk(tag, cls, css) { var n = document.createElement(tag); if (cls) n.className = cls; if (css) n.style.cssText = css; return n; }
@@ -27,7 +27,7 @@
     '.ab-grip{flex:none;display:flex;align-items:center;height:56px;padding:0 16px;cursor:grab;user-select:none;-webkit-user-select:none}' +
     '.ab-card.dragging,.ab-card.dragging .ab-grip{cursor:grabbing}' +
     '.ab-card iframe{flex:1;min-height:0;width:100%;border:0;display:block;background:transparent}' +
-    '.ab-card.dragging iframe{pointer-events:none}' +
+    '.ab-card.grip-drag iframe{pointer-events:none}' +
     '.ab-close{padding:4px 0;border:0;background:none;color:#0b0b0b;font:400 16px/1.2 "Anton","Inter Display",sans-serif;text-transform:uppercase;letter-spacing:0;cursor:pointer}' +
     '.ab-name{flex:none;padding:8px 16px 16px;overflow:hidden;white-space:nowrap;font:400 100px/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;user-select:none;-webkit-user-select:none}' +
     '.ab-bend{position:absolute;left:0;top:0;transform-style:preserve-3d;pointer-events:none;opacity:.01}' +
@@ -182,16 +182,27 @@
   /* ---------- motion ---------- */
   function step(now) {
     var raw = (now - last) / 1000 || .016, dt = Math.min(.033, raw); last = now; var calm = true;
+    /* velocity as the tilt and bend see it: smoothed in time, so jittery pointer events never make the sheet shake */
+    var fs = 1 - Math.exp(-dt * 16); sv.x += (V.x - sv.x) * fs; sv.y += (V.y - sv.y) * fs;
+    if (drag && now - drag.t > 40) { var dk = Math.exp(-dt * 18); V.x *= dk; V.y *= dk; }
+    if (glide) {
+      /* after a throw the sheet coasts and slows down with friction; it never bounces or springs back */
+      var fr = Math.exp(-dt * 4.6), cx = (innerWidth - W) / 2, cy = (innerHeight - H) / 2;
+      V.x *= fr; V.y *= fr; S.x += V.x * dt; S.y += V.y * dt;
+      var minX = -(W - 110) - cx, maxX = innerWidth - 110 - cx, minY = -cy, maxY = innerHeight - 60 - cy;
+      if (S.x < minX) { S.x = minX; V.x = 0; } else if (S.x > maxX) { S.x = maxX; V.x = 0; }
+      if (S.y < minY) { S.y = minY; V.y = 0; } else if (S.y > maxY) { S.y = maxY; V.y = 0; }
+      if (Math.hypot(V.x, V.y) < 14) { glide = false; V.x = V.y = 0; T.x = S.x; T.y = S.y; }
+    }
     PROPS.forEach(function (k) {
-      var tilt = k === "rx" || k === "ry", K = k === "r" ? 90 : k === "s" ? 120 : tilt ? 55 : open_ ? 62 : 70, D = 2 * Math.sqrt(K) * (k === "r" ? .8 : tilt ? .5 : .92);
-      if (drag && (k === "x" || k === "y")) return;
+      var tilt = k === "rx" || k === "ry", K = k === "r" ? 80 : k === "s" ? 120 : tilt ? 70 : open_ ? 62 : 70, D = 2 * Math.sqrt(K) * (k === "r" || tilt ? 1 : .95);
+      if ((drag || glide) && (k === "x" || k === "y")) { if (glide) calm = false; return; }
       V[k] += ((T[k] - S[k]) * K - V[k] * D) * dt; S[k] += V[k] * dt;
       var tiny = k === "x" || k === "y" ? .4 : .02;
       if (Math.abs(T[k] - S[k]) > tiny || Math.abs(V[k]) > tiny * 1.5) calm = false;
     });
-    if (drag) { V.x *= .88; V.y *= .88; }
-    if (open_) { T.rx = clamp(-V.y * .009, -12, 12); T.ry = clamp(V.x * .009, -12, 12); T.r = clamp(V.x * .004, -5, 5); T.s = drag ? 1.012 : 1; }
-    var lx = hx.length ? hx[hx.length - 1] : 0, ly = hy.length ? hy[hy.length - 1] : 0; hx.push(lx + (V.x - lx) * .3); hy.push(ly + (V.y - ly) * .3); if (hx.length > 40) { hx.shift(); hy.shift(); }
+    if (open_) { T.rx = clamp(-sv.y * .007, -9, 9); T.ry = clamp(sv.x * .007, -9, 9); T.r = clamp(sv.x * .003, -4, 4); T.s = drag ? 1.012 : 1; }
+    var lx = hx.length ? hx[hx.length - 1] : 0, ly = hy.length ? hy[hy.length - 1] : 0; hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
     /* on a device that cannot keep up the bend is switched off, so the card still moves smoothly (tilt only) */
     if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 45) { var med = dts.slice().sort(function (a, b) { return a - b; })[22]; if (med > .036) slow = true; dts = []; } }
@@ -274,38 +285,43 @@
     frame.addEventListener("load", function () { pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
     addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
     addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); layout(); dirty = true; scheduleBuild(500); } });
-    grip.addEventListener("pointerdown", function (e) { if (e.button || e.target.closest("button")) return; e.preventDefault(); grip.setPointerCapture(e.pointerId); begin(e.clientX, e.clientY); });
+    grip.addEventListener("pointerdown", function (e) { if (e.button || e.target.closest("button")) return; e.preventDefault(); grip.setPointerCapture(e.pointerId); begin(e.clientX, e.clientY, true); });
     grip.addEventListener("pointermove", function (e) { if (drag) move(e.clientX, e.clientY); });
     grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
   }
 
   /* dragging: from the title strip, or from anywhere on the page inside the card (it reports its own coordinates) */
-  function begin(px, py) { drag = { px: px, py: py, x0: S.x, y0: S.y, t: performance.now(), vx: 0, vy: 0 }; card.classList.add("dragging"); V.x = V.y = 0; run(); }
+  function begin(px, py, grab) { glide = false; drag = { px: px, py: py, x0: S.x, y0: S.y, t: performance.now(), vx: 0, vy: 0 }; card.classList.add("dragging"); if (grab) card.classList.add("grip-drag"); V.x = V.y = 0; run(); }
   function move(px, py) {
     if (!drag) return; var now = performance.now(), dt = Math.max(8, now - drag.t), nx = drag.x0 + px - drag.px, ny = drag.y0 + py - drag.py;
-    drag.vx = drag.vx * .6 + ((nx - S.x) / dt * 1000) * .4; drag.vy = drag.vy * .6 + ((ny - S.y) / dt * 1000) * .4;
+    drag.vx = drag.vx * .55 + ((nx - S.x) / dt * 1000) * .45; drag.vy = drag.vy * .55 + ((ny - S.y) / dt * 1000) * .45;
     S.x = nx; S.y = ny; V.x = drag.vx; V.y = drag.vy; drag.t = now;
   }
   function end() {
-    if (!drag) return; var v = drag; drag = null; card.classList.remove("dragging");
-    T.x = S.x + v.vx * .2; T.y = S.y + v.vy * .2; clampT(); run();
+    if (!drag) return; var v = drag, idle = performance.now() - v.t; drag = null; card.classList.remove("dragging", "grip-drag");
+    /* released while still moving: coast; released after a pause: just stay where it is */
+    var live = Math.exp(-idle / 1000 * 9);
+    if (idle < 140 && Math.hypot(v.vx, v.vy) * live > 120) { glide = true; V.x = clamp(v.vx * live, -4000, 4000); V.y = clamp(v.vy * live, -4000, 4000); } else { V.x = V.y = 0; T.x = S.x; T.y = S.y; }
+    run();
   }
   function open() {
     build(); layout();
     if (open_) return; open_ = true;
     sheet.style.visibility = "visible"; pauseFrame(false);
-    var h = hiddenPose(); S.x = h.x; S.y = h.y; S.r = h.r; S.s = h.s; S.rx = h.rx; S.ry = 0;
+    glide = false; var h = hiddenPose(); S.x = h.x; S.y = h.y; S.r = h.r; S.s = h.s; S.rx = h.rx; S.ry = 0;
     V.x = V.y = V.r = V.s = V.rx = V.ry = 0; T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }; hx = []; hy = [];
     if (reduce.matches) { S.x = 0; S.y = 0; S.r = 0; S.s = 1; S.rx = 0; }
     paint(); root.classList.add("about-open"); run();
   }
   function close() {
-    if (!open_) return; open_ = false; drag = null; card.classList.remove("dragging");
+    if (!open_) return; open_ = false; drag = null; glide = false; card.classList.remove("dragging", "grip-drag");
     root.classList.remove("about-open");
     T = hiddenPose(); V.r = 0;
     if (reduce.matches) { S = hiddenPose(); paint(); sheet.style.visibility = "hidden"; return; }
     run();
   }
+  /* a button released outside the window, or a lost window focus, must never leave the card stuck to the pointer */
+  addEventListener("pointerup", function () { end(); }); addEventListener("blur", function () { end(); });
   addEventListener("keydown", function (e) {
     if (e.key === "Escape") close();
     if (e.shiftKey && (e.key === "G" || e.key === "g") && !/INPUT|TEXTAREA/.test((e.target || {}).tagName || "")) root.classList.toggle("show-grid");
@@ -314,7 +330,7 @@
     var d = e.data; if (d === "about-panel:close") return close();
     if (!d || d.about !== "drag" || !card || e.source !== frame.contentWindow) return;
     var r = frame.getBoundingClientRect(), k = r.width / (frame.offsetWidth || r.width) || 1, px = r.left + d.cx * k, py = r.top + d.cy * k; /* the page reports its own coordinates; screenX is unreliable on phones */
-    if (d.phase === "start") begin(px, py); else if (d.phase === "move") move(px, py); else end();
+    if (d.phase === "start") begin(px, py); else if (d.phase === "move") { if (d.up) end(); else move(px, py); } else end();
   });
   document.addEventListener("click", function (e) {
     var a = e.target.closest && e.target.closest("a[href]");
