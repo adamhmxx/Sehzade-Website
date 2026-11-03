@@ -6,8 +6,10 @@
   if (window.__aboutCard) return;
   window.__aboutCard = 1;
   var root = document.documentElement, reduce = matchMedia("(prefers-reduced-motion: reduce)");
+  /* touch phones: dozens of 3D layers at 3x pixel density overwhelm the GPU, so the card only tilts there (no strip bend) */
+  var touchy = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && Math.min(innerWidth, innerHeight) < 820);
   var sheet, card, frame, grip, nameEl, nameTxt, backdrop, bend, shadow, strips = [], sharedSheet = null, dirty = true, bending = false;
-  var raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56, N = 24;
+  var FK = 1, FW = 0, raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56, N = 24;
   var S = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }, V = { x: 0, y: 0, r: 0, s: 0, rx: 0, ry: 0 }, T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 };
   var hx = [], hy = [], dts = [], slow = false;
   var PROPS = ["x", "y", "r", "s", "rx", "ry"];
@@ -101,7 +103,7 @@
     var page = mk("div", "ab-page", "pointer-events:none;top:" + (-off) + "px;bottom:auto;height:" + H + "px");
     var g = grip.cloneNode(true); g.removeAttribute("id"); [].forEach.call(g.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
     g.style.cssText = "position:absolute;left:0;top:0;width:100%;box-sizing:border-box";
-    var host = mk("div", "", "position:absolute;left:0;top:" + GRIP + "px;width:" + (k < 1 ? 390 : W) + "px;height:" + (k < 1 ? avail / k : avail) + "px;overflow:hidden;transform:scale(" + k + ");transform-origin:0 0");
+    var host = mk("div", "", "position:absolute;left:0;top:" + GRIP + "px;width:" + FW + "px;height:" + avail / FK + "px;overflow:hidden;transform:scale(" + FK + ");transform-origin:0 0");
     var sr = host.attachShadow({ mode: "open" }); sr.adoptedStyleSheets = [sharedSheet];
     var wrap = mk("div", "sb", "width:100%;height:100%;overflow:hidden;background:#ff2d20;position:relative");
     wrap.appendChild(tpl.cloneNode(true)); sr.appendChild(wrap);
@@ -125,13 +127,14 @@
     }).observe(win.document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["style", "class"] });
   }
   function buildStrips() {
-    dirty = false; strips = []; bend.textContent = "";
+    try { builtSig = sig(frame.contentWindow); } catch (e) {}
+    frameFit(); dirty = false;
+    if (touchy) return; strips = []; bend.textContent = "";
     var win; try { win = frame.contentWindow; } catch (e) { return; }
     if (!win || !win.document || !win.document.getElementById("main")) { dirty = true; return; }
-    builtSig = sig(win);
     var tpl = template(win); if (!tpl) { dirty = true; return; }
     try { sharedSheet = new CSSStyleSheet(); sharedSheet.replaceSync(collectCSS(win)); } catch (e) { return; }
-    var k = Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, h = Math.max(20, Math.round(H / N)), n = Math.ceil(H / h), parent = bend; /* whole-pixel strips: composited layers snap to the pixel grid */
+    var k = FK, avail = H - GRIP - nameEl.offsetHeight, h = Math.max(20, Math.round(H / N)), n = Math.ceil(H / h), parent = bend; /* whole-pixel strips: composited layers snap to the pixel grid */
     bend.style.width = W + "px"; bend.style.height = H + "px";
     for (var i = 0; i < n; i++) {
       var sh = i === n - 1 ? H - i * h : h, s = mk("div", "ab-strip", "top:" + (i ? h : 0) + "px;width:" + W + "px;height:" + sh + "px");
@@ -190,7 +193,7 @@
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
     /* on a device that cannot keep up the bend is switched off, so the card still moves smoothly (tilt only) */
     if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 45) { var med = dts.slice().sort(function (a, b) { return a - b; })[22]; if (med > .036) slow = true; dts = []; } }
-    var amp = slow ? 0 : ampNow(), moving = !calm || drag || energy > 8;
+    var amp = slow || touchy ? 0 : ampNow(), moving = !calm || drag || energy > 8;
     if (moving && amp > 0 && !reduce.matches) { if (!bending) setBending(true); if (bending) bendFrame(now, amp); }
     else if (bending) setBending(false);
     paint();
@@ -210,13 +213,44 @@
     if (w > 0) nameTxt.style.fontSize = Math.floor(100 * inner / w * 100) / 100 + "px";
   }
   /* the About phone layout is designed for 390px, so it is scaled down on narrower cards */
+  /* the page inside the card is laid out for a phone (390px wide). On narrower or shorter cards it is scaled down so that
+     everything fits: width first, then height if the content is still taller than the space (nothing is ever cut off) */
+  function needH() {
+    try {
+      var d = frame.contentDocument, m = 0; if (!d || !d.body) return 0;
+      [].forEach.call(d.querySelectorAll("h1,p,a[href]"), function (e) {
+        if (e.closest("nav") || !e.offsetHeight) return;
+        var y = e.offsetHeight; for (var n = e; n; n = n.offsetParent) y += n.offsetTop; /* layout position: unaffected by entrance animations */
+        m = Math.max(m, y);
+      });
+      return m ? m + 16 : 0;
+    } catch (e) { return 0; }
+  }
+  var needKey = "", needVal = 0, needBusy = false;
+  function frameFit() {
+    var base = Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, key = W.toFixed(1) + ":" + H.toFixed(1) + ":" + builtSig;
+    var k = base;
+    if (key === needKey) { if (needVal > avail / base + 1) k = Math.max(.55, avail / needVal); }
+    else if (!needBusy) {
+      /* measure the content at the plain phone geometry first (two frames, so the page has really been resized), then fit */
+      needBusy = true;
+      frame.style.cssText = base < 1 ? "flex:none;width:390px;height:" + avail / base + "px;transform:scale(" + base + ");transform-origin:0 0" : "";
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        needBusy = false; var v = needH(); if (!v) { setTimeout(layout, 800); return; }
+        needVal = v; needKey = key; layout();
+      }); });
+    }
+    var fw = W / k, sig_ = k.toFixed(3) + ":" + fw.toFixed(1);
+    frame.style.cssText = k < 1 || base < 1 ? "flex:none;width:" + fw + "px;height:" + avail / k + "px;margin-bottom:" + (avail - avail / k) + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
+    if (sig_ !== frameFit.key) { frameFit.key = sig_; dirty = true; }
+    FK = k; FW = fw;
+  }
   function layout() {
     if (!sheet) return; dims();
     if (W !== lw || H !== lh) { lw = W; lh = H; dirty = true; scheduleBuild(); }
     sheet.style.width = W + "px"; sheet.style.height = H + "px";
     fitName();
-    var k = Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight;
-    frame.style.cssText = k < 1 ? "flex:none;width:390px;height:" + avail / k + "px;margin-bottom:" + (avail - avail / k) + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
+    frameFit();
   }
   function cardName() { try { var d = JSON.parse(localStorage.getItem("site-cms-v1") || "null"); return (d && d.site && d.site.cardName) || "Adam Himawan"; } catch (e) { return "Adam Himawan"; } }
   function build() {
@@ -243,7 +277,7 @@
     grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
   }
 
-  /* dragging: from the title strip, or from anywhere on the page inside the card (it reports screen coordinates) */
+  /* dragging: from the title strip, or from anywhere on the page inside the card (it reports its own coordinates) */
   function begin(px, py) { drag = { px: px, py: py, x0: S.x, y0: S.y, t: performance.now(), vx: 0, vy: 0 }; card.classList.add("dragging"); V.x = V.y = 0; run(); }
   function move(px, py) {
     if (!drag) return; var now = performance.now(), dt = Math.max(8, now - drag.t), nx = drag.x0 + px - drag.px, ny = drag.y0 + py - drag.py;
@@ -277,7 +311,8 @@
   addEventListener("message", function (e) {
     var d = e.data; if (d === "about-panel:close") return close();
     if (!d || d.about !== "drag" || !card || e.source !== frame.contentWindow) return;
-    if (d.phase === "start") begin(d.sx, d.sy); else if (d.phase === "move") move(d.sx, d.sy); else end();
+    var r = frame.getBoundingClientRect(), k = r.width / (frame.offsetWidth || r.width) || 1, px = r.left + d.cx * k, py = r.top + d.cy * k; /* the page reports its own coordinates; screenX is unreliable on phones */
+    if (d.phase === "start") begin(px, py); else if (d.phase === "move") move(px, py); else end();
   });
   document.addEventListener("click", function (e) {
     var a = e.target.closest && e.target.closest("a[href]");
