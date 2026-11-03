@@ -28,7 +28,7 @@
   if (TOP) window.__liquidCfg = own;
   /* the About page lives in an iframe of the main page, so it follows the main page's panel */
   /* no component distortion while the About card is being dragged: the text under the cursor would shimmer as the card moves */
-  function dragging() { try { return !!(TOP ? window : parent).__abDragging; } catch (e) { return false; } }
+  function dragging() { try { return !!(TOP ? window : parent).__abDragging || (TOP && !!window.__abOpen); } catch (e) { return false; } } /* ...and nothing behind the open card reacts either: only the card does */
   function C() { if (TOP) return own; try { return parent.__liquidCfg || own; } catch (e) { return own; } }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(own)); } catch (e) {} }
 
@@ -47,7 +47,7 @@
   function drawBlob(c) {
     var W = cv.width, H = cv.height, s = 1 / SCALE;
     cx.clearRect(0, 0, W, H);
-    if (!c.on || (!inside && Math.abs(head.vx) + Math.abs(head.vy) < .05 && idle > 40)) return;
+    if (!c.on || (TOP && window.__abOpen) || (!inside && Math.abs(head.vx) + Math.abs(head.vy) < .05 && idle > 40)) return;
     var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, rad = c.radius * s, soft = c.softness, h = (1 - soft) * .6;
     for (var j = N - 1; j >= 0; j--) {
       var f = j / (N - 1), p = chain[j], r = rad * (.32 + .68 * Math.pow(1 - f, 1.1)), a = Math.pow(1 - f, 1.4);
@@ -73,7 +73,7 @@
 
   /* ---------- components: blur only ---------- */
   var states = new Map(), els = [], lastScan = 0;
-  var SEL = ABOUT ? "h1,p,a[href],#about-close" : "nav a,nav span,[role=tab],#about-close";
+  var SEL = ABOUT ? "h1,p,a[href],#about-close" : "nav a,nav span,[role=tab],#about-close,.ab-card .ab-name span,.ab-card .ab-copy";
   function scan(now) {
     if (now - lastScan < 600) return;
     lastScan = now;
@@ -108,7 +108,7 @@
       '<feGaussianBlur in="w" stdDeviation="0.45"/>';
     defs.appendChild(f);
     /* small text gets a fraction of the strength a large card gets, so every component distorts to the same degree visually */
-    return { id: id, off: f.children[1], map: f.children[2], k: el.__fxt && el.__fxt !== el ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
+    return { id: id, off: f.children[1], map: f.children[2], k: ABOUT || (el.__fxt && el.__fxt !== el) ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
   }
   function spring(st, key, target, k, damp) { st["v" + key] = (st["v" + key] + (target - st[key]) * k) * damp; st[key] += st["v" + key]; }
 

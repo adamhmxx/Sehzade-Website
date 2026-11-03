@@ -18,8 +18,8 @@
     x: "https://x.com/adamhmwn", behance: "https://www.behance.net/adamhimawan", linkedin: "https://www.linkedin.com/in/adamhimawan/",
     dribbble: "https://dribbble.com/adamhmwn", instagram: "https://www.instagram.com/adamhmwn/"
   };
-  var DEF_SITE = { logo: "Sehzade", aboutLabel: "About", callLabel: "Book a call", clock: "ID (WIB)", cardName: "Adam Himawan", title: "Adam Himawan Portfolio",
-                   modes: ["Space", "Cross", "Globe", "Grid", "Paper"] };
+  var DEF_SITE = { logo: "Sehzade", aboutLabel: "About", callLabel: "Book a call", clock: "ID (WIB)", cardName: "Adam Himawan", copyright: "Copyright Sehzade 2026", title: "Adam Himawan Portfolio",
+                   modes: ["Space", "Cross", "Globe", "Grid", "Twister"] };
   var SOCIALS = [["x", "X"], ["behance", "Behance"], ["linkedin", "LinkedIn"], ["dribbble", "Dribbble"], ["instagram", "Instagram"]];
 
   function read() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
@@ -254,7 +254,7 @@
     c1.append(el("div", { class: "cp-label" }, "Navigation and page"),
       field("Logo (top left)", o.logo, set("logo")), field("About menu (centre)", o.aboutLabel, set("aboutLabel")),
       field("Book a call button", o.callLabel, set("callLabel")), field("Clock label", o.clock, set("clock")),
-      field("Name on the About card", o.cardName, set("cardName")), field("Browser tab title", o.title, set("title")));
+      field("Name on the About card", o.cardName, set("cardName")), field("Card footer text (top left of the card)", o.copyright, set("copyright")), field("Browser tab title", o.title, set("title")));
     c2.appendChild(el("div", { class: "cp-label" }, "Gallery mode names"));
     o.modes.forEach(function (m, i) { c2.appendChild(field("Mode " + (i + 1), m, setMode(i))); });
     c2.appendChild(el("p", { class: "cp-hint" }, "Projects are on the Portfolio tab, the About text and links on the About tab. Changes show on the site straight away."));

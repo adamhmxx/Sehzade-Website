@@ -8,7 +8,7 @@
   var root = document.documentElement, reduce = matchMedia("(prefers-reduced-motion: reduce)");
   /* touch phones: dozens of 3D layers at 3x pixel density overwhelm the GPU, so the card only tilts there (no strip bend) */
   var touchy = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && Math.min(innerWidth, innerHeight) < 820);
-  var sheet, card, frame, grip, nameEl, nameTxt, backdrop, bend, shadow, strips = [], sharedSheet = null, dirty = true, bending = false;
+  var copyEl, sheet, card, frame, grip, nameEl, nameTxt, backdrop, bend, shadow, strips = [], sharedSheet = null, dirty = true, bending = false;
   var FK = 1, FW = 0, raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56;
   var S = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }, V = { x: 0, y: 0, r: 0, s: 0, rx: 0, ry: 0 }, T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 };
   var hx = [], hy = [], dts = [], slow = false, fpsOn = false, glide = false, sv = { x: 0, y: 0 };
@@ -30,10 +30,11 @@
     '.ab-shadow{position:absolute;inset:0;border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,.35),0 40px 90px rgba(0,0,0,.55)}' +
     '.ab-card,.ab-page{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;border-radius:2px;background:#ff2d20;color:#0b0b0b}' +
     '.ab-card{pointer-events:auto;touch-action:none}' +
-    '.ab-grip{flex:none;display:flex;align-items:center;height:56px;padding:0 16px;cursor:grab;user-select:none;-webkit-user-select:none}' +
+    '.ab-grip{flex:none;display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;cursor:grab;user-select:none;-webkit-user-select:none}' +
     '.ab-card.dragging,.ab-card.dragging .ab-grip{cursor:grabbing}' +
     '.ab-card iframe{flex:1;min-height:0;width:100%;border:0;display:block;background:transparent}' +
     '.ab-card.grip-drag iframe{pointer-events:none}' +
+    '.ab-copy{font:400 16px/1.2 "Anton","Inter Display",sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap}' +
     '.ab-close{padding:4px 0;border:0;background:none;color:#0b0b0b;font:400 16px/1.2 "Anton","Inter Display",sans-serif;text-transform:uppercase;letter-spacing:0;cursor:pointer}' +
     '.ab-name{flex:none;padding:8px 16px 16px;overflow:hidden;white-space:nowrap;font:400 100px/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;user-select:none;-webkit-user-select:none}' +
     '.ab-bend{position:absolute;left:0;top:0;transform-style:preserve-3d;pointer-events:none;opacity:.01}' +
@@ -166,7 +167,8 @@
     [].forEach.call(bend.querySelectorAll(".sb"), function (w) { w.firstChild.style.transform = st ? "translateY(" + -st + "px)" : ""; });
   }
   /* the portrait's wobble loop inside the page is paused whenever the card is hidden or being shown as strips */
-  function pauseFrame(v) { try { frame.contentWindow.__abPaused = v; } catch (e) {} }
+  var paused = null;
+  function pauseFrame(v) { if (v === paused) return; paused = v; try { frame.contentWindow.__abPaused = v; } catch (e) {} }
   function setBending(on) {
     if (on === bending) return;
     if (on) { if (!strip()) return; syncScroll(); }
@@ -216,12 +218,13 @@
     var amp = slow || touchy || !strips.length || quality() !== builtQ ? 0 : ampNow(), moving = !calm || drag || energy > 8;
     if (moving && amp > 0 && !reduce.matches) { if (!bending) setBending(true); if (bending) bendFrame(now, amp); }
     else if (bending) setBending(false);
+    pauseFrame(moving || !open_);
     paint();
     if (moving) raf = requestAnimationFrame(step);
     else {
       raf = 0;
       if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); }
-      else { S.x = T.x; S.y = T.y; S.r = 0; S.s = 1; S.rx = 0; S.ry = 0; paint(); }
+      else { S.x = T.x; S.y = T.y; S.r = 0; S.s = 1; S.rx = 0; S.ry = 0; paint(); pauseFrame(false); }
     }
   }
   function run() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); } }
@@ -272,6 +275,7 @@
     fitName();
     frameFit();
   }
+  function siteText(k, d) { try { var o = JSON.parse(localStorage.getItem("site-cms-v1") || "null"); return (o && o.site && o.site[k]) || d; } catch (e) { return d; } }
   function cardName() { try { var d = JSON.parse(localStorage.getItem("site-cms-v1") || "null"); return (d && d.site && d.site.cardName) || "Adam Himawan"; } catch (e) { return "Adam Himawan"; } }
   function build() {
     if (sheet) return;
@@ -280,7 +284,8 @@
     shadow = mk("div", "ab-shadow");
     card = mk("aside", "ab-card"); card.setAttribute("aria-label", "About"); card.setAttribute("role", "dialog");
     grip = mk("div", "ab-grip"); grip.title = "Drag to move";
-    var btn = mk("button", "ab-close"); btn.id = "about-close"; btn.type = "button"; btn.textContent = "Close"; btn.onclick = close; grip.appendChild(btn);
+    copyEl = mk("span", "ab-copy"); copyEl.textContent = siteText("copyright", "Copyright Sehzade 2026");
+    var btn = mk("button", "ab-close"); btn.id = "about-close"; btn.type = "button"; btn.textContent = "Close"; btn.onclick = close; grip.append(copyEl, btn);
     frame = mk("iframe"); frame.title = "About"; frame.src = "about.html";
     nameEl = mk("div", "ab-name"); nameEl.setAttribute("aria-hidden", "true");
     nameTxt = mk("span", "", "display:inline-block"); nameTxt.textContent = cardName(); nameEl.appendChild(nameTxt);
@@ -289,9 +294,9 @@
     sheet.append(shadow, bend, card); document.body.append(backdrop, sheet);
     layout(); S = hiddenPose(); paint();
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
-    frame.addEventListener("load", function () { pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
+    frame.addEventListener("load", function () { paused = null; pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
     addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
-    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); layout(); dirty = true; scheduleBuild(500); } });
+    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); copyEl.textContent = siteText("copyright", "Copyright Sehzade 2026"); layout(); dirty = true; scheduleBuild(500); } });
     grip.addEventListener("pointerdown", function (e) { if (e.button || e.target.closest("button")) return; e.preventDefault(); grip.setPointerCapture(e.pointerId); begin(e.clientX, e.clientY, true); });
     grip.addEventListener("pointermove", function (e) { if (drag) move(e.clientX, e.clientY); });
     grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
@@ -321,15 +326,15 @@
   function open() {
     build(); layout();
     var q = quality(); if (q !== lastQ) { if (lastQ !== undefined) { slow = false; try { localStorage.removeItem(SLOWKEY); } catch (e) {} } lastQ = q; dirty = true; scheduleBuild(200); }
-    if (open_) return; open_ = true;
-    sheet.style.visibility = "visible"; pauseFrame(false);
+    if (open_) return; open_ = true; window.__abOpen = true;
+    sheet.style.visibility = "visible";
     glide = false; var h = hiddenPose(); S.x = h.x; S.y = h.y; S.r = h.r; S.s = h.s; S.rx = h.rx; S.ry = 0;
     V.x = V.y = V.r = V.s = V.rx = V.ry = 0; T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }; hx = []; hy = [];
     if (reduce.matches) { S.x = 0; S.y = 0; S.r = 0; S.s = 1; S.rx = 0; }
     paint(); root.classList.add("about-open"); run();
   }
   function close() {
-    if (!open_) return; open_ = false; drag = null; glide = false; card.classList.remove("dragging", "grip-drag");
+    if (!open_) return; open_ = false; window.__abOpen = false; drag = null; glide = false; card.classList.remove("dragging", "grip-drag");
     root.classList.remove("about-open");
     T = hiddenPose(); V.r = 0;
     if (reduce.matches) { S = hiddenPose(); paint(); sheet.style.visibility = "hidden"; return; }
