@@ -7,7 +7,7 @@
   window.__aboutCard = 1;
   var root = document.documentElement, reduce = matchMedia("(prefers-reduced-motion: reduce)");
   var sheet, card, frame, grip, nameEl, nameTxt, backdrop, bend, shadow, strips = [], sharedSheet = null, dirty = true, bending = false;
-  var raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56, N = 14;
+  var raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56, N = 24;
   var S = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }, V = { x: 0, y: 0, r: 0, s: 0, rx: 0, ry: 0 }, T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 };
   var hx = [], hy = [];
   var PROPS = ["x", "y", "r", "s", "rx", "ry"];
@@ -108,7 +108,7 @@
     bend.style.width = W + "px"; bend.style.height = H + "px";
     for (var i = 0; i < N; i++) {
       var s = mk("div", "ab-strip", "top:" + (i ? h : 0) + "px;width:" + W + "px;height:" + h + "px");
-      var clip = mk("div", "ab-clip", "width:" + W + "px;height:" + (h + 3) + "px;background:#ff2d20");
+      var clip = mk("div", "ab-clip", "width:" + W + "px;height:" + (h + 2) + "px;background:#ff2d20");
       clip.appendChild(makePage(tpl, k, avail, i * h)); clip.appendChild(mk("div", "ab-shade"));
       s.appendChild(clip); parent.appendChild(s); parent = s;
       strips.push({ s: s, sh: clip.lastChild });
@@ -131,12 +131,12 @@
   }
   /* every strip replays the motion of the one above it a little later, so the bend travels down the sheet like a wave */
   function bendFrame(now, amp) {
-    var n = hx.length, wave = Math.min(2.4, Math.hypot(V.x, V.y) * .0012) * amp;
+    var n = hx.length, wave = Math.min(1.1, Math.hypot(V.x, V.y) * .0006) * amp;
     for (var i = 0; i < strips.length; i++) {
-      var j = n - 1 - Math.min(n - 1, Math.round(i * 1.5)), vy = hy[j], vx = hx[j],
-          a = clamp(-vy * .0018, -3.6, 3.6) * amp + wave * Math.sin(now * .011 - i * .6), g = clamp(vx * .0015, -3, 3) * amp;
+      var j = n - 1 - Math.min(n - 1, Math.round(i * .9)), vy = hy[j], vx = hx[j],
+          a = clamp(-vy * .00105, -2.1, 2.1) * amp + wave * Math.sin(now * .011 - i * .32), g = clamp(vx * .00085, -1.7, 1.7) * amp;
       strips[i].s.style.transform = "rotateX(" + a.toFixed(2) + "deg) rotateZ(" + g.toFixed(2) + "deg)";
-      strips[i].sh.style.opacity = Math.min(.12, (Math.abs(a) + Math.abs(g)) * .022).toFixed(3);
+      strips[i].sh.style.opacity = Math.min(.06, (Math.abs(a) + Math.abs(g)) * .012).toFixed(3);
     }
   }
   function ampNow() { var c = window.__liquidCfg; return (c && c.pliq != null ? +c.pliq : 60) / 60; }
