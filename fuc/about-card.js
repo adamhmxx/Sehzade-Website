@@ -9,7 +9,7 @@
   var sheet, card, frame, grip, nameEl, nameTxt, backdrop, bend, shadow, strips = [], sharedSheet = null, dirty = true, bending = false;
   var raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56, N = 24;
   var S = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }, V = { x: 0, y: 0, r: 0, s: 0, rx: 0, ry: 0 }, T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 };
-  var hx = [], hy = [];
+  var hx = [], hy = [], dts = [], slow = false;
   var PROPS = ["x", "y", "r", "s", "rx", "ry"];
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function mk(tag, cls, css) { var n = document.createElement(tag); if (cls) n.className = cls; if (css) n.style.cssText = css; return n; }
@@ -28,10 +28,9 @@
     '.ab-card.dragging iframe{pointer-events:none}' +
     '.ab-close{padding:4px 0;border:0;background:none;color:#0b0b0b;font:400 16px/1.2 "Anton","Inter Display",sans-serif;text-transform:uppercase;letter-spacing:0;cursor:pointer}' +
     '.ab-name{flex:none;padding:8px 16px 16px;overflow:hidden;white-space:nowrap;font:400 100px/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;user-select:none;-webkit-user-select:none}' +
-    '.ab-bend{position:absolute;left:0;top:0;transform-style:preserve-3d;pointer-events:none;display:none}' +
-    '.ab-strip{position:absolute;left:0;transform-origin:50% 0;transform-style:preserve-3d}' +
+    '.ab-bend{position:absolute;left:0;top:0;transform-style:preserve-3d;pointer-events:none;opacity:.01}' +
+    '.ab-strip{position:absolute;left:0;transform-origin:50% 0;transform-style:preserve-3d;will-change:transform}' +
     '.ab-clip{position:absolute;left:0;top:0;overflow:hidden;backface-visibility:visible}' +
-    '.ab-shade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}' +
     '@media (prefers-reduced-motion:reduce){#about-backdrop{transition:none!important}}' +
     '#grid-overlay{position:fixed;inset:0;z-index:2147483640;pointer-events:none;display:none;margin:0 32px;grid-template-columns:repeat(12,1fr);gap:16px}' +
     '#grid-overlay i{background:rgba(255,45,32,.12);outline:1px solid rgba(255,45,32,.35)}' +
@@ -109,10 +108,16 @@
     for (var i = 0; i < N; i++) {
       var s = mk("div", "ab-strip", "top:" + (i ? h : 0) + "px;width:" + W + "px;height:" + h + "px");
       var clip = mk("div", "ab-clip", "width:" + W + "px;height:" + (h + 2) + "px;background:#ff2d20");
-      clip.appendChild(makePage(tpl, k, avail, i * h)); clip.appendChild(mk("div", "ab-shade"));
+      clip.appendChild(makePage(tpl, k, avail, i * h));
       s.appendChild(clip); parent.appendChild(s); parent = s;
-      strips.push({ s: s, sh: clip.lastChild });
+      strips.push({ s: s, a: 0, g: 0 });
     }
+  }
+  /* the copy is rebuilt while the card is idle, never in the middle of a motion */
+  var buildTimer = 0, lw = 0, lh = 0;
+  function scheduleBuild(delay) {
+    clearTimeout(buildTimer);
+    buildTimer = setTimeout(function () { if (raf || bending) return scheduleBuild(600); if (dirty) buildStrips(); }, delay || 350);
   }
   function strip() {
     if (dirty) buildStrips();
@@ -126,8 +131,8 @@
     if (on === bending) return;
     if (on) { if (!strip()) return; syncScroll(); }
     bending = on;
-    bend.style.display = on ? "block" : "none"; card.style.opacity = on ? "0" : "";
-    if (!on) for (var i = 0; i < strips.length; i++) { strips[i].s.style.transform = ""; strips[i].sh.style.opacity = 0; }
+    bend.style.opacity = on ? "1" : ""; card.style.opacity = on ? "0" : "";
+    if (!on) for (var i = 0; i < strips.length; i++) { strips[i].a = strips[i].g = 0; strips[i].s.style.transform = ""; }
   }
   /* every strip replays the motion of the one above it a little later, so the bend travels down the sheet like a wave */
   function bendFrame(now, amp) {
@@ -135,15 +140,15 @@
     for (var i = 0; i < strips.length; i++) {
       var j = n - 1 - Math.min(n - 1, Math.round(i * .9)), vy = hy[j], vx = hx[j],
           a = clamp(-vy * .00105, -2.1, 2.1) * amp + wave * Math.sin(now * .011 - i * .32), g = clamp(vx * .00085, -1.7, 1.7) * amp;
-      strips[i].s.style.transform = "rotateX(" + a.toFixed(2) + "deg) rotateZ(" + g.toFixed(2) + "deg)";
-      strips[i].sh.style.opacity = Math.min(.06, (Math.abs(a) + Math.abs(g)) * .012).toFixed(3);
+      var st = strips[i]; st.a += (a - st.a) * .35; st.g += (g - st.g) * .35;
+      st.s.style.transform = "rotateX(" + st.a.toFixed(2) + "deg) rotateZ(" + st.g.toFixed(2) + "deg)";
     }
   }
   function ampNow() { var c = window.__liquidCfg; return (c && c.pliq != null ? +c.pliq : 60) / 60; }
 
   /* ---------- motion ---------- */
   function step(now) {
-    var dt = Math.min(.033, (now - last) / 1000 || .016); last = now; var calm = true;
+    var raw = (now - last) / 1000 || .016, dt = Math.min(.033, raw); last = now; var calm = true;
     PROPS.forEach(function (k) {
       var tilt = k === "rx" || k === "ry", K = k === "r" ? 90 : k === "s" ? 120 : tilt ? 55 : open_ ? 62 : 70, D = 2 * Math.sqrt(K) * (k === "r" ? .8 : tilt ? .5 : .92);
       if (drag && (k === "x" || k === "y")) return;
@@ -153,9 +158,11 @@
     });
     if (drag) { V.x *= .88; V.y *= .88; }
     if (open_) { T.rx = clamp(-V.y * .009, -12, 12); T.ry = clamp(V.x * .009, -12, 12); T.r = clamp(V.x * .004, -5, 5); T.s = drag ? 1.012 : 1; }
-    hx.push(V.x); hy.push(V.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
+    var lx = hx.length ? hx[hx.length - 1] : 0, ly = hy.length ? hy[hy.length - 1] : 0; hx.push(lx + (V.x - lx) * .3); hy.push(ly + (V.y - ly) * .3); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
-    var amp = ampNow(), moving = !calm || drag || energy > 8;
+    /* on a device that cannot keep up the bend is switched off, so the card still moves smoothly (tilt only) */
+    if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 45) { var med = dts.slice().sort(function (a, b) { return a - b; })[22]; if (med > .036) slow = true; dts = []; } }
+    var amp = slow ? 0 : ampNow(), moving = !calm || drag || energy > 8;
     if (moving && amp > 0 && !reduce.matches) { if (!bending) setBending(true); if (bending) bendFrame(now, amp); }
     else if (bending) setBending(false);
     paint();
@@ -177,11 +184,11 @@
   /* the About phone layout is designed for 390px, so it is scaled down on narrower cards */
   function layout() {
     if (!sheet) return; dims();
+    if (W !== lw || H !== lh) { lw = W; lh = H; dirty = true; scheduleBuild(); }
     sheet.style.width = W + "px"; sheet.style.height = H + "px";
     fitName();
     var k = Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight;
     frame.style.cssText = k < 1 ? "flex:none;width:390px;height:" + avail / k + "px;margin-bottom:" + (avail - avail / k) + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
-    dirty = true;
   }
   function cardName() { try { var d = JSON.parse(localStorage.getItem("site-cms-v1") || "null"); return (d && d.site && d.site.cardName) || "Adam Himawan"; } catch (e) { return "Adam Himawan"; } }
   function build() {
@@ -197,12 +204,12 @@
     nameTxt = mk("span", "", "display:inline-block"); nameTxt.textContent = cardName(); nameEl.appendChild(nameTxt);
     card.append(grip, frame, nameEl);
     bend = mk("div", "ab-bend"); bend.setAttribute("aria-hidden", "true");
-    sheet.append(shadow, card, bend); document.body.append(backdrop, sheet);
+    sheet.append(shadow, bend, card); document.body.append(backdrop, sheet);
     layout(); S = hiddenPose(); paint();
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
-    frame.addEventListener("load", function () { setTimeout(function () { dirty = true; if (strips.length === 0) buildStrips(); }, 1600); });
+    frame.addEventListener("load", function () { dirty = true; scheduleBuild(1600); });
     addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
-    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); layout(); } });
+    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); layout(); dirty = true; scheduleBuild(500); } });
     grip.addEventListener("pointerdown", function (e) { if (e.button || e.target.closest("button")) return; e.preventDefault(); grip.setPointerCapture(e.pointerId); begin(e.clientX, e.clientY); });
     grip.addEventListener("pointermove", function (e) { if (drag) move(e.clientX, e.clientY); });
     grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
