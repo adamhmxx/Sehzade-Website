@@ -25,8 +25,20 @@
   function stage(v) { if (v > target) target = v; }
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { stage(45); });
   if (document.readyState === "complete") stage(75); else addEventListener("load", function () { stage(75); });
-  var seenGal = 0, poll = setInterval(function () {
-    if (window.__galK && window.__galK.current) { if (!seenGal) seenGal = performance.now(); stage(92); if (performance.now() - seenGal > 500) stage(100); }
+  /* warm-up: while the red screen still covers everything, the ribbon is put in its entrance pose (wound up, below the screen) and its
+     images are decoded, so the first frames of the entrance do not have to paint and decode anything */
+  var seenGal = 0, warmed = false, decoded = false, cont0 = null;
+  function warm(gk) {
+    if (warmed) return; warmed = true;
+    gk.ox = gk.tx = C.tstart;
+    var tl = $('[role="tablist"]'); cont0 = tl && tl.closest('div[style*="overflow"]');
+    if (cont0) cont0.style.transform = "translateY(" + C.trise + "vh)";
+    var imgs = [].slice.call(document.querySelectorAll("#main img")).filter(function (i) { return i.decode; });
+    var done = function () { decoded = true; };
+    Promise.all(imgs.map(function (i) { return i.decode().catch(function () {}); })).then(done, done); setTimeout(done, 4000);
+  }
+  var poll = setInterval(function () {
+    if (window.__galK && window.__galK.current) { warm(window.__galK.current); if (!seenGal) seenGal = performance.now(); stage(92); if (performance.now() - seenGal > 500 && decoded) stage(100); }
     if (performance.now() - T0 > 9000) stage(100); /* never hang */
   }, 120);
 
@@ -96,6 +108,7 @@
     var START = C.tstart, D = C.tdur, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     root.classList.remove("intro-on");
+    if (cont) cont.style.transform = "";
     if (cont && cont.animate) cont.animate([{ transform: "translateY(" + C.trise + "vh)" }, { transform: "none" }], { duration: D, easing: "cubic-bezier(.22,1,.36,1)" });
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), v = START * (1 - easeOut(k));
