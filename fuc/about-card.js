@@ -167,7 +167,7 @@
     [].forEach.call(bend.querySelectorAll(".sb"), function (w) { w.firstChild.style.transform = st ? "translateY(" + -st + "px)" : ""; });
   }
   /* the portrait's wobble loop inside the page is paused whenever the card is hidden or being shown as strips */
-  var paused = null;
+  var paused = null, lastBend = 0;
   function pauseFrame(v) { if (v === paused) return; paused = v; try { frame.contentWindow.__abPaused = v; } catch (e) {} }
   function setBending(on) {
     if (on === bending) return;
@@ -216,11 +216,14 @@
     /* on a device that cannot keep up the bend is switched off, so the card still moves smoothly (tilt only) */
     if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 30) { var med = dts.slice().sort(function (a, b) { return a - b; })[15]; if (med > .024 && !window.__aboutNoAuto) { slow = true; try { localStorage.setItem(SLOWKEY, "1"); } catch (e) {} } dts = []; } }
     var amp = slow || touchy || !strips.length || quality() !== builtQ ? 0 : ampNow(), moving = !calm || drag || energy > 8;
-    if (moving && amp > 0 && !reduce.matches) { if (!bending) setBending(true); if (bending) bendFrame(now, amp); }
-    else if (bending) setBending(false);
-    pauseFrame(moving || !open_);
+    /* the bend is only switched off after the motion has really stopped (a short hold); switching live page <-> strip copy on every small change of speed made the card blink */
+    var want = moving && amp > 0 && !reduce.matches, hold = bending && now - lastBend < 380;
+    if (want) lastBend = now;
+    if (want && !bending) setBending(true);
+    if (bending) { if (want || hold) bendFrame(now, want ? amp : 0); else setBending(false); }
+    pauseFrame(moving || hold || !open_);
     paint();
-    if (moving) raf = requestAnimationFrame(step);
+    if (moving || hold) raf = requestAnimationFrame(step);
     else {
       raf = 0;
       if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); }
@@ -265,7 +268,7 @@
     }
     var fw = W / k, sig_ = k.toFixed(3) + ":" + fw.toFixed(1);
     frame.style.cssText = k < 1 || base < 1 ? "flex:none;width:" + fw + "px;height:" + avail / k + "px;margin-bottom:" + (avail - avail / k) + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
-    if (sig_ !== frameFit.key) { frameFit.key = sig_; dirty = true; }
+    if (sig_ !== frameFit.key) { frameFit.key = sig_; dirty = true; scheduleBuild(400); }
     FK = k; FW = fw;
   }
   function layout() {
