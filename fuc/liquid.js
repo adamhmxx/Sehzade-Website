@@ -75,7 +75,7 @@
 
   /* ---------- components: blur only ---------- */
   var states = new Map(), els = [], lastScan = 0;
-  var SEL = ABOUT ? "h1,p,a[href],#about-close" : "nav a,nav span,[role=tab],#about-close,.ab-card .ab-name span,.ab-card .ab-copy";
+  var SEL = ABOUT ? "h1,p,a[href]" : "nav a,nav span,[role=tab],.ab-card .ab-name span,.ab-card .ab-copy";
   function scan(now) {
     if (now - lastScan < 600) return;
     lastScan = now;

@@ -285,7 +285,7 @@
     card = mk("aside", "ab-card"); card.setAttribute("aria-label", "About"); card.setAttribute("role", "dialog");
     grip = mk("div", "ab-grip"); grip.title = "Drag to move";
     copyEl = mk("span", "ab-copy"); copyEl.textContent = siteText("copyright", "\u00a9 Sehzade 2026");
-    var btn = mk("button", "ab-close"); btn.id = "about-close"; btn.type = "button"; btn.textContent = "Close"; btn.onclick = close; grip.append(copyEl, btn);
+    grip.append(copyEl);
     frame = mk("iframe"); frame.title = "About"; frame.src = "about.html";
     nameEl = mk("div", "ab-name"); nameEl.setAttribute("aria-hidden", "true");
     nameTxt = mk("span", "", "display:inline-block"); nameTxt.textContent = cardName(); nameEl.appendChild(nameTxt);

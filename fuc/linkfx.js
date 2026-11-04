@@ -3,15 +3,15 @@
 (function () {
   if (window.__linkfx) return;
   window.__linkfx = 1;
-  var SPLIT = "#about-close"; /* plain-text controls (the card's Close button), split into letters on first hover */
+  var SPLIT = "#none-split"; /* plain-text controls (the card's Close button), split into letters on first hover */
   var SEL = 'a[href], [role="tab"], ' + SPLIT;
   var css = document.createElement("style");
   css.textContent =
-    'a[href],#about-close{text-decoration:none!important}' +
+    'a[href]{text-decoration:none!important}' +
     'a[href]>span[aria-hidden="true"]{display:none!important}' +
-    'a[href] span,#about-close span,[role="tab"] span{animation:none!important}' +
+    'a[href] span,[role="tab"] span{animation:none!important}' +
     /* the letters travel outside their own box while sliding in, so the box must not clip them */
-    'a[href]>span:first-child,[role="tab"]>span:first-child{overflow:visible!important;padding:0 3px;margin:0 -3px}#about-close{overflow:visible!important}';
+    'a[href]>span:first-child,[role="tab"]>span:first-child{overflow:visible!important;padding:0 3px;margin:0 -3px}';
   document.head.appendChild(css);
 
   function letters(el) {
