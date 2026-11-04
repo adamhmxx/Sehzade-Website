@@ -14,7 +14,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
 
 #intro{position:fixed;inset:0;z-index:1;pointer-events:none;display:block;color:#0b0b0b}
 #intro{display:block}
-#intro canvas.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block;background:#ff2d20}
+#intro canvas.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
 #intro .in-ui{position:absolute;inset:0}
 #intro .in-pct,#intro .in-welcome,#intro .in-line{transition:opacity .7s ease}
 #intro.out .in-pct,#intro.out .in-welcome,#intro.out .in-line{opacity:0}
@@ -135,13 +135,15 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     "float fA=mix(n1,uv.y,bias),fB=mix(mix(n1,n2,.6),uv.y,bias),fC=mix(n2,uv.y,bias*.8);" +
     "float sA=soft,sB=soft*1.6,sC=soft*2.4,lB=lag,lC=lag*2.;" +
     "float aA=smoothstep(front-sA,front+sA,fA),aB=smoothstep(front-lB-sB,front-lB+sB,fB),aC=smoothstep(front-lC-sC,front-lC+sC,fC);" +
-    "vec3 col=vec3(.043);col=mix(col,vec3(.2,.035,.03),aC);col=mix(col,vec3(.55,.09,.06),aB);col=mix(col,vec3(1.,.176,.125),aA);" +
-    "float edge=aA*(1.-aA)*4.;col=mix(col,vec3(1.,.42,.22),edge*rim);" +
-    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(fbm(p2+vec2(0.,t2)),fbm(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;float ta=texture2D(tex,uv+w*tAmp).a;col=mix(col,vec3(.043),ta);float ua=texture2D(tex2,uv+w*uAmp).a;col=mix(col,vec3(.043),ua);}" +
-    "col+=(hash(gl_FragCoord.xy+fract(time)*97.)-.5)*grain;gl_FragColor=vec4(col,1.);}";
+    "vec4 r=vec4(vec3(.2,.035,.03)*aC*.9,aC*.9);" +
+    "r=vec4(vec3(.55,.09,.06)*aB+r.rgb*(1.-aB),aB+r.a*(1.-aB));" +
+    "r=vec4(vec3(1.,.176,.125)*aA+r.rgb*(1.-aA),aA+r.a*(1.-aA));" +
+    "float edge=aA*(1.-aA)*4.;r.rgb=mix(r.rgb,vec3(1.,.42,.22)*r.a,edge*rim);" +
+    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(fbm(p2+vec2(0.,t2)),fbm(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;float ta=texture2D(tex,uv+w*tAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ta);float ua=texture2D(tex2,uv+w*uAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ua);}" +
+    "r.rgb+=(hash(gl_FragCoord.xy+fract(time)*97.)-.5)*grain*r.a;gl_FragColor=r;}";
   var gl = null, prog = null, U = {}, seepT = 0, seepNow = 0, tc = document.createElement("canvas"), tx = tc.getContext("2d"), uc = document.createElement("canvas"), ux = uc.getContext("2d"), tex = null, tex2 = null, sc = 1, uiAmp = 0;
   try {
-    gl = cv.getContext("webgl", { antialias: false, alpha: false });
+    gl = cv.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true });
     if (gl) {
       var mk = function (t, src) { var sh = gl.createShader(t); gl.shaderSource(sh, src); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; };
       prog = gl.createProgram(); gl.attachShader(prog, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
@@ -185,7 +187,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     var lr = line.getBoundingClientRect(); ux.fillRect(lr.left, lr.top, lr.width * Math.max(0, Math.min(1, p / 100)), CFG.line);
   }
   function draw() {
-    if (!gl) { cv.style.opacity = String(1 - seepT); return; }
+    if (!gl) { cv.style.background = "#ff2d20"; cv.style.opacity = String(1 - seepT); return; }
     var soft = CFG.seepSoft / 100, lag = CFG.seepLag / 100, sC = soft * 2.4, lC = lag * 2;
     var f0 = Math.min(-soft, lC - sC, lag - soft * 1.6) - .02, f1 = 1 + Math.max(soft, lag + soft * 1.6, lC + sC) + .02;
     renderText(performance.now()); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tc);

@@ -10,7 +10,7 @@ html.intro-on #main{opacity:0;pointer-events:none}
 html.intro-on body{background:#0b0b0b}
 #intro{position:fixed;inset:0;z-index:2147483646;pointer-events:none;display:none;color:#0b0b0b}
 html.intro-on #intro{display:block}
-#intro svg.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+#intro canvas.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
 #intro .in-ui{position:absolute;inset:0}
 #intro .in-pct,#intro .in-welcome,#intro .in-line{transition:opacity .7s ease}
 #intro.out .in-pct,#intro.out .in-welcome,#intro.out .in-line{opacity:0}
@@ -111,11 +111,9 @@ html.intro-ui [role=tablist]{transform:translateX(-50%) translateY(12px)!importa
 </head>
 <body>
 <div id="intro" aria-hidden="true">
-<svg class="in-bg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><defs>
-<filter id="in-edge" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur id="in-edge-b" in="SourceGraphic" stdDeviation="22" result="b"/><feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 13 -5" result="g"/><feGaussianBlur in="g" stdDeviation="1.2"/></filter>
-<mask id="in-mask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="4000" height="3000"><rect x="-200" y="-200" width="4000" height="3000" fill="#fff"/><g id="in-holes"></g></mask>
+<canvas class="in-bg" id="seep"></canvas><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <filter id="in-liquid" x="-25%" y="-60%" width="150%" height="240%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>
-</defs><rect id="in-red" x="-200" y="-200" width="4000" height="3000" fill="#ff2d20" mask="url(#in-mask)"/></svg>
+</defs></svg>
 <div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Designer</span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>
 </div>
 <div id="intro-row" aria-hidden="true"><div class="rw"></div></div>

@@ -21,4 +21,4 @@ Run:  python3 server.py   ->  http://localhost:8000
 
 ## Loading entrance, stand-alone (loading/)
 - loading/index.html   the loading entrance on its own, from the red screen until the background is plain black, with its control panel (Hide/Show with C, Replay with R). Every setting has a slider and a description; values are kept in localStorage, "Copy values" gives the numbers as JSON. Open it through `python3 server.py` -> http://localhost:8000/loading/
-- The same sequence inside the site still lives in fuc/intro.js (it continues with the portfolio row and the Twister); port final values back there.
+- The same sequence runs in the site from fuc/intro.js (red seeps into black, then the portfolio row, then the Twister cards rise one by one). Its numbers live in `DEF` at the top of intro.js and in the Liquid panel (Shift+L, tab "Intro"). Keep the two in step: loading/index.html is the sandbox, fuc/intro.js is what ships.
