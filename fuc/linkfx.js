@@ -3,7 +3,7 @@
 (function () {
   if (window.__linkfx) return;
   window.__linkfx = 1;
-  var SPLIT = "#about-close, .ab-copy, .ab-name > span"; /* plain-text pieces of the About card, split into letters on first hover */
+  var SPLIT = "#about-close"; /* plain-text controls (the card's Close button), split into letters on first hover */
   var SEL = 'a[href], [role="tab"], ' + SPLIT;
   var css = document.createElement("style");
   css.textContent =
