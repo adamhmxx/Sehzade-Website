@@ -15,7 +15,7 @@
   var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, distort: 9, reach: 200, on: 1,
               ldur: 1000, ldist: 10, lblur: 2, lstag: 148, pliq: 60, pq: 1,
               cfa: 45, cdx: 8, cdy: 10, cdz: 8, cscl: 78, clift: 11, clz: 40, cspr: 90, cstep: 22,
-              twr: 34, twp: 100, twsc: 90 };
+              twr: 34, twp: 100, twsc: 90, twg: 100, twn: 20 };
   var KEY = "liquid-cfg-v1";
   function load() {
     try {
@@ -208,11 +208,13 @@
       ["clz", "Hover forward", 0, 120, 1, "px"],
       ["cspr", "Hover spread", 0, 200, 5, "%"],
       ["#", "Twister"],
-      ["twr", "Radius", 20, 70, 1, "%"],
+      ["twr", "Curve radius (small = tighter)", 20, 70, 1, "%"],
+      ["twn", "Curve smoothness (slices)", 8, 40, 1, ""],
+      ["twg", "Item spacing (100 = touching)", 80, 160, 1, "%"],
       ["twp", "Rise per turn", 50, 200, 5, "%"],
       ["twsc", "Card size", 60, 120, 1, "%"]
     ];
-    var GALLERY = /^(c(fa|dx|dy|dz|scl|step|lift|lz|spr)|tw(r|p|sc))$/;
+    var GALLERY = /^(c(fa|dx|dy|dz|scl|step|lift|lz|spr)|tw(r|p|sc|g|n))$/;
     var css = document.createElement("style");
     css.textContent =
       '#liquid-ui{position:fixed;right:var(--lm,32px);bottom:88px;z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
@@ -299,7 +301,7 @@
     ui.classList.toggle("off", !own.on);
     var copy = document.createElement("button"); copy.type = "button"; copy.textContent = "Copy values";
     copy.onclick = function () {
-      var txt = JSON.stringify({ radius: own.radius, softness: own.softness, brightness: own.brightness, trail: own.trail, distort: own.distort, blur: own.blur, reach: own.reach, ldur: own.ldur, ldist: own.ldist, lblur: own.lblur, lstag: own.lstag, pliq: own.pliq, pq: own.pq, cfa: own.cfa, cdx: own.cdx, cdy: own.cdy, cdz: own.cdz, cscl: own.cscl, cstep: own.cstep, clift: own.clift, clz: own.clz, cspr: own.cspr, twr: own.twr, twp: own.twp, twsc: own.twsc });
+      var txt = JSON.stringify({ radius: own.radius, softness: own.softness, brightness: own.brightness, trail: own.trail, distort: own.distort, blur: own.blur, reach: own.reach, ldur: own.ldur, ldist: own.ldist, lblur: own.lblur, lstag: own.lstag, pliq: own.pliq, pq: own.pq, cfa: own.cfa, cdx: own.cdx, cdy: own.cdy, cdz: own.cdz, cscl: own.cscl, cstep: own.cstep, clift: own.clift, clz: own.clz, cspr: own.cspr, twr: own.twr, twp: own.twp, twsc: own.twsc, twg: own.twg, twn: own.twn });
       var done = function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy values"; }, 1400); };
       try { navigator.clipboard.writeText(txt).then(done, function () { copy.textContent = txt.slice(0, 18) + "…"; }); } catch (e) { copy.textContent = "Not allowed"; }
     };
