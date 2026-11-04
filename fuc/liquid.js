@@ -84,7 +84,8 @@
     if (!ABOUT) {
       [].forEach.call(document.querySelectorAll("div"), function (d) {
         var st = d.style;
-        if (st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex) list.push(d);   /* gallery cards */
+        /* gallery cards. A Twister card is built from many 3D slices: a filter on it (or on one slice) flattens or tears the ribbon, so those cards take no distortion or blur, only the cursor blob */
+        if (st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex) { if (d.childElementCount <= 1) list.push(d); }
         else if (st.zIndex === "7000") [].forEach.call(d.children, function (c) { list.push(c); });           /* project caption */
       });
     }
@@ -215,11 +216,10 @@
       ["irn", "Portfolio row: cards", 3, 14, 1, ""],
       ["irdur", "Portfolio row: travel time", 1200, 8000, 100, "ms"],
       ["irgo", "Portfolio row starts at", 20, 100, 1, "% of seep"],
-      ["itgo", "Twister starts at", 20, 100, 1, "% of row"],
-      ["itcdur", "Twister: card rise time", 600, 5000, 50, "ms"],
-      ["itstag", "Twister: delay between cards", 0, 500, 10, "ms"],
-      ["itdist", "Twister: rise distance", 20, 200, 5, "vh"],
-      ["itstart", "Twister: ribbon turn", 0, 2000, 50, "px"],
+      ["itdelay", "Pause before the Twister (row gone)", 0, 6000, 100, "ms"],
+      ["itdur", "Twister: rise time", 1200, 8000, 100, "ms"],
+      ["itdist", "Twister: start distance below screen", 20, 200, 5, "vh"],
+      ["itstart", "Twister: ribbon turn while rising", 0, 3000, 50, "px"],
       ["itui", "Navbar & menu appear after", 0, 6000, 100, "ms"],
       ["#", "Link hover"],
       ["ldur", "Duration", 300, 2000, 10, "ms"],
@@ -273,9 +273,9 @@
       iseepr: "Warm glow along the edge of the red as it is absorbed.", iseepg: "Fine film grain that keeps the gradients from banding.",
       ircard: "Size of each portfolio card in the row, as a share of the screen width.", irgap: "Space between the portfolio cards.", irn: "How many portfolio cards pass by.",
       irdur: "Time the portfolio row takes to cross the screen.", irgo: "When the portfolio row starts, as a share of the red being absorbed. Lower starts it earlier.",
-      itgo: "When the Twister starts rising, as a share of the portfolio row crossing. Lower starts it earlier.", itcdur: "How long each Twister card takes to rise from below.",
-      itstag: "Delay between one Twister card and the next rising.", itdist: "How far below the screen each card starts, in screen heights.", itstart: "How far the ribbon turns while the cards rise. 0 keeps it still.",
-      itui: "When the navbar and the mode menu fade in after the Twister starts.",
+      itdelay: "How long the screen stays empty and black after the portfolio row has sunk off the left, before the Twister comes up.", itdur: "How long the whole ribbon takes to rise from below into place.",
+      itdist: "How far below the screen the ribbon starts, in screen heights. 100 starts fully out of sight.", itstart: "How far the ribbon turns while it rises. 0 keeps it still, higher turns it more.",
+      itui: "When the navbar and the mode menu fade in after the Twister starts rising.",
       radius: "Size of the liquid blob that follows the cursor.", softness: "How soft the blob's edge is. Lower is sharper.", brightness: "How bright the blob glows over the background.",
       trail: "Length of the blob's tail behind the cursor.", distort: "How strongly text and cards ripple when the cursor is near.", blur: "Soft blur added to components close to the cursor.",
       reach: "How far from the cursor components still react.",

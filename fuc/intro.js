@@ -7,7 +7,7 @@
 (function () {
   var DEF = { imin: 2400, iline: 2, ildl: 600, iltr: 1300, ilst: 60, iliq: 8, iliqp: 20, iliqd: 3100, ioutd: 800, ioutl: 200,
     iseept: 3200, iseeps: 18, iseepl: 20, iseepd: 60, iseepf: 130, iseepb: 30, iseepr: 30, iseepg: 4,
-    ircard: 26, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itstag: 150, itcdur: 1800, itdist: 100, itstart: 500, itgo: 80, itui: 2200 };
+    ircard: 26, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itdelay: 2000, itdur: 3600, itdist: 100, itstart: 1200, itui: 2200 };
   window.__introDef = DEF;
   var CFG = {};
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
@@ -181,39 +181,31 @@
     rw.style.marginTop = (-ch / 2) + "px";
     for (var i = 0; i < n; i++) { var d = document.createElement("div"); d.style.cssText = "width:" + cw + "px;height:" + ch + "px;background-image:url(" + list[i].image.src + ")"; rw.appendChild(d); }
     row.style.display = "block";
-    var total = n * (cw + gap), x0 = W + 40, x1 = -total - 40, D = CFG.irdur, s0 = performance.now(), go = false;
+    var total = n * (cw + gap), x0 = W + 40, x1 = -total - 40, D = CFG.irdur, s0 = performance.now();
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), x = x0 + (x1 - x0) * (.5 - .5 * Math.cos(Math.PI * k));
-      if (!go && k > CFG.itgo / 100) { go = true; reveal(); }
       rw.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
       if (k < 1) return requestAnimationFrame(step);
-      row.style.display = "none"; if (!go) reveal();
+      /* the row has sunk off the left edge completely: a calm pause on the empty black, then the Twister comes up */
+      row.style.display = "none"; setTimeout(reveal, CFG.itdelay);
     })(performance.now());
   }
 
-  /* ---- the ribbon builds itself: every card rises from below, one after another, while the ribbon turns; then the page is live and scrolls forever ---- */
+  /* ---- the Twister rises from below as ONE piece while the ribbon turns upward; then the page is live and scrolls forever ---- */
   function reveal() {
     if (wipeActive) return setTimeout(reveal, 50); /* never cut the red short */
-    var gk = window.__galK && window.__galK.current, START = CFG.itstart, cdur = CFG.itcdur, stag = CFG.itstag;
-    var cards = [].filter.call(document.querySelectorAll("#main div"), function (d) {
-      var st = d.style; return st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex && d.getBoundingClientRect().width > 0;
-    });
-    /* lowest card on screen goes first, so the ribbon grows upward */
-    cards.forEach(function (c) { var r = c.getBoundingClientRect(); c.__ry = r.top + r.height / 2; });
-    cards.sort(function (a, z) { return z.__ry - a.__ry; });
-    var D = Math.max(1, (cards.length - 1) * stag + cdur), s0 = performance.now();
+    var gk = window.__galK && window.__galK.current, tl = $('[role="tablist"]'), cont = tl && tl.closest('div[style*="overflow"]');
+    var START = CFG.itstart, D = CFG.itdur, s0 = performance.now(), an = null;
     if (gk) { gk.ox = gk.tx = START; }
+    /* the whole ribbon starts below the screen (no fading, it simply travels up into place), eased so it leaves gently and lands softly */
+    if (!reduce && cont && cont.animate) an = cont.animate([{ transform: "translateY(" + CFG.itdist + "vh)" }, { transform: "none" }], { duration: D, easing: "cubic-bezier(.33,0,.15,1)", fill: "both" });
     root.classList.remove("intro-on");
-    if (!reduce) cards.forEach(function (c, i) {
-      if (!c.animate) return;
-      var an = c.animate([{ translate: "0 " + CFG.itdist + "vh" }, { translate: "0 0" }], { duration: cdur, delay: i * stag, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" });
-      an.onfinish = function () { an.cancel(); };
-    });
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k));
       if (gk) { gk.ox = v; gk.tx = v; }
       if (k < 1) return requestAnimationFrame(step);
       if (gk) { gk.ox = 0; gk.tx = 0; }
+      if (an) an.cancel();
     })(performance.now());
     setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : CFG.itui);
   }

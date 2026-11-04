@@ -17,15 +17,16 @@
     txt = document.createElement("canvas"); tctx = txt.getContext("2d"); mk = document.createElement("canvas"); mctx = mk.getContext("2d");
     size(); return true;
   }
-  /* the portrait is fitted to the height of the screen and centred; its lines are drawn once into an off-screen canvas */
+  /* the portrait is ONE object, 60vh tall (it follows the height of the screen), centred; its lines are drawn once into an off-screen canvas */
+  var VH = .6;
   function size() {
     var r = box.getBoundingClientRect(), w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
     if (w === cw && h === ch) return; cw = w; ch = h;
     cv.width = txt.width = mk.width = w; cv.height = txt.height = mk.height = h;
     var n = rows.length, cols = 0; rows.forEach(function (l) { cols = Math.max(cols, l.length); });
-    var lh = h / n, fs = lh * 1.02, cwid = fs * .6, pw = cols * cwid, ox = (w - pw) / 2;
+    var oh = innerHeight * VH, lh = oh / n, fs = lh * 1.02, cwid = fs * .6, pw = cols * cwid, ox = (w - pw) / 2, oy = (h - oh) / 2;
     tctx.clearRect(0, 0, w, h); tctx.fillStyle = "#fff"; tctx.font = fs.toFixed(2) + 'px "Courier New", ui-monospace, monospace'; tctx.textBaseline = "top";
-    for (var i = 0; i < n; i++) { var l = rows[i]; if (/^\s*$/.test(l)) continue; tctx.fillText(l, ox, i * lh); }
+    for (var i = 0; i < n; i++) { var l = rows[i]; if (/^\s*$/.test(l)) continue; tctx.fillText(l, ox, oy + i * lh); }
     mctx.clearRect(0, 0, w, h);
   }
   function dab(x, y, rad, a) {
@@ -55,7 +56,7 @@
     if (ready) return; if (!build()) return setTimeout(start, 400); ready = true;
     addEventListener("pointermove", function (e) { if (e.pointerType === "touch") return; mx = e.clientX; my = e.clientY; inside = true; kick(); }, { passive: true });
     document.addEventListener("pointerleave", function () { inside = false; });
-    addEventListener("resize", function () { if (box) size(); });
+    addEventListener("resize", function () { if (box) { cw = 0; size(); } });
   }
   if (document.readyState === "complete") setTimeout(start, 300); else addEventListener("load", function () { setTimeout(start, 300); });
 })();
