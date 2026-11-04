@@ -7,7 +7,7 @@
   var intro = document.getElementById("intro"), row = document.getElementById("intro-row");
   if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
-  var C = window.__introCfg || { min: 3000, lstag: 85, lrise: 1000, lstr: 22, ldecay: 2400, hold: 150, wdur: 2000, wstag: 200, rdur: 1700, rn: 9, rsz: 26, rov: 70, tdur: 2800, tstart: 1600, trise: 90, udel: 500 }; /* tuned from the Shift+I panel */
+  var C = window.__introCfg || { min: 3000, lstag: 85, lrise: 1000, lstr: 22, ldecay: 2400, hold: 150, wdur: 2000, wstag: 200, rdur: 1700, rn: 9, rsz: 26, rgap: 1000, tdur: 2800, tstart: 1600, trise: 90, udel: 500 }; /* tuned from the Shift+I panel */
   function $(s, r) { return (r || document).querySelector(s); }
   function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
   function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
@@ -76,19 +76,17 @@
   }
   function row_start() {
     var list = items(), rw = $(".rw", row);
-    if (!list.length || reduce) return reveal();
+    if (!list.length || reduce) return setTimeout(reveal, reduce ? 0 : C.rgap);
     var cw = Math.max(120, W * C.rsz / 100), ch = cw * .75, n = C.rn;
     rw.style.marginTop = (-ch / 2) + "px";
     for (var i = 0; i < n; i++) { var d = document.createElement("div"); d.style.cssText = "width:" + cw + "px;height:" + ch + "px;background-image:url(" + list[i % list.length].image.src + ")"; rw.appendChild(d); }
     row.style.display = "block";
     var total = n * (cw + 16), x0 = W + 40, x1 = -total - 40, D = C.rdur, s0 = performance.now();
-    var shown = false;
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), x = x0 + (x1 - x0) * ease(k);
       rw.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
-      if (!shown && k >= C.rov / 100) { shown = true; reveal(); } /* the ribbon starts coming in while the row is still leaving */
       if (k < 1) return requestAnimationFrame(step);
-      row.style.display = "none"; if (!shown) reveal();
+      row.style.display = "none"; setTimeout(reveal, C.rgap); /* a beat of black after the row has sunk off the left */
     })(performance.now());
   }
 

@@ -1,7 +1,7 @@
 /* Control panel for the loading / entrance animation. Hidden by default: Shift+I (or #intro-panel in the address) shows it.
    Values are saved in this browser and read by intro.js the next time the page loads; "Replay" reloads the page to show the sequence again. */
 (function () {
-  var KEY = "intro-cfg-v3";
+  var KEY = "intro-cfg-v4";
   var ROWS = [
     ["#", "Loading screen"],
     ["min", "Minimum show time", 1000, 8000, 100, "ms", "The loading screen never finishes faster than this, even if the page is ready."],
@@ -16,7 +16,7 @@
     ["#", "Portfolio row"],
     ["rdur", "Row duration", 800, 6000, 100, "ms", "Time the row takes to cross from the right to the left."],
     ["rn", "Cards in the row", 3, 14, 1, "", "Number of portfolio cards in the row."],
-    ["rov", "Start overlap", 30, 100, 1, "%", "How far through the row the Twister starts coming in: lower starts it earlier, 100 waits for the row to finish."],
+    ["rgap", "Pause before Twister", 0, 3000, 50, "ms", "Black pause after the row has sunk off the left, before the Twister starts rising."],
     ["rsz", "Card size", 15, 45, 1, "% w", "Width of each card as a share of the screen width."],
     ["#", "Twister entrance"],
     ["tdur", "Entrance duration", 600, 5000, 100, "ms", "How long the ribbon takes to rise and untwist: higher is slower."],
@@ -25,7 +25,7 @@
     ["#", "Navbar and menu"],
     ["udel", "Appear delay", 0, 3000, 50, "ms", "Wait after the ribbon starts moving before the navbar and menu fade in."]
   ];
-  var DEF = { min: 3000, lstag: 85, lrise: 1000, lstr: 22, ldecay: 2400, hold: 150, wdur: 2000, wstag: 200, rdur: 1700, rn: 9, rsz: 26, rov: 70, tdur: 2800, tstart: 1600, trise: 90, udel: 500 };
+  var DEF = { min: 3000, lstag: 85, lrise: 1000, lstr: 22, ldecay: 2400, hold: 150, wdur: 2000, wstag: 200, rdur: 1700, rn: 9, rsz: 26, rgap: 1000, tdur: 2800, tstart: 1600, trise: 90, udel: 500 };
   var cfg = Object.assign({}, DEF);
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
   window.__introCfg = cfg;
