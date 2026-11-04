@@ -12,7 +12,7 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 140, softness: 1, brightness: 0.03, trail: 0.66, blur: 0.6, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, pq: 2, cfa: 40, cdx: 6.5, cdy: 5, cdz: 16, cscl: 90, clift: 9, clz: 0, cspr: 60, cstep: 22, twr: 40, twp: 90, twsc: 100, twg: 101, twn: 14, cbl: 0, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 34, gbl: 7, ggap: 16, gstag: 0, gpar: 20 };
+  var DEF = { radius: 140, softness: 1, brightness: 0.03, trail: 0.66, blur: 0.6, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, pq: 2, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
   var KEY = "liquid-cfg-v1";
   function load() {
     try {
