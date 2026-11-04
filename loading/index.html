@@ -14,7 +14,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
 
 #intro{position:fixed;inset:0;z-index:1;pointer-events:none;display:block;color:#0b0b0b}
 #intro{display:block}
-#intro svg.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+#intro canvas.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block;background:#ff2d20}
 #intro .in-ui{position:absolute;inset:0}
 #intro .in-pct,#intro .in-welcome,#intro .in-line{transition:opacity .7s ease}
 #intro.out .in-pct,#intro.out .in-welcome,#intro.out .in-line{opacity:0}
@@ -62,14 +62,14 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
 <button id="replay" type="button" aria-label="Replay the loading entrance">Replay (R)</button>
 <script>
 (function () {
-  var TEMPLATE = '<div id="intro" aria-hidden="true">\n<svg class="in-bg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><defs>\n<filter id="in-edge" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur id="in-edge-b" in="SourceGraphic" stdDeviation="22" result="b"/><feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 13 -5" result="g"/><feGaussianBlur in="g" stdDeviation="1.2"/></filter>\n<mask id="in-mask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="4000" height="3000"><rect x="-200" y="-200" width="4000" height="3000" fill="#fff"/><g id="in-holes"></g></mask>\n<filter id="in-liquid" x="-25%" y="-60%" width="150%" height="240%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>\n</defs><rect id="in-red" x="-200" y="-200" width="4000" height="3000" fill="#ff2d20" mask="url(#in-mask)"/></svg>\n<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Designer</span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>\n</div>\n';
+  var TEMPLATE = '<div id="intro" aria-hidden="true">\n<canvas class="in-bg" id="seep"></canvas><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>\n<filter id="in-liquid" x="-25%" y="-60%" width="150%" height="240%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>\n</defs></svg>\n<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Designer</span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>\n</div>\n';
   var CFG = {
     min: 2400,          /* shortest time the loading screen stays (ms) */
     line: 2,            /* loading line thickness (px) */
     letterDelay: 600, letterTime: 1100, letterStagger: 50,           /* SEHZADE letters rising (ms) */
     liquid: 10, liquidBurst: 10, liquidBurstTime: 3100,               /* ripple on the letters: steady, opening burst (px), how long the burst takes */
     exitTime: 1000, exitMelt: 80, exitStagger: 50,                   /* text leaving: time (ms), liquid melt (px), letter stagger (ms) */
-    wipeTime: 3300, wipeStagger: 130, wipeSoft: 50, wipeWobble: 300  /* red to black: blob grow time (ms), start spacing (%), goo softness (px), edge wobble */
+    seepTime: 4200, seepSoft: 22, seepLag: 18, seepScale: 22, seepFlow: 100, seepBias: 35, seepRim: 40, seepGrain: 3  /* red seeps into black: time (ms), edge softness (%), depth layer spread (%), pattern detail, flow (%), from-bottom bias (%), hot edge glow (%), grain (%) */
   };
   window.__run = 0;
   function play() {
@@ -77,8 +77,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
   var stage = document.getElementById("stage"); stage.innerHTML = TEMPLATE; var RUN = ++window.__run;
   var intro = document.getElementById("intro"), big = intro.querySelector(".in-big"), pct = intro.querySelector(".in-pct"),
       bar = intro.querySelector(".in-line i"), line = intro.querySelector(".in-line"), liqO = document.getElementById("in-liq-o"),
-      liqD = document.getElementById("in-liq-d"), edgeB = document.getElementById("in-edge-b"), holes = document.getElementById("in-holes"),
-      red = document.getElementById("in-red");
+      liqD = document.getElementById("in-liq-d"), cv = document.getElementById("seep");
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
   function setA(el, k, v) { if (el) el.setAttribute(k, v); }
 
@@ -89,7 +88,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     var w = big.getBoundingClientRect().width;
     if (w > 0) big.style.fontSize = (100 * (innerWidth - 2 * m) / w).toFixed(2) + "px";
   }
-  line.style.height = CFG.line + "px"; setA(edgeB, "stdDeviation", CFG.wipeSoft);
+  line.style.height = CFG.line + "px";
   "SEHZADE".split("").forEach(function (c, i) {
     var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp);
     sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
@@ -124,33 +123,66 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
   }
   requestAnimationFrame(frame);
 
-  /* red -> black: the text melts away while black blobs well up from the bottom and merge (gooey mask) */
+  /* red -> black: the red is soaked up by the black underneath, like ink sinking into paper. Three layers of red (bright surface, deep
+     red, smoky ember) sit at different depths; each is eaten by its own slowly drifting noise field, so patches go at different times
+     and the deeper layers linger below the surface. Drawn with a small WebGL shader. */
+  var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
+  var FS = "precision highp float;uniform vec2 res;uniform float time,front,soft,lag,scale,flow,bias,rim,grain;" +
+    "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}" +
+    "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*f*(f*(f*6.-15.)+10.);float a=hash(i),b=hash(i+vec2(1.,0.)),c=hash(i+vec2(0.,1.)),d=hash(i+vec2(1.,1.));return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}" +
+    "float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,-.6,.6,.8);for(int i=0;i<4;i++){v+=a*noise(p);p=r*p*2.03+11.7;a*=.48;}return v;}" +
+    "void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=vec2(uv.x*res.x/res.y,uv.y)*scale;float tm=time*flow*.05;" +
+    "vec2 q=vec2(fbm(p+vec2(0.,tm)),fbm(p+vec2(5.2,1.3)-vec2(tm,0.)));float n1=fbm(p+1.8*q);" +
+    "vec2 q2=vec2(fbm(p*.7+vec2(8.3,2.8)+tm*.6),fbm(p*.7+vec2(1.7,9.2)-tm*.5));float n2=fbm(p*.7+2.2*q2+3.1);" +
+    "n1=smoothstep(.0,1.,clamp((n1-.3)/.4,0.,1.));n2=smoothstep(.0,1.,clamp((n2-.3)/.4,0.,1.));" +
+    "float fA=mix(n1,uv.y,bias),fB=mix(mix(n1,n2,.6),uv.y,bias),fC=mix(n2,uv.y,bias*.8);" +
+    "float sA=soft,sB=soft*1.6,sC=soft*2.4,lB=lag,lC=lag*2.;" +
+    "float aA=smoothstep(front-sA,front+sA,fA),aB=smoothstep(front-lB-sB,front-lB+sB,fB),aC=smoothstep(front-lC-sC,front-lC+sC,fC);" +
+    "vec3 col=vec3(.043);col=mix(col,vec3(.2,.035,.03),aC);col=mix(col,vec3(.55,.09,.06),aB);col=mix(col,vec3(1.,.176,.125),aA);" +
+    "float edge=aA*(1.-aA)*4.;col=mix(col,vec3(1.,.42,.22),edge*rim);" +
+    "col+=(hash(gl_FragCoord.xy+fract(time)*97.)-.5)*grain;gl_FragColor=vec4(col,1.);}";
+  var gl = null, prog = null, U = {}, seepT = 0, seepNow = 0;
+  try {
+    gl = cv.getContext("webgl", { antialias: false, alpha: false });
+    if (gl) {
+      var mk = function (t, src) { var sh = gl.createShader(t); gl.shaderSource(sh, src); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; };
+      prog = gl.createProgram(); gl.attachShader(prog, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
+      var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      var loc = gl.getAttribLocation(prog, "a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      ["res", "time", "front", "soft", "lag", "scale", "flow", "bias", "rim", "grain"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+    }
+  } catch (err) { gl = null; }
+  function draw() {
+    if (!gl) { cv.style.opacity = String(1 - seepT); return; }
+    var soft = CFG.seepSoft / 100, lag = CFG.seepLag / 100, sC = soft * 2.4, lC = lag * 2;
+    var f0 = Math.min(-soft, lC - sC, lag - soft * 1.6) - .02, f1 = 1 + Math.max(soft, lag + soft * 1.6, lC + sC) + .02;
+    gl.uniform2f(U.res, cv.width, cv.height); gl.uniform1f(U.time, seepNow / 1000); gl.uniform1f(U.front, f0 + (f1 - f0) * seepT);
+    gl.uniform1f(U.soft, soft); gl.uniform1f(U.lag, lag); gl.uniform1f(U.scale, CFG.seepScale / 10); gl.uniform1f(U.flow, CFG.seepFlow / 100);
+    gl.uniform1f(U.bias, CFG.seepBias / 100); gl.uniform1f(U.rim, CFG.seepRim / 100); gl.uniform1f(U.grain, CFG.seepGrain / 100);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  function sizeCv() { cv.width = Math.max(2, Math.round(innerWidth * .5)); cv.height = Math.max(2, Math.round(innerHeight * .5)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
+  sizeCv(); window.__size = sizeCv;
+
   function wipe() {
-    holes.setAttribute("filter", "url(#in-edge)"); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
+    wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
     [].forEach.call(big.children, function (sp, i) {
       sp.animate([{ transform: "translateY(0)", opacity: 1, filter: "blur(0px)" }, { transform: "translateY(60%)", opacity: 0, filter: "blur(6px)" }],
         { duration: reduce ? 1 : CFG.exitTime, delay: reduce ? 0 : i * CFG.exitStagger, easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards" });
     });
-    var NS = "http://www.w3.org/2000/svg", R = Math.hypot(W, H), els = [], pts = [], N = 8, i, st = CFG.wipeStagger / 100;
-    for (i = 0; i < N; i++) pts.push([W * (i + .5) / N + (i % 2 ? 1 : -1) * W * .02, H * (1.02 + (i % 3) * .03), 1.0 + (i % 3) * .12, (80 + Math.abs(i - N / 2 + .5) * 150 + (i % 2) * 90) * st]);
-    pts.push([W * .3, H * .45, .85, 1100 * st], [W * .75, H * .35, .9, 1400 * st]);
-    pts.forEach(function (q) { var e = document.createElementNS(NS, "ellipse"); e.setAttribute("fill", "#000"); e.setAttribute("cx", q[0]); e.setAttribute("cy", q[1]); e.setAttribute("rx", 0); e.setAttribute("ry", 0); holes.appendChild(e); els.push(e); });
-    var D = reduce ? 400 : CFG.wipeTime, s0 = performance.now(), wob = CFG.wipeWobble / 1000;
-    function sm(t) { return .5 - .5 * Math.cos(Math.PI * t); }
+    var D = reduce ? 400 : CFG.seepTime, s0 = performance.now();
     (function step(now) {
-      var t = now - s0, all = true;
-      els.forEach(function (e, i) {
-        var k = Math.max(0, Math.min(1, (t - pts[i][3]) / D)), r = sm(sm(k) * .35 + k * .65) * R * pts[i][2] * .62, tw = (t - pts[i][3]) / 1000;
-        e.setAttribute("rx", (r * (1 + wob * Math.sin(tw * 1.6 + i * 1.7))).toFixed(1)); e.setAttribute("ry", (r * 1.05 * (1 + wob * Math.sin(tw * 1.2 + i * 2.3 + 1))).toFixed(1)); if (k < 1) all = false;
-      });
-      liquid(now);
-      if (RUN !== window.__run) return; if (!all) return requestAnimationFrame(step);
-      wipeActive = false; red.setAttribute("display", "none"); intro.style.display = "none";
+      if (RUN !== window.__run) return;
+      var k = Math.min(1, (now - s0) / D);
+      seepT = .5 - .5 * Math.cos(Math.PI * k); /* sine in-out: slow start, steady soak, soft tail */
+      seepNow = now - s0; draw(); liquid(now);
+      if (k < 1) return requestAnimationFrame(step);
+      wipeActive = false; cv.style.display = "none"; intro.style.display = "none";
       document.getElementById("replay").classList.add("on");
     })(performance.now());
   }
   }
-  addEventListener("resize", function () { if (window.__fit) window.__fit(); });
+  addEventListener("resize", function () { if (window.__fit) window.__fit(); if (window.__size) window.__size(); });
   document.getElementById("replay").addEventListener("click", play);
   addEventListener("keydown", function (e) { if (e.key === "r" || e.key === "R") play(); });
   /* ---------- control panel ---------- */
@@ -172,11 +204,15 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     ["exitTime", "Exit time", 200, 3000, 50, "ms", "How long the text takes to disappear once loading is done."],
     ["exitMelt", "Liquid melt", 0, 200, 5, "px", "How strongly the letters warp and melt while they go."],
     ["exitStagger", "Exit stagger", 0, 200, 5, "ms", "Delay between one letter and the next while they leave."],
-    ["#", "Red to black"],
-    ["wipeTime", "Blob grow time", 800, 8000, 100, "ms", "How long each black blob takes to grow. Higher is slower and smoother."],
-    ["wipeStagger", "Blob stagger", 0, 250, 5, "%", "Spacing between blobs starting. 0 all at once, 100 default, higher is a longer rolling wipe."],
-    ["wipeSoft", "Goo softness", 4, 80, 1, "px", "How much the blobs melt into each other. Higher is gooier, lower is sharper."],
-    ["wipeWobble", "Edge wobble", 0, 600, 5, "", "How much each blob breathes, which keeps the edge flowing."]
+    ["#", "Red seeps into black"],
+    ["seepTime", "Absorb time", 1500, 10000, 100, "ms", "How long the red takes to be soaked up completely. Higher is slower and calmer."],
+    ["seepSoft", "Edge softness", 3, 50, 1, "%", "How wide and blurry the front between red and black is. Low is a sharper stain, high is a diffuse fade."],
+    ["seepLag", "Depth layers spread", 0, 60, 1, "%", "How far the deeper layers of red (dark red, then smoky ember) trail behind the surface. 0 is a single flat layer."],
+    ["seepScale", "Patch detail", 5, 60, 1, "", "Size of the patches the red breaks into. Low is a few big areas, high is many fine ones."],
+    ["seepFlow", "Flow", 0, 300, 5, "%", "How fast the patches drift while they dissolve. 0 keeps them still."],
+    ["seepBias", "Direction", 0, 100, 1, "%", "0 soaks in at random places, 100 soaks in from the bottom of the screen upward."],
+    ["seepRim", "Hot edge glow", 0, 100, 1, "%", "Warm glow along the edge of the red as it is absorbed."],
+    ["seepGrain", "Grain", 0, 10, 1, "%", "Fine film grain that keeps the gradients from banding."]
   ];
   var ui = document.getElementById("panel"), list = document.getElementById("panel-list"), inputs = {}, pend = 0;
   function replayLater() { clearTimeout(pend); pend = setTimeout(play, 350); }
