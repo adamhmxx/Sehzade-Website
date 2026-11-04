@@ -206,7 +206,7 @@
       ["iwdur", "Red to black: blob grow time", 800, 8000, 100, "ms"],
       ["iwst", "Red to black: blob stagger", 0, 250, 5, "%"],
       ["iwsoft", "Red to black: goo softness", 4, 50, 1, "px"],
-      ["iwedge", "Red to black: edge wobble", 0, 300, 5, "px"],
+      ["iwedge", "Red to black: edge wobble", 0, 300, 5, ""],
       ["ircard", "Portfolio row: card size", 12, 50, 1, "% of width"],
       ["irgap", "Portfolio row: gap", 0, 80, 1, "px"],
       ["irn", "Portfolio row: cards", 3, 14, 1, ""],

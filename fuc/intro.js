@@ -20,7 +20,7 @@
   var big = $(".in-big", intro), pct = $(".in-pct", intro), bar = $(".in-line i", intro),
       edgeD = $("#in-edge-d"), edgeB = $("#in-edge-b"), line = $(".in-line", intro), liqO = $("#in-liq-o"), liqD = $("#in-liq-d"), edgeO = $("#in-edge-o"), holes = $("#in-holes"), red = $("#in-red");
   line.style.height = cfg("iline") + "px";
-  setA(edgeB, "stdDeviation", cfg("iwsoft")); setA(edgeD, "scale", cfg("iwedge"));
+  setA(edgeB, "stdDeviation", cfg("iwsoft"));
   "SEHZADE".split("").forEach(function (c, i) {
     var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp);
     sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
@@ -71,7 +71,7 @@
 
   /* ---- red -> black: the red sinks as black liquid wells up from the bottom and the blobs melt into each other (gooey mask) ---- */
   function wipe() {
-    clearInterval(poll); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
+    clearInterval(poll); holes.setAttribute("filter", "url(#in-edge)"); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
     [].forEach.call(big.children, function (sp, i) {
       sp.animate([{ transform: "translateY(0)", opacity: 1, filter: "blur(0px)" }, { transform: "translateY(60%)", opacity: 0, filter: "blur(6px)" }],
         { duration: reduce ? 1 : cfg("ioutd"), delay: reduce ? 0 : i * cfg("ioutst"), easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards" });
@@ -87,9 +87,10 @@
       var t = now - s0, all = true;
       els.forEach(function (e, i) {
         var k = Math.max(0, Math.min(1, (t - pts[i][3]) / D)), r = sm(sm(k) * .35 + k * .65) * R * pts[i][2] * .62;
-        e.setAttribute("rx", r.toFixed(1)); e.setAttribute("ry", (r * 1.05).toFixed(1)); if (k < 1) all = false;
+        /* each blob breathes a little, so the melting edge keeps flowing without any costly noise filter */
+        var wob = cfg("iwedge") / 1000, tw = (t - pts[i][3]) / 1000;
+        e.setAttribute("rx", (r * (1 + wob * Math.sin(tw * 1.6 + i * 1.7))).toFixed(1)); e.setAttribute("ry", (r * 1.05 * (1 + wob * Math.sin(tw * 1.2 + i * 2.3 + 1))).toFixed(1)); if (k < 1) all = false;
       });
-      setA(edgeO, "dx", (Math.sin(t / 1100) * 80).toFixed(1)); setA(edgeO, "dy", (t / 14 % 600).toFixed(1));
       liquid(now);
       /* the portfolio row starts while the last of the red is still draining, so there is no dead pause */
       if (!rowGo && t > END * cfg("irgo") / 100) { rowGo = true; row_start(); }
