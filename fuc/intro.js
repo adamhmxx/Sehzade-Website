@@ -7,7 +7,7 @@
 (function () {
   var DEF = { imin: 2400, iline: 2, ildl: 600, iltr: 1300, ilst: 60, iliq: 8, iliqp: 20, iliqd: 3100, ioutd: 800, ioutl: 200,
     iseept: 3200, iseeps: 18, iseepl: 20, iseepd: 60, iseepf: 130, iseepb: 30, iseepr: 30, iseepg: 4,
-    ircard: 26, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itdelay: 2000, itdur: 3600, itdist: 100, itstart: 1200, itui: 2200 };
+    ircard: 26, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itdelay: 1000, itdur: 3600, itdist: 100, itstart: 1200, itui: 2200 };
   window.__introDef = DEF;
   var CFG = {};
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
