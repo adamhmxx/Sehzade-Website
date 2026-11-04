@@ -140,8 +140,8 @@
           if (multi) {
             /* a card made of slices (Twister): an SVG filter would cut and soften every slice edge and open seams, so the liquid is a travelling wave:
                each slice is nudged vertically by a smooth sine, driven by the cursor (transform only, no filter, no seams) */
-            var kids = el.children, ph = now * .004 + (-dx) * .012, A = st.d * .3;
-            for (var wi = 0; wi < kids.length; wi++) kids[wi].style.translate = "0 " + (A * (.7 * Math.sin(wi * .14 + ph) + .3 * Math.sin(wi * .31 - ph * 1.4))).toFixed(2) + "px";
+            var kids = el.children, ph = now * .004 + (-dx) * .012, A = st.d * .25;
+            for (var wi = 0; wi < kids.length; wi++) kids[wi].style.translate = "0 " + (A * (.7 * Math.sin(wi * .09 + ph) + .3 * Math.sin(wi * .17 - ph * 1.4))).toFixed(2) + "px";
             continue;
           }
           if (!st.warp) st.warp = makeWarp(el, b);
