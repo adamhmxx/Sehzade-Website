@@ -12,17 +12,14 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, distort: 9, reach: 200, on: 1,
-              ldur: 1000, ldist: 10, lblur: 2, lstag: 148, pliq: 60, pq: 1,
-              cfa: 45, cdx: 8, cdy: 10, cdz: 8, cscl: 78, clift: 11, clz: 40, cspr: 90, cstep: 22,
-              twr: 34, twp: 100, twsc: 90, twg: 100, twn: 20,
-              fstep: 100, fnear: 560, fbl: 14, fsc: 62, fx: 44, fy: 42, grad: 34, gbl: 7, ggap: 16, gstag: 0, gpar: 10 };
+  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.66, blur: 0.6, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 100, pq: 2, cfa: 47, cdx: 7, cdy: 5.5, cdz: 16, cscl: 90, clift: 9, clz: 0, cspr: 60, cstep: 22, twr: 40, twp: 100, twsc: 100, twg: 100, twn: 40, fstep: 100, fnear: 560, fbl: 14, fsc: 62, fx: 44, fy: 42, grad: 34, gbl: 7, ggap: 16, gstag: 0, gpar: 20 };
   var KEY = "liquid-cfg-v1";
   function load() {
     try {
       var sv = JSON.parse(localStorage.getItem(KEY) || "{}");
       /* link hover defaults were retuned (slower, softer): drop link values saved by older versions once */
-      if (sv.lv !== 4) { delete sv.ldur; delete sv.ldist; delete sv.lblur; delete sv.lstag; sv.lv = 4; }
+      /* defaults were retuned: drop values saved by older versions once */
+      if (sv.lv !== 5) sv = { on: sv.on, lv: 5 };
       return Object.assign({}, DEF, sv);
     }
     catch (e) { return Object.assign({}, DEF); }
