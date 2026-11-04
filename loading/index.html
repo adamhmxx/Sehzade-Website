@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Loading entrance (red to black)</title>
+<link rel="preload" href="../fuc/assets/anton-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>@font-face{font-family:"Anton";font-style:normal;font-weight:400;font-display:swap;src:url(../fuc/assets/anton-latin.woff2) format("woff2")}
+html,body{margin:0;height:100%;background:#0b0b0b}
+#hint{position:fixed;right:16px;bottom:12px;z-index:20;font:400 12px/1 "Anton",Impact,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#f2f2f2;opacity:0;transition:opacity .8s ease}
+#hint.on{opacity:.5}</style>
+<style id="intro-css">
+
+#intro{position:fixed;inset:0;z-index:10;pointer-events:none;display:block;color:#0b0b0b}
+#intro{display:block}
+#intro svg.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+#intro .in-ui{position:absolute;inset:0}
+#intro .in-pct,#intro .in-welcome,#intro .in-line{transition:opacity .7s ease}
+#intro.out .in-pct,#intro.out .in-welcome,#intro.out .in-line{opacity:0}
+#intro .in-line{position:absolute;left:0;right:0;top:50%;height:2px}
+#intro .in-line i{position:absolute;left:0;top:0;bottom:0;width:100%;background:#0b0b0b;transform-origin:0 50%;transform:scaleX(0)}
+#intro .in-pct,#intro .in-welcome{position:absolute;top:50%;margin-top:-34px;font:400 16px/1 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;font-variant-numeric:tabular-nums}
+#intro .in-pct{left:32px}
+#intro .in-welcome{right:32px}
+#intro .in-big{padding-bottom:.07em;position:absolute;left:24px;bottom:3vw;font:400 20vw/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;filter:url(#in-liquid);will-change:filter}
+#intro .in-big span{display:inline-block;transform:translateY(105%);opacity:0}
+@media (max-width:809.98px){#intro .in-pct{left:16px}#intro .in-welcome{right:16px}#intro .in-big{left:12px;font-size:23vw;bottom:5vw}}
+</style>
+</head>
+<body>
+<div id="intro" aria-hidden="true">
+<svg class="in-bg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><defs>
+<filter id="in-edge" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur id="in-edge-b" in="SourceGraphic" stdDeviation="22" result="b"/><feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 13 -5" result="g"/><feGaussianBlur in="g" stdDeviation="1.2"/></filter>
+<mask id="in-mask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="4000" height="3000"><rect x="-200" y="-200" width="4000" height="3000" fill="#fff"/><g id="in-holes"></g></mask>
+<filter id="in-liquid" x="-25%" y="-60%" width="150%" height="240%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>
+</defs><rect id="in-red" x="-200" y="-200" width="4000" height="3000" fill="#ff2d20" mask="url(#in-mask)"/></svg>
+<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Designer</span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>
+</div>
+<div id="hint">Press R to replay</div>
+<script src="loading.js"></script>
+</body>
+</html>

@@ -18,3 +18,7 @@ Run:  python3 server.py   ->  http://localhost:8000
 - linkfx.js   one hover effect for every text link, tab and button: letters slide in from both edges with a motion blur.
 - cms.js + cms.html   the CMS as its own page (Shift+C on the site, or open cms.html): projects, About text, links, JSON export/import. Saved in the browser's localStorage.
 - about-card.js   the About card: draggable paper sheet that bends while it moves (strip copy of the page), grid overlay (Shift+G)
+
+## Loading entrance, stand-alone (loading/)
+- loading/index.html + loading/loading.js   the loading entrance on its own, from the red screen until the background is plain black (fires `loading-done`). All numbers are in one `CFG` block at the top of loading.js. Press R to replay, or open it with `#loop` to repeat. Open it through `python3 server.py` -> http://localhost:8000/loading/
+- The same sequence inside the site still lives in fuc/intro.js (it continues with the portfolio row and the Twister); port changes back there when the loading is final.
