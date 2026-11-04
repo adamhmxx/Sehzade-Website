@@ -23,8 +23,17 @@
     if (w === cw && h === ch) return; cw = w; ch = h;
     cv.width = txt.width = mk.width = w; cv.height = txt.height = mk.height = h;
     /* only the drawn part of the portrait counts: its bounding box is scaled to the full height of the screen and set flush with the bottom edge, centred sideways */
-    var n = rows.length, r0 = n, r1 = -1, c0 = 1e9, c1 = -1;
-    rows.forEach(function (l, i) { var a = l.search(/\S/); if (a < 0) return; r0 = Math.min(r0, i); r1 = Math.max(r1, i); c0 = Math.min(c0, a); c1 = Math.max(c1, l.replace(/\s+$/, "").length); });
+    /* the art holds two separate figures (a blank band between them): only the densest one is used, so there is exactly one object */
+    var n = rows.length, r0 = n, r1 = -1, c0 = 1e9, c1 = -1, best = -1, cur = null, groups = [];
+    rows.forEach(function (l, i) {
+      var k = l.replace(/\s/g, "").length;
+      if (!k) { if (cur && i - cur.last > 2) { groups.push(cur); cur = null; } return; }
+      if (cur && i - cur.last > 2) { groups.push(cur); cur = null; }
+      if (!cur) cur = { a: i, last: i, ink: 0 }; cur.last = i; cur.ink += k;
+    });
+    if (cur) groups.push(cur);
+    groups.forEach(function (g) { if (g.ink > best) { best = g.ink; r0 = g.a; r1 = g.last; } });
+    for (var ri = r0; ri <= r1 && r1 >= 0; ri++) { var l2 = rows[ri], a2 = l2.search(/\S/); if (a2 < 0) continue; c0 = Math.min(c0, a2); c1 = Math.max(c1, l2.replace(/\s+$/, "").length); }
     if (r1 < 0) return;
     var lh = h / (r1 - r0 + 1), fs = lh * 1.02, cwid = fs * .6, ox = (w - (c1 - c0) * cwid) / 2 - c0 * cwid, oy = -r0 * lh;
     tctx.clearRect(0, 0, w, h); tctx.fillStyle = "#fff"; tctx.font = fs.toFixed(2) + 'px "Courier New", ui-monospace, monospace'; tctx.textBaseline = "top";
