@@ -19,7 +19,7 @@
       var sv = JSON.parse(localStorage.getItem(KEY) || "{}");
       /* link hover defaults were retuned (slower, softer): drop link values saved by older versions once */
       /* defaults were retuned: drop values saved by older versions once */
-      if (sv.lv !== 9) sv = { on: sv.on, lv: 9 };
+      if (sv.lv !== 9) sv = sv.on === undefined ? { lv: 9 } : { on: sv.on, lv: 9 };
       return Object.assign({}, DEF, sv);
     }
     catch (e) { return Object.assign({}, DEF); }
@@ -79,7 +79,7 @@
   function scan(now) {
     if (now - lastScan < 600) return;
     lastScan = now;
-    var list = [].slice.call(document.querySelectorAll(SEL)).filter(function (e) { return !(e.matches && e.matches('nav a[href="/"], nav a[href="./"], nav a[href="/"] *, nav a[href="./"] *')); });
+    var list = [].slice.call(document.querySelectorAll(SEL));
     if (!ABOUT) {
       [].forEach.call(document.querySelectorAll("div"), function (d) {
         var st = d.style;
