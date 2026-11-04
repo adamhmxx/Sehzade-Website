@@ -148,16 +148,10 @@
         var fl = "";
         if (warp) {
           if (multi) {
-            /* a card made of slices: vertical-only ripples, with the noise continuing from slice to slice so there are no seams */
-            st.wl = st.wl || []; var kids = el.children, sw = kids[0].offsetWidth || 12;
-            if (st.ox === undefined) { st.ox = -dx * .35; st.oy = -dy * .35; }
-            st.ox += (-dx * .35 - st.ox) * .12; st.oy += (-dy * .35 - st.oy) * .12;
-            for (var wi = 0; wi < kids.length; wi++) {
-              var w1 = st.wl[wi] || (st.wl[wi] = makeWarp(el, b, true));
-              w1.map.setAttribute("scale", (st.d * .6).toFixed(2));
-              w1.off.setAttribute("dx", (st.ox - wi * sw).toFixed(1)); w1.off.setAttribute("dy", st.oy.toFixed(1));
-              kids[wi].style.filter = "url(#" + w1.id + ")" + (st.b > .03 ? " blur(" + (st.b * .5).toFixed(2) + "px)" : "");
-            }
+            /* a card made of slices (Twister): an SVG filter would cut and soften every slice edge and open seams, so the liquid is a travelling wave:
+               each slice is nudged vertically by a smooth sine, driven by the cursor (transform only, no filter, no seams) */
+            var kids = el.children, ph = now * .004 + (-dx) * .012, A = st.d * .3;
+            for (var wi = 0; wi < kids.length; wi++) kids[wi].style.translate = "0 " + (A * (.7 * Math.sin(wi * .14 + ph) + .3 * Math.sin(wi * .31 - ph * 1.4))).toFixed(2) + "px";
             continue;
           }
           if (!st.warp) st.warp = makeWarp(el, b);
@@ -170,8 +164,8 @@
           fl = "url(#" + st.warp.id + ") ";
         }
         if (st.b > .03) fl += "blur(" + st.b.toFixed(2) + "px)";
-        if (multi) { if (!warp) for (var ci = 0; ci < el.children.length; ci++) el.children[ci].style.filter = fl; } else tgt.style.filter = fl;
-      } else if (st.set) { if (multi) { for (var cj = 0; cj < el.children.length; cj++) el.children[cj].style.filter = ""; } else tgt.style.filter = ""; st.set = 0; }
+        if (!multi) tgt.style.filter = fl;
+      } else if (st.set) { if (multi) { for (var cj = 0; cj < el.children.length; cj++) { el.children[cj].style.filter = ""; el.children[cj].style.translate = ""; } } else tgt.style.filter = ""; st.set = 0; }
     }
     idle = active || inside ? 0 : idle + 1;
     if (inside || active || idle < 40) requestAnimationFrame(step); else run = false;
