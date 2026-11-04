@@ -55,6 +55,11 @@
   var cur = null;
   /* the logo (first link of the navbar) has no hover effect */
   function isLogo(el) { return !!(el.matches && el.matches('nav a[href="/"], nav a[href="./"]')); }
+  /* clicking the logo goes nowhere: the router must not see the click either (capture phase) */
+  if (!document.getElementById("about-overrides")) {
+    document.addEventListener("click", function (e) { var l = e.target.closest && e.target.closest('nav a[href="/"], nav a[href="./"]'); if (l) { e.preventDefault(); e.stopPropagation(); } }, true);
+    var lcss = document.createElement("style"); lcss.textContent = 'nav a[href="/"],nav a[href="./"]{cursor:default!important}'; document.head.appendChild(lcss);
+  }
   document.addEventListener("mouseover", function (e) {
     var el = e.target.closest && e.target.closest(SEL);
     if (!el || el === cur || isLogo(el)) return;
