@@ -1,7 +1,7 @@
 /* Control panel for the loading / entrance animation. Hidden by default: Shift+I (or #intro-panel in the address) shows it.
    Values are saved in this browser and read by intro.js the next time the page loads; "Replay" reloads the page to show the sequence again. */
 (function () {
-  var KEY = "intro-cfg-v1";
+  var KEY = "intro-cfg-v2";
   var ROWS = [
     ["#", "Loading screen"],
     ["min", "Minimum show time", 1000, 8000, 100, "ms", "The loading screen never finishes faster than this, even if the page is ready."],
@@ -16,15 +16,16 @@
     ["#", "Portfolio row"],
     ["rdur", "Row duration", 800, 6000, 100, "ms", "Time the row takes to cross from the right to the left."],
     ["rn", "Cards in the row", 3, 14, 1, "", "Number of portfolio cards in the row."],
+    ["rov", "Start overlap", 30, 100, 1, "%", "How far through the row the Twister starts coming in: lower starts it earlier, 100 waits for the row to finish."],
     ["rsz", "Card size", 15, 45, 1, "% w", "Width of each card as a share of the screen width."],
-    ["#", "Twister rise"],
-    ["tdur", "Rise duration", 800, 4000, 100, "ms", "How long the ribbon takes to rise and untwist."],
+    ["#", "Twister entrance"],
+    ["tdur", "Entrance duration", 600, 4000, 100, "ms", "How long the ribbon takes to swing in and untwist."],
     ["tstart", "Twist amount", 400, 3000, 50, "", "How far the ribbon is wound when it starts: higher spins more."],
-    ["trise", "Rise from below", 0, 80, 1, "vh", "How far below its place the ribbon starts, in screen heights."],
+    ["tdrop", "Drop from above", 0, 120, 1, "vh", "How far above its place the ribbon starts, in screen heights. There is no fade: the cards just travel in."],
     ["#", "Navbar and menu"],
-    ["udel", "Appear delay", 0, 3000, 50, "ms", "Wait after the ribbon starts rising before the navbar and menu fade in."]
+    ["udel", "Appear delay", 0, 3000, 50, "ms", "Wait after the ribbon starts moving before the navbar and menu fade in."]
   ];
-  var DEF = { min: 3300, lstag: 85, lrise: 1100, lstr: 22, ldecay: 2600, hold: 350, wdur: 2700, wstag: 260, rdur: 2600, rn: 9, rsz: 26, tdur: 1900, tstart: 1600, trise: 38, udel: 1100 };
+  var DEF = { min: 3000, lstag: 85, lrise: 1000, lstr: 22, ldecay: 2400, hold: 150, wdur: 2000, wstag: 200, rdur: 1700, rn: 9, rsz: 26, rov: 70, tdur: 1700, tstart: 1600, tdrop: 90, udel: 500 };
   var cfg = Object.assign({}, DEF);
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
   window.__introCfg = cfg;
