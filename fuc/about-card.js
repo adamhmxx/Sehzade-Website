@@ -100,6 +100,7 @@
         a.push(l.children[i]); b.push(cc);
       }
     }
+    [].forEach.call(win.document.querySelectorAll(".abx"), function (n) { copy.appendChild(n.cloneNode(true)); });
     [].forEach.call(copy.querySelectorAll("script,nav"), function (n) { n.remove(); });
     [].forEach.call(copy.querySelectorAll('[style*="vh"],[style*="vw"]'), function (n) { n.setAttribute("style", vu(n.getAttribute("style"), win)); });
     [].forEach.call(copy.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
@@ -108,14 +109,11 @@
   }
   function makePage(tpl, k, avail, off) {
     var page = mk("div", "ab-page", "pointer-events:none;top:" + (-off) + "px;bottom:auto;height:" + H + "px");
-    var g = grip.cloneNode(true); g.removeAttribute("id"); [].forEach.call(g.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
-    g.style.cssText = "position:absolute;left:0;top:0;width:100%;box-sizing:border-box";
-    var host = mk("div", "", "position:absolute;left:0;top:" + GRIP + "px;width:" + FW + "px;height:" + avail / FK + "px;overflow:hidden;transform:scale(" + FK + ");transform-origin:0 0");
+    var host = mk("div", "", "position:absolute;left:0;top:0;width:" + FW + "px;height:" + H / FK + "px;overflow:hidden;transform:scale(" + FK + ");transform-origin:0 0");
     var sr = host.attachShadow({ mode: "open" }); sr.adoptedStyleSheets = [sharedSheet];
     var wrap = mk("div", "sb", "width:100%;height:100%;overflow:hidden;background:#ff2d20;position:relative");
     wrap.appendChild(tpl.cloneNode(true)); sr.appendChild(wrap);
-    var n = nameEl.cloneNode(true); n.style.cssText = "position:absolute;left:0;bottom:0;width:100%;box-sizing:border-box";
-    page.append(g, host, n);
+    page.append(host);
     return page;
   }
   /* a cheap fingerprint of what the live page shows; when it changes (content appears, text is edited) the copy is rebuilt */
@@ -234,10 +232,19 @@
   function run() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); } }
 
   /* the name at the bottom is scaled so it exactly fills the card width */
+  /* hands the page what it needs to draw its own copyright line and name: scale, sizes, texts */
+  function pushPage(k) {
+    k = k || FK || 1;
+    try {
+      var w = frame.contentWindow; if (!w || !w.__abxSet || !nameTxt) return;
+      w.__abxSet({ k: k, top: GRIP, avail: H - GRIP - nameEl.offsetHeight, fs: parseFloat(nameTxt.style.fontSize) || 100, copy: siteText("copyright", "\u00a9 Sehzade 2026"), name: cardName() });
+    } catch (e) {}
+  }
   function fitName() {
     var cs = getComputedStyle(nameEl), inner = nameEl.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     nameTxt.style.fontSize = "100px"; var w = nameTxt.offsetWidth;
     if (w > 0) nameTxt.style.fontSize = Math.floor(100 * inner / w * 100) / 100 + "px";
+    pushPage();
   }
   /* the About phone layout is designed for 390px, so it is scaled down on narrower cards */
   /* the page inside the card is laid out for a phone (390px wide). On narrower or shorter cards it is scaled down so that
@@ -250,6 +257,8 @@
         var y = e.offsetHeight; for (var n = e; n; n = n.offsetParent) y += n.offsetTop; /* layout position: unaffected by entrance animations */
         m = Math.max(m, y);
       });
+      /* the page is shifted below the copyright line; that shift is not content */
+      var ab = d.querySelector('[data-framer-name="About"]'); if (ab && m) m -= parseFloat(ab.style.top) || 0;
       return m ? m + 16 : 0;
     } catch (e) { return 0; }
   }
@@ -261,14 +270,15 @@
     else if (!needBusy) {
       /* measure the content at the plain phone geometry first (two frames, so the page has really been resized), then fit */
       needBusy = true;
-      frame.style.cssText = base < 1 ? "flex:none;width:390px;height:" + avail / base + "px;transform:scale(" + base + ");transform-origin:0 0" : "";
+      frame.style.cssText = base < 1 ? "flex:none;width:390px;height:" + H / base + "px;transform:scale(" + base + ");transform-origin:0 0" : "";
       requestAnimationFrame(function () { requestAnimationFrame(function () {
         needBusy = false; var v = needH(); if (!v) { setTimeout(layout, 800); return; }
         needVal = v; needKey = key; layout();
       }); });
     }
     var fw = W / k, sig_ = k.toFixed(3) + ":" + fw.toFixed(1);
-    frame.style.cssText = k < 1 || base < 1 ? "flex:none;width:" + fw + "px;height:" + avail / k + "px;margin-bottom:" + (avail - avail / k) + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
+    frame.style.cssText = k < 1 || base < 1 ? "flex:none;width:" + fw + "px;height:" + H / k + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
+    pushPage(k);
     if (sig_ !== frameFit.key) { frameFit.key = sig_; dirty = true; scheduleBuild(400); }
     FK = k; FW = fw;
   }
@@ -287,23 +297,18 @@
     sheet = mk("div"); sheet.id = "about-sheet";
     shadow = mk("div", "ab-shadow");
     card = mk("aside", "ab-card"); card.setAttribute("aria-label", "About"); card.setAttribute("role", "dialog");
-    grip = mk("div", "ab-grip"); grip.title = "Drag to move";
-    copyEl = mk("span", "ab-copy"); copyEl.textContent = siteText("copyright", "\u00a9 Sehzade 2026");
-    grip.append(copyEl);
     frame = mk("iframe"); frame.title = "About"; frame.src = "about.html";
-    nameEl = mk("div", "ab-name"); nameEl.setAttribute("aria-hidden", "true");
+    /* the copyright line and the name live inside the page itself (one document, so one liquid effect covers the whole card); this box only measures the name */
+    nameEl = mk("div", "ab-name", "position:absolute;left:0;bottom:0;width:100%;visibility:hidden;pointer-events:none"); nameEl.setAttribute("aria-hidden", "true");
     nameTxt = mk("span", "", "display:inline-block"); nameTxt.textContent = cardName(); nameEl.appendChild(nameTxt);
-    card.append(grip, frame, nameEl);
+    card.append(frame);
     bend = mk("div", "ab-bend"); bend.setAttribute("aria-hidden", "true");
-    sheet.append(shadow, bend, card); document.body.append(backdrop, sheet);
+    sheet.append(shadow, bend, card, nameEl); document.body.append(backdrop, sheet);
     layout(); S = hiddenPose(); paint();
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
-    frame.addEventListener("load", function () { contentVer++; setTimeout(function () { contentVer++; layout(); }, 1800); paused = null; pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
+    frame.addEventListener("load", function () { contentVer++; pushPage(); setTimeout(pushPage, 600); setTimeout(function () { contentVer++; layout(); }, 1800); paused = null; pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
     addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
-    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { contentVer++; nameTxt.textContent = cardName(); copyEl.textContent = siteText("copyright", "\u00a9 Sehzade 2026"); layout(); dirty = true; scheduleBuild(500); } });
-    grip.addEventListener("pointerdown", function (e) { if (e.button || e.target.closest("button")) return; e.preventDefault(); grip.setPointerCapture(e.pointerId); begin(e.clientX, e.clientY, true); });
-    grip.addEventListener("pointermove", function (e) { if (drag) move(e.clientX, e.clientY); });
-    grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
+    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { contentVer++; nameTxt.textContent = cardName(); layout(); dirty = true; scheduleBuild(500); } });
   }
 
   /* dragging: from the title strip, or from anywhere on the page inside the card (it reports its own coordinates) */
