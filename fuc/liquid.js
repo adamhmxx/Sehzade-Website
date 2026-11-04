@@ -215,13 +215,13 @@
     var GALLERY = /^(c(fa|dx|dy|dz|scl|step|lift|lz|spr)|tw(r|p|sc))$/;
     var css = document.createElement("style");
     css.textContent =
-      '#liquid-ui{position:fixed;right:var(--lm,32px);bottom:var(--lm,32px);z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
+      '#liquid-ui{position:fixed;right:var(--lm,32px);bottom:88px;z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
       '#liquid-ui *{box-sizing:border-box;font-family:inherit;text-transform:inherit;letter-spacing:inherit}' +
       '#liquid-ui .lq-btn{display:flex;align-items:center;gap:8px;margin-left:auto;padding:8px 13px;border:1px solid rgba(242,242,242,.16);border-radius:999px;background:rgba(14,14,14,.62);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:inherit;font-size:12px;cursor:pointer;transition:border-color .5s,background .5s}' +
       '#liquid-ui .lq-btn:hover{border-color:rgba(242,242,242,.4);background:rgba(14,14,14,.8)}' +
       '#liquid-ui .lq-dot{width:8px;height:8px;border-radius:50%;background:#f2f2f2;box-shadow:0 0 10px rgba(242,242,242,.55);opacity:.9;transition:opacity .5s}' +
       '#liquid-ui.off .lq-dot{opacity:.25;box-shadow:none}' +
-      '#liquid-ui .lq-card{width:calc(3 * (100vw - 2 * var(--lm,32px) - 176px) / 12 + 32px);max-height:calc(100vh - 96px);overflow:auto;margin-bottom:10px;padding:16px 16px 12px;border:1px solid rgba(242,242,242,.14);border-radius:16px;background:rgba(14,14,14,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);visibility:hidden;pointer-events:none;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1),visibility 0s .7s}' +
+      '#liquid-ui .lq-card{width:calc(3 * (100vw - 2 * var(--lm,32px) - 176px) / 12 + 32px);max-height:calc(100vh - 168px);overflow:auto;margin-bottom:10px;padding:16px 16px 12px;border:1px solid rgba(242,242,242,.14);border-radius:16px;background:rgba(14,14,14,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);visibility:hidden;pointer-events:none;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1),visibility 0s .7s}' +
       '#liquid-ui.open .lq-card{opacity:1;transform:none;visibility:visible;pointer-events:auto;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}' +
       '#liquid-ui .lq-tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:14px;padding:3px;border:1px solid rgba(242,242,242,.14);border-radius:999px}' +
       '#liquid-ui .lq-tabs button{padding:6px 0;font-size:10px;border:0;border-radius:999px;background:none;color:rgba(242,242,242,.7);font-size:11px;cursor:pointer;transition:background .4s,color .4s}' +
