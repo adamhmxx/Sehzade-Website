@@ -371,6 +371,6 @@
     fpsEl.style.display = fpsOn ? "" : "none"; if (fpsOn) { fpsN = 0; fpsT = performance.now(); requestAnimationFrame(fpsTick); }
   });
   var go = mk("div"); go.id = "grid-overlay"; for (var i = 0; i < 12; i++) go.appendChild(document.createElement("i"));
-  function ready() { document.body.appendChild(go); if (/grid/.test(location.hash)) root.classList.add("show-grid"); /* warm up the card when the browser is idle, so it never competes with the first paint */ (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(build, { timeout: 4000 }); }
+  function ready() { document.body.appendChild(go); if (/grid/.test(location.hash)) root.classList.add("show-grid"); /* warm up the card when the browser is idle, so it never competes with the first paint */ (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(build, { timeout: touchy ? 12000 : 4000 }); }
   if (document.readyState === "complete") ready(); else addEventListener("load", ready);
 })();
