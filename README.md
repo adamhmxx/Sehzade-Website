@@ -20,5 +20,5 @@ Run:  python3 server.py   ->  http://localhost:8000
 - about-card.js   the About card: draggable paper sheet that bends while it moves (strip copy of the page), grid overlay (Shift+G)
 
 ## Loading entrance, stand-alone (loading/)
-- loading/index.html + loading/loading.js   the loading entrance on its own, from the red screen until the background is plain black (fires `loading-done`). All numbers are in one `CFG` block at the top of loading.js. Press R to replay, or open it with `#loop` to repeat. Open it through `python3 server.py` -> http://localhost:8000/loading/
-- The same sequence inside the site still lives in fuc/intro.js (it continues with the portfolio row and the Twister); port changes back there when the loading is final.
+- loading/index.html   the loading entrance on its own, from the red screen until the background is plain black, with its control panel (Hide/Show with C, Replay with R). Every setting has a slider and a description; values are kept in localStorage, "Copy values" gives the numbers as JSON. Open it through `python3 server.py` -> http://localhost:8000/loading/
+- The same sequence inside the site still lives in fuc/intro.js (it continues with the portfolio row and the Twister); port final values back there.

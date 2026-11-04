@@ -3,15 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
-<title>Loading entrance (red to black)</title>
-<link rel="preload" href="../fuc/assets/anton-latin.woff2" as="font" type="font/woff2" crossorigin>
-<style>@font-face{font-family:"Anton";font-style:normal;font-weight:400;font-display:swap;src:url(../fuc/assets/anton-latin.woff2) format("woff2")}
-html,body{margin:0;height:100%;background:#0b0b0b}
-#hint{position:fixed;right:16px;bottom:12px;z-index:20;font:400 12px/1 "Anton",Impact,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#f2f2f2;opacity:0;transition:opacity .8s ease}
-#hint.on{opacity:.5}</style>
-<style id="intro-css">
+<title>Sehzade Loading Entrance</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{--ink:#0b0b0b;--red:#ff2d20;--paper:#f2f2f2}
+@font-face{font-family:"Anton";font-style:normal;font-weight:400;font-display:swap;src:url(../fuc/assets/anton-latin.woff2) format("woff2")}
+html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
+#stage{position:fixed;inset:0}
 
-#intro{position:fixed;inset:0;z-index:10;pointer-events:none;display:block;color:#0b0b0b}
+
+#intro{position:fixed;inset:0;z-index:1;pointer-events:none;display:block;color:#0b0b0b}
 #intro{display:block}
 #intro svg.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
 #intro .in-ui{position:absolute;inset:0}
@@ -25,18 +26,185 @@ html,body{margin:0;height:100%;background:#0b0b0b}
 #intro .in-big{padding-bottom:.07em;position:absolute;left:24px;bottom:3vw;font:400 20vw/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;filter:url(#in-liquid);will-change:filter}
 #intro .in-big span{display:inline-block;transform:translateY(105%);opacity:0}
 @media (max-width:809.98px){#intro .in-pct{left:16px}#intro .in-welcome{right:16px}#intro .in-big{left:12px;font-size:23vw;bottom:5vw}}
+
+#replay{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:5;padding:9px 16px;border:1px solid rgba(242,242,242,.35);border-radius:999px;background:rgba(11,11,11,.6);color:var(--paper);font:400 12px/1 "Anton",Impact,sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .8s ease,border-color .4s}
+#replay.on{opacity:1;pointer-events:auto}
+#replay:hover{border-color:var(--paper)}
+#replay:focus-visible{outline:2px solid var(--paper);outline-offset:3px}
+
+#panel{position:fixed;top:max(16px,env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));z-index:6;width:min(340px,calc(100vw - 32px));max-height:calc(100% - 32px);display:flex;flex-direction:column;border:1px solid rgba(242,242,242,.16);border-radius:16px;background:rgba(14,14,14,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:var(--paper);box-shadow:0 18px 50px rgba(0,0,0,.45);font-family:"Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:.04em;transition:opacity .5s ease,transform .6s cubic-bezier(.22,1,.36,1)}
+#panel.shut{opacity:0;transform:translateY(-8px);pointer-events:none}
+#panel .pn-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;font-size:13px}
+#panel #panel-list{overflow:auto;padding:0 16px 4px;min-height:0}
+#panel .pn-sec{margin:14px 0 10px;padding-top:12px;border-top:1px solid rgba(242,242,242,.12);font-size:11px;color:rgba(242,242,242,.5)}
+#panel .pn-sec:first-child{margin-top:4px;border-top:0;padding-top:0}
+#panel .pn-row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin-bottom:12px;font-size:11px;color:rgba(242,242,242,.75)}
+#panel .pn-row b{font-weight:400;color:var(--paper);font-variant-numeric:tabular-nums}
+#panel .pn-row small{grid-column:1/-1;font:400 10px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.01em;text-transform:none;color:rgba(242,242,242,.5)}
+#panel input[type=range]{grid-column:1/-1;width:100%;height:16px;margin:0;background:none;-webkit-appearance:none;appearance:none;cursor:pointer}
+#panel input[type=range]::-webkit-slider-runnable-track{height:2px;border-radius:2px;background:rgba(242,242,242,.25)}
+#panel input[type=range]::-moz-range-track{height:2px;border-radius:2px;background:rgba(242,242,242,.25)}
+#panel input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-5px;border-radius:50%;border:0;background:var(--paper)}
+#panel input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;border:0;background:var(--paper)}
+#panel .pn-act{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 16px 14px;border-top:1px solid rgba(242,242,242,.12)}
+#panel button,#pn-toggle{font:inherit;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--paper);background:transparent;border:1px solid rgba(242,242,242,.22);border-radius:999px;padding:8px 6px;cursor:pointer;transition:border-color .4s,background .4s}
+#panel button:hover,#pn-toggle:hover{border-color:rgba(242,242,242,.6);background:rgba(242,242,242,.08)}
+#panel :focus-visible,#pn-toggle:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
+#pn-toggle{position:fixed;top:max(16px,env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));z-index:5;padding:8px 14px;background:rgba(14,14,14,.7)}
+#panel:not(.shut)~#pn-toggle{opacity:0;pointer-events:none}
+@media (max-width:600px){#panel{top:auto;bottom:max(16px,env(safe-area-inset-bottom,0px));max-height:55%}#pn-toggle{top:auto;bottom:max(16px,env(safe-area-inset-bottom,0px))}#replay{display:none}}
 </style>
 </head>
 <body>
-<div id="intro" aria-hidden="true">
-<svg class="in-bg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><defs>
-<filter id="in-edge" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur id="in-edge-b" in="SourceGraphic" stdDeviation="22" result="b"/><feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 13 -5" result="g"/><feGaussianBlur in="g" stdDeviation="1.2"/></filter>
-<mask id="in-mask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="4000" height="3000"><rect x="-200" y="-200" width="4000" height="3000" fill="#fff"/><g id="in-holes"></g></mask>
-<filter id="in-liquid" x="-25%" y="-60%" width="150%" height="240%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>
-</defs><rect id="in-red" x="-200" y="-200" width="4000" height="3000" fill="#ff2d20" mask="url(#in-mask)"/></svg>
-<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Designer</span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>
-</div>
-<div id="hint">Press R to replay</div>
-<script src="loading.js"></script>
+<div id="stage"></div>
+<div id="panel" role="group" aria-label="Loading controls"><div class="pn-head"><span>Loading controls</span></div><div id="panel-list"></div><div class="pn-act"><button type="button" id="pn-replay">Replay</button><button type="button" id="pn-copy">Copy values</button><button type="button" id="pn-reset">Reset</button></div></div>
+<button id="pn-toggle" type="button" aria-expanded="true">Hide controls</button>
+<button id="replay" type="button" aria-label="Replay the loading entrance">Replay (R)</button>
+<script>
+(function () {
+  var TEMPLATE = '<div id="intro" aria-hidden="true">\n<svg class="in-bg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><defs>\n<filter id="in-edge" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur id="in-edge-b" in="SourceGraphic" stdDeviation="22" result="b"/><feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 13 -5" result="g"/><feGaussianBlur in="g" stdDeviation="1.2"/></filter>\n<mask id="in-mask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="4000" height="3000"><rect x="-200" y="-200" width="4000" height="3000" fill="#fff"/><g id="in-holes"></g></mask>\n<filter id="in-liquid" x="-25%" y="-60%" width="150%" height="240%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>\n</defs><rect id="in-red" x="-200" y="-200" width="4000" height="3000" fill="#ff2d20" mask="url(#in-mask)"/></svg>\n<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Designer</span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>\n</div>\n';
+  var CFG = {
+    min: 3300,          /* shortest time the loading screen stays (ms) */
+    line: 2,            /* loading line thickness (px) */
+    letterDelay: 250, letterTime: 1100, letterStagger: 85,           /* SEHZADE letters rising (ms) */
+    liquid: 9, liquidBurst: 22, liquidBurstTime: 2600,               /* ripple on the letters: steady, opening burst (px), how long the burst takes */
+    exitTime: 1100, exitMelt: 70, exitStagger: 50,                   /* text leaving: time (ms), liquid melt (px), letter stagger (ms) */
+    wipeTime: 3200, wipeStagger: 100, wipeSoft: 22, wipeWobble: 110  /* red to black: blob grow time (ms), start spacing (%), goo softness (px), edge wobble */
+  };
+  window.__run = 0;
+  function play() {
+    document.getElementById("replay").classList.remove("on");
+  var stage = document.getElementById("stage"); stage.innerHTML = TEMPLATE; var RUN = ++window.__run;
+  var intro = document.getElementById("intro"), big = intro.querySelector(".in-big"), pct = intro.querySelector(".in-pct"),
+      bar = intro.querySelector(".in-line i"), line = intro.querySelector(".in-line"), liqO = document.getElementById("in-liq-o"),
+      liqD = document.getElementById("in-liq-d"), edgeB = document.getElementById("in-edge-b"), holes = document.getElementById("in-holes"),
+      red = document.getElementById("in-red");
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
+  function setA(el, k, v) { if (el) el.setAttribute(k, v); }
+
+  /* the word always spans the full screen width */
+  function fit() {
+    var m = parseFloat(getComputedStyle(big).left) || 24;
+    big.style.fontSize = "100px";
+    var w = big.getBoundingClientRect().width;
+    if (w > 0) big.style.fontSize = (100 * (innerWidth - 2 * m) / w).toFixed(2) + "px";
+  }
+  line.style.height = CFG.line + "px"; setA(edgeB, "stdDeviation", CFG.wipeSoft);
+  "SEHZADE".split("").forEach(function (c, i) {
+    var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp);
+    sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
+      { duration: reduce ? 1 : CFG.letterTime, delay: (reduce ? 0 : CFG.letterDelay) + i * CFG.letterStagger, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
+  });
+  fit(); window.__fit = fit;
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+
+  /* progress: real signals (fonts, page load), never faster than the minimum show time */
+  var target = 8, p = 0, last = T0, finished = false, MIN = reduce ? 600 : CFG.min;
+  function stg(v) { if (v > target) target = v; }
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { stg(45); });
+  setTimeout(function () { stg(75); }, 500); setTimeout(function () { stg(100); }, 1400);
+
+  var exitT0 = 0, wiping = false, wipeActive = false;
+  function liquid(now) {
+    var t = now - T0, pulse = reduce ? 0 : Math.max(0, 1 - t / CFG.liquidBurstTime), ek = 0;
+    if (exitT0) { ek = Math.max(0, Math.min(1, (now - exitT0) / CFG.exitTime)); ek *= ek; }
+    setA(liqD, "scale", (reduce ? 0 : CFG.liquid + CFG.liquidBurst * pulse + 4 * Math.sin(t / 700) + CFG.exitMelt * ek).toFixed(1));
+    setA(liqO, "dx", (Math.sin(t / 900) * 90).toFixed(1)); setA(liqO, "dy", (t / 18 % 400).toFixed(1));
+  }
+  function frame(now) {
+    var dt = Math.min(.05, (now - last) / 1000); last = now;
+    liquid(now);
+    if (!finished) {
+      var cap = Math.min(100, (now - T0) / MIN * 100);
+      p = Math.min(target, cap, p + Math.max((target - p) * 2.4, 12) * dt);
+      pct.textContent = Math.floor(p) + "%"; bar.style.transform = "scaleX(" + (p / 100).toFixed(4) + ")";
+      if (p >= 99.9 && target >= 100) { finished = true; pct.textContent = "100%"; bar.style.transform = "scaleX(1)"; setTimeout(function () { if (RUN === window.__run) wipe(); }, 250); }
+    }
+    if (RUN === window.__run && (!wiping || wipeActive)) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  /* red -> black: the text melts away while black blobs well up from the bottom and merge (gooey mask) */
+  function wipe() {
+    holes.setAttribute("filter", "url(#in-edge)"); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
+    [].forEach.call(big.children, function (sp, i) {
+      sp.animate([{ transform: "translateY(0)", opacity: 1, filter: "blur(0px)" }, { transform: "translateY(60%)", opacity: 0, filter: "blur(6px)" }],
+        { duration: reduce ? 1 : CFG.exitTime, delay: reduce ? 0 : i * CFG.exitStagger, easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards" });
+    });
+    var NS = "http://www.w3.org/2000/svg", R = Math.hypot(W, H), els = [], pts = [], N = 8, i, st = CFG.wipeStagger / 100;
+    for (i = 0; i < N; i++) pts.push([W * (i + .5) / N + (i % 2 ? 1 : -1) * W * .02, H * (1.02 + (i % 3) * .03), 1.0 + (i % 3) * .12, (80 + Math.abs(i - N / 2 + .5) * 150 + (i % 2) * 90) * st]);
+    pts.push([W * .3, H * .45, .85, 1100 * st], [W * .75, H * .35, .9, 1400 * st]);
+    pts.forEach(function (q) { var e = document.createElementNS(NS, "ellipse"); e.setAttribute("fill", "#000"); e.setAttribute("cx", q[0]); e.setAttribute("cy", q[1]); e.setAttribute("rx", 0); e.setAttribute("ry", 0); holes.appendChild(e); els.push(e); });
+    var D = reduce ? 400 : CFG.wipeTime, s0 = performance.now(), wob = CFG.wipeWobble / 1000;
+    function sm(t) { return .5 - .5 * Math.cos(Math.PI * t); }
+    (function step(now) {
+      var t = now - s0, all = true;
+      els.forEach(function (e, i) {
+        var k = Math.max(0, Math.min(1, (t - pts[i][3]) / D)), r = sm(sm(k) * .35 + k * .65) * R * pts[i][2] * .62, tw = (t - pts[i][3]) / 1000;
+        e.setAttribute("rx", (r * (1 + wob * Math.sin(tw * 1.6 + i * 1.7))).toFixed(1)); e.setAttribute("ry", (r * 1.05 * (1 + wob * Math.sin(tw * 1.2 + i * 2.3 + 1))).toFixed(1)); if (k < 1) all = false;
+      });
+      liquid(now);
+      if (RUN !== window.__run) return; if (!all) return requestAnimationFrame(step);
+      wipeActive = false; red.setAttribute("display", "none"); intro.style.display = "none";
+      document.getElementById("replay").classList.add("on");
+    })(performance.now());
+  }
+  }
+  addEventListener("resize", function () { if (window.__fit) window.__fit(); });
+  document.getElementById("replay").addEventListener("click", play);
+  addEventListener("keydown", function (e) { if (e.key === "r" || e.key === "R") play(); });
+  /* ---------- control panel ---------- */
+  var DEF = JSON.parse(JSON.stringify(CFG)), KEY = "sehzade-loading-cfg";
+  try { var sv = JSON.parse(localStorage.getItem(KEY) || "{}"); Object.keys(sv).forEach(function (k) { if (k in CFG) CFG[k] = +sv[k]; }); } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(CFG)); } catch (e) {} }
+  var ROWS = [
+    ["#", "Loading"],
+    ["min", "Minimum loading time", 1000, 10000, 100, "ms", "Shortest time the red screen stays, even if everything is ready sooner."],
+    ["line", "Line thickness", 1, 16, 1, "px", "Thickness of the black loading line. It always spans the full screen width."],
+    ["#", "SEHZADE text"],
+    ["letterDelay", "Start delay", 0, 1500, 25, "ms", "Wait before the first letter rises."],
+    ["letterTime", "Letter rise time", 300, 3000, 50, "ms", "How long each letter takes to rise into place."],
+    ["letterStagger", "Letter stagger", 0, 300, 5, "ms", "Delay between one letter and the next."],
+    ["liquid", "Liquid (steady)", 0, 40, 1, "px", "Constant liquid ripple on the letters."],
+    ["liquidBurst", "Liquid (opening burst)", 0, 80, 1, "px", "Extra ripple right when the page opens."],
+    ["liquidBurstTime", "Burst calms down over", 300, 6000, 100, "ms", "How long the opening ripple takes to settle."],
+    ["#", "Text leaves"],
+    ["exitTime", "Exit time", 200, 3000, 50, "ms", "How long the text takes to disappear once loading is done."],
+    ["exitMelt", "Liquid melt", 0, 200, 5, "px", "How strongly the letters warp and melt while they go."],
+    ["exitStagger", "Exit stagger", 0, 200, 5, "ms", "Delay between one letter and the next while they leave."],
+    ["#", "Red to black"],
+    ["wipeTime", "Blob grow time", 800, 8000, 100, "ms", "How long each black blob takes to grow. Higher is slower and smoother."],
+    ["wipeStagger", "Blob stagger", 0, 250, 5, "%", "Spacing between blobs starting. 0 all at once, 100 default, higher is a longer rolling wipe."],
+    ["wipeSoft", "Goo softness", 4, 50, 1, "px", "How much the blobs melt into each other. Higher is gooier, lower is sharper."],
+    ["wipeWobble", "Edge wobble", 0, 300, 5, "", "How much each blob breathes, which keeps the edge flowing."]
+  ];
+  var ui = document.getElementById("panel"), list = document.getElementById("panel-list"), inputs = {}, pend = 0;
+  function replayLater() { clearTimeout(pend); pend = setTimeout(play, 350); }
+  ROWS.forEach(function (r) {
+    if (r[0] === "#") { var h = document.createElement("div"); h.className = "pn-sec"; h.textContent = r[1]; list.appendChild(h); return; }
+    var row = document.createElement("label"), name = document.createElement("span"), val = document.createElement("b"), inp = document.createElement("input"), d = document.createElement("small");
+    row.className = "pn-row"; name.textContent = r[1]; d.textContent = r[6];
+    inp.type = "range"; inp.min = r[2]; inp.max = r[3]; inp.step = r[4]; inp.id = "pn-" + r[0]; inp.value = CFG[r[0]];
+    function show() { val.textContent = CFG[r[0]] + r[5]; }
+    show();
+    inp.addEventListener("input", function () { CFG[r[0]] = +inp.value; show(); save(); });
+    inp.addEventListener("change", replayLater);
+    inputs[r[0]] = [inp, show]; row.append(name, val, inp, d); list.appendChild(row);
+  });
+  document.getElementById("pn-reset").onclick = function () { Object.keys(DEF).forEach(function (k) { CFG[k] = DEF[k]; if (inputs[k]) { inputs[k][0].value = DEF[k]; inputs[k][1](); } }); save(); play(); };
+  document.getElementById("pn-replay").onclick = function () { play(); };
+  var cp = document.getElementById("pn-copy");
+  cp.onclick = function () {
+    var txt = JSON.stringify(CFG), ok = function () { cp.textContent = "Copied"; setTimeout(function () { cp.textContent = "Copy values"; }, 1400); };
+    try { navigator.clipboard.writeText(txt).then(ok, function () { cp.textContent = "Not allowed"; }); } catch (e) { cp.textContent = "Not allowed"; }
+  };
+  var tg = document.getElementById("pn-toggle");
+  function openPanel(v) { ui.classList.toggle("shut", !v); tg.setAttribute("aria-expanded", v); tg.textContent = v ? "Hide controls" : "Controls (C)"; }
+  tg.onclick = function () { openPanel(ui.classList.contains("shut")); };
+  addEventListener("keydown", function (e) { if ((e.key === "c" || e.key === "C") && !/INPUT|TEXTAREA/.test((e.target || {}).tagName || "")) tg.click(); });
+  openPanel(true);
+  play();
+})();
+</script>
 </body>
 </html>
