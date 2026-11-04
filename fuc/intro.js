@@ -7,7 +7,7 @@
   var intro = document.getElementById("intro"), row = document.getElementById("intro-row");
   if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
-  var C = window.__introCfg || { min: 3000, lstag: 85, lrise: 1000, lstr: 22, ldecay: 2400, hold: 150, wdur: 2000, wstag: 200, rdur: 1700, rn: 9, rsz: 26, rov: 70, tdur: 1700, tstart: 1600, tdrop: 90, udel: 500 }; /* tuned from the Shift+I panel */
+  var C = window.__introCfg || { min: 3000, lstag: 85, lrise: 1000, lstr: 22, ldecay: 2400, hold: 150, wdur: 2000, wstag: 200, rdur: 1700, rn: 9, rsz: 26, rov: 70, tdur: 2800, tstart: 1600, trise: 90, udel: 500 }; /* tuned from the Shift+I panel */
   function $(s, r) { return (r || document).querySelector(s); }
   function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
   function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
@@ -98,7 +98,7 @@
     var START = C.tstart, D = C.tdur, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     root.classList.remove("intro-on");
-    if (cont && cont.animate) cont.animate([{ transform: "translateY(-" + C.tdrop + "vh)" }, { transform: "none" }], { duration: D, easing: "cubic-bezier(.22,1,.36,1)" });
+    if (cont && cont.animate) cont.animate([{ transform: "translateY(" + C.trise + "vh)" }, { transform: "none" }], { duration: D, easing: "cubic-bezier(.22,1,.36,1)" });
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), v = START * (1 - easeOut(k));
       if (gk) { gk.ox = v; gk.tx = v; }
