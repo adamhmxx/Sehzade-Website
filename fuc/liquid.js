@@ -13,7 +13,9 @@
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
   var DEF = { radius: 44, softness: 0.85, brightness: 0.05, trail: 0.7, blur: 1.2, distort: 9, reach: 200, on: 1,
-              ldur: 1000, ldist: 10, lblur: 2, lstag: 148, pliq: 60, pq: 1 };
+              ldur: 1000, ldist: 10, lblur: 2, lstag: 148, pliq: 60, pq: 1,
+              cfa: 45, cdx: 8, cdy: 10, cdz: 8, cscl: 78, clift: 11, clz: 40, cspr: 90, cstep: 22,
+              twr: 34, twp: 100, twsc: 90 };
   var KEY = "liquid-cfg-v1";
   function load() {
     try {
@@ -194,8 +196,23 @@
       ["lstag", "Stagger", 0, 300, 5, "ms"],
       ["#", "About popup"],
       ["pliq", "Liquid appear", 0, 120, 1, "px"],
-      ["pq", "Paper bend: 0 off, 1 light, 2 full", 0, 2, 1, ""]
+      ["pq", "Paper bend: 0 off, 1 light, 2 full", 0, 2, 1, ""],
+      ["#", "Cross"],
+      ["cfa", "Facing (0 = front)", 0, 80, 1, "\u00b0"],
+      ["cdx", "Spacing across", 2, 16, .5, "%"],
+      ["cdy", "Spacing up", 0, 20, .5, "%"],
+      ["cdz", "Depth step", 0, 16, .5, "%"],
+      ["cscl", "Card size", 40, 120, 1, "%"],
+      ["cstep", "Scroll step", 10, 40, 1, "%"],
+      ["clift", "Hover lift", 0, 30, .5, "%"],
+      ["clz", "Hover forward", 0, 120, 1, "px"],
+      ["cspr", "Hover spread", 0, 200, 5, "%"],
+      ["#", "Twister"],
+      ["twr", "Radius", 20, 70, 1, "%"],
+      ["twp", "Rise per turn", 50, 200, 5, "%"],
+      ["twsc", "Card size", 60, 120, 1, "%"]
     ];
+    var GALLERY = /^(c(fa|dx|dy|dz|scl|step|lift|lz|spr)|tw(r|p|sc))$/;
     var css = document.createElement("style");
     css.textContent =
       '#liquid-ui{position:fixed;right:var(--lm,32px);bottom:var(--lm,32px);z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
@@ -206,8 +223,8 @@
       '#liquid-ui.off .lq-dot{opacity:.25;box-shadow:none}' +
       '#liquid-ui .lq-card{width:calc(3 * (100vw - 2 * var(--lm,32px) - 176px) / 12 + 32px);max-height:calc(100vh - 96px);overflow:auto;margin-bottom:10px;padding:16px 16px 12px;border:1px solid rgba(242,242,242,.14);border-radius:16px;background:rgba(14,14,14,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);visibility:hidden;pointer-events:none;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1),visibility 0s .7s}' +
       '#liquid-ui.open .lq-card{opacity:1;transform:none;visibility:visible;pointer-events:auto;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}' +
-      '#liquid-ui .lq-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:14px;padding:3px;border:1px solid rgba(242,242,242,.14);border-radius:999px}' +
-      '#liquid-ui .lq-tabs button{padding:6px 0;border:0;border-radius:999px;background:none;color:rgba(242,242,242,.7);font-size:11px;cursor:pointer;transition:background .4s,color .4s}' +
+      '#liquid-ui .lq-tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;margin-bottom:14px;padding:3px;border:1px solid rgba(242,242,242,.14);border-radius:999px}' +
+      '#liquid-ui .lq-tabs button{padding:6px 0;font-size:10px;border:0;border-radius:999px;background:none;color:rgba(242,242,242,.7);font-size:11px;cursor:pointer;transition:background .4s,color .4s}' +
       '#liquid-ui .lq-tabs button.on{background:#f2f2f2;color:#0b0b0b}' +
       '#liquid-ui .lq-sec{margin:16px 0 10px;padding-top:12px;border-top:1px solid rgba(242,242,242,.12);font-size:11px;color:rgba(242,242,242,.5)}' +
       '#liquid-ui .lq-demo{display:inline-block;margin:0 0 12px;font-size:16px;color:#f2f2f2;text-decoration:none;cursor:pointer}' +
@@ -242,7 +259,7 @@
     card.innerHTML = '<div class="lq-title"><span>Liquid hover</span></div>';
     var inputs = {}, pages = {}, tabs = document.createElement("div"), cur = null;
     tabs.className = "lq-tabs";
-    [["Cursor", "Cursor"], ["Link hover", "Links"], ["About popup", "Popup"]].forEach(function (t) {
+    [["Cursor", "Cursor"], ["Link hover", "Links"], ["About popup", "Popup"], ["Cross", "Cross"], ["Twister", "Twist"]].forEach(function (t) {
       var pg = document.createElement("div"); pg.className = "lq-page"; pages[t[0]] = pg;
       var tb = document.createElement("button"); tb.type = "button"; tb.textContent = t[1]; tb.dataset.page = t[0];
       tb.onclick = function () { setPage(t[0]); try { localStorage.setItem(KEY + "-tab", t[0]); } catch (e) {} };
@@ -268,7 +285,7 @@
       var inp = document.createElement("input"); inp.type = "range"; inp.min = r[2]; inp.max = r[3]; inp.step = r[4]; inp.id = "lq-" + r[0];
       function show() { var v = +own[r[0]]; val.textContent = (r[4] < 1 ? v.toFixed(r[4] < .01 ? 3 : 2) : Math.round(v)) + r[5]; }
       inp.value = own[r[0]]; show();
-      inp.addEventListener("input", function () { own[r[0]] = +inp.value; show(); save(); kick(); });
+      inp.addEventListener("input", function () { own[r[0]] = +inp.value; show(); save(); kick(); if (GALLERY.test(r[0])) { window.__gcfgV = (window.__gcfgV || 0) + 1; if (r[0].slice(0, 2) === "tw") dispatchEvent(new Event("cms-change")); } });
       inputs[r[0]] = [inp, show];
       row.append(name, val, inp); host.appendChild(row);
     });
@@ -276,13 +293,13 @@
     setPage(pages[savedTab] ? savedTab : "Cursor");
     var actions = document.createElement("div"); actions.className = "lq-actions";
     var reset = document.createElement("button"); reset.type = "button"; reset.textContent = "Reset";
-    reset.onclick = function () { Object.keys(DEF).forEach(function (k) { own[k] = DEF[k]; if (inputs[k]) { inputs[k][0].value = DEF[k]; inputs[k][1](); } }); ui.classList.remove("off"); save(); kick(); };
+    reset.onclick = function () { Object.keys(DEF).forEach(function (k) { own[k] = DEF[k]; if (inputs[k]) { inputs[k][0].value = DEF[k]; inputs[k][1](); } }); ui.classList.remove("off"); save(); kick(); window.__gcfgV = (window.__gcfgV || 0) + 1; dispatchEvent(new Event("cms-change")); };
     var toggle = document.createElement("button"); toggle.type = "button"; toggle.textContent = own.on ? "Turn off" : "Turn on";
     toggle.onclick = function () { own.on = own.on ? 0 : 1; toggle.textContent = own.on ? "Turn off" : "Turn on"; ui.classList.toggle("off", !own.on); save(); kick(); };
     ui.classList.toggle("off", !own.on);
     var copy = document.createElement("button"); copy.type = "button"; copy.textContent = "Copy values";
     copy.onclick = function () {
-      var txt = JSON.stringify({ radius: own.radius, softness: own.softness, brightness: own.brightness, trail: own.trail, distort: own.distort, blur: own.blur, reach: own.reach, ldur: own.ldur, ldist: own.ldist, lblur: own.lblur, lstag: own.lstag, pliq: own.pliq, pq: own.pq });
+      var txt = JSON.stringify({ radius: own.radius, softness: own.softness, brightness: own.brightness, trail: own.trail, distort: own.distort, blur: own.blur, reach: own.reach, ldur: own.ldur, ldist: own.ldist, lblur: own.lblur, lstag: own.lstag, pliq: own.pliq, pq: own.pq, cfa: own.cfa, cdx: own.cdx, cdy: own.cdy, cdz: own.cdz, cscl: own.cscl, cstep: own.cstep, clift: own.clift, clz: own.clz, cspr: own.cspr, twr: own.twr, twp: own.twp, twsc: own.twsc });
       var done = function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy values"; }, 1400); };
       try { navigator.clipboard.writeText(txt).then(done, function () { copy.textContent = txt.slice(0, 18) + "…"; }); } catch (e) { copy.textContent = "Not allowed"; }
     };
