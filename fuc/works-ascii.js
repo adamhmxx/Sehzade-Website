@@ -17,15 +17,15 @@
     txt = document.createElement("canvas"); tctx = txt.getContext("2d"); mk = document.createElement("canvas"); mctx = mk.getContext("2d");
     size(); return true;
   }
-  /* the portrait is fitted to the height of the screen and centred; its lines are drawn once into an off-screen canvas */
+  /* the portrait is 50% taller than the screen, centred and stuck to the bottom edge; its lines are drawn once into an off-screen canvas */
   function size() {
     var r = box.getBoundingClientRect(), w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
     if (w === cw && h === ch) return; cw = w; ch = h;
     cv.width = txt.width = mk.width = w; cv.height = txt.height = mk.height = h;
     var n = rows.length, cols = 0; rows.forEach(function (l) { cols = Math.max(cols, l.length); });
-    var lh = h / n, fs = lh * 1.02, cwid = fs * .6, pw = cols * cwid, ox = (w - pw) / 2;
+    var lh = h * 1.5 / n, oy = h - n * lh, fs = lh * 1.02, cwid = fs * .6, pw = cols * cwid, ox = (w - pw) / 2;
     tctx.clearRect(0, 0, w, h); tctx.fillStyle = "#fff"; tctx.font = fs.toFixed(2) + 'px "Courier New", ui-monospace, monospace'; tctx.textBaseline = "top";
-    for (var i = 0; i < n; i++) { var l = rows[i]; if (/^\s*$/.test(l)) continue; tctx.fillText(l, ox, i * lh); }
+    for (var i = 0; i < n; i++) { var l = rows[i]; if (/^\s*$/.test(l)) continue; tctx.fillText(l, ox, oy + i * lh); }
     mctx.clearRect(0, 0, w, h);
   }
   function dab(x, y, rad, a) {

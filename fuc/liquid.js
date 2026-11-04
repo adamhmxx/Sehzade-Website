@@ -130,16 +130,16 @@
       var el = els[n], b = el.getBoundingClientRect(), st = states.get(el);
       if (b.bottom < -reach || b.top > innerHeight + reach || b.right < -reach || b.left > innerWidth + reach || b.width === 0) { if (st && st.set) near.push({ el: el, b: b, vs: 1, f: 0, dx: 0, dy: 0 }); continue; }
       var dx = b.left + b.width / 2 - mx, dy = b.top + b.height / 2 - my, dist = Math.hypot(dx, dy);
-      var edge = Math.max(0, dist - Math.min(b.width, 260) / 2), tg = el.__fxt || (el.__fxt = el.style.zIndex && el.firstElementChild && el.style.position === "absolute" && el.style.top === "50%" ? el.firstElementChild : el);
+      var edge = Math.max(0, dist - Math.min(b.width, 260) / 2), tg = el.children.length > 2 ? el : el.__fxt || (el.__fxt = el.style.zIndex && el.firstElementChild && el.style.position === "absolute" && el.style.top === "50%" ? el.firstElementChild : el);
       near.push({ el: el, b: b, vs: tg === el ? 1 : Math.max(.3, Math.min(1.2, b.width / (tg.offsetWidth || b.width))), dx: dx, dy: dy, f: inside && c.on && !drag_ && !behindCard(el) && !(TOP && window.__abBusy && el.closest && el.closest(".ab-card")) ? Math.exp(-Math.pow(edge / reach, 2) * 1.8) : 0 });
     }
     /* filters are expensive: only the few components closest to the cursor get one, the rest relax back to normal */
     near.sort(function (a, z) { return z.f - a.f; });
     for (var q = 0; q < near.length; q++) {
-      var it = near[q], el = it.el, b = it.b, dx = it.dx, dy = it.dy, f = q < 6 ? it.f : 0;
+      var it = near[q], el = it.el, b = it.b, dx = it.dx, dy = it.dy, multi = el.children.length > 2, f = q < (multi ? 2 : 6) ? it.f : 0; /* multi: a card made of slices (Twister), the filter goes on every slice, only for the two nearest cards */
       var st = states.get(el);
       if (!st) { st = { b: 0, vb: 0, d: 0, vd: 0, set: 0, warp: null }; states.set(el, st); }
-      var tgt = el.__fxt || el, vs = it.vs; /* the filter works in the element's own pixels: far (small) cards get the matching boost, so every mode shows the panel's on-screen strength */
+      var tgt = multi ? el : el.__fxt || el, vs = it.vs; /* the filter works in the element's own pixels: far (small) cards get the matching boost, so every mode shows the panel's on-screen strength */
       spring(st, "b", f * c.blur * (.55 + sp * .9) / vs, .09, .82);
       spring(st, "d", f * c.distort * (.7 + sp * .6) / vs, .08, .84);
       var warp = st.d > .15;
@@ -157,8 +157,8 @@
           fl = "url(#" + st.warp.id + ") ";
         }
         if (st.b > .03) fl += "blur(" + st.b.toFixed(2) + "px)";
-        tgt.style.filter = fl;
-      } else if (st.set) { tgt.style.filter = ""; st.set = 0; }
+        if (multi) { for (var ci = 0; ci < el.children.length; ci++) el.children[ci].style.filter = fl; } else tgt.style.filter = fl;
+      } else if (st.set) { if (multi) { for (var cj = 0; cj < el.children.length; cj++) el.children[cj].style.filter = ""; } else tgt.style.filter = ""; st.set = 0; }
     }
     idle = active || inside ? 0 : idle + 1;
     if (inside || active || idle < 40) requestAnimationFrame(step); else run = false;
