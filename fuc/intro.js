@@ -10,6 +10,7 @@
   function $(s, r) { return (r || document).querySelector(s); }
   function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
   function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+  function twist(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; } /* gentle start, long soft landing */
   function setA(el, k, v) { if (el) el.setAttribute(k, v); }
   var big = $(".in-big", intro), pct = $(".in-pct", intro), bar = $(".in-line i", intro),
       liqO = $("#in-liq-o"), liqD = $("#in-liq-d"), edgeO = $("#in-edge-o"), holes = $("#in-holes"), red = $("#in-red");
@@ -42,29 +43,35 @@
       var cap = Math.min(100, (now - T0) / MIN * 100);
       p = Math.min(target, cap, p + Math.max((target - p) * 2.4, 12) * dt);
       pct.textContent = Math.floor(p) + "%"; bar.style.transform = "scaleX(" + (p / 100).toFixed(4) + ")";
-      if (p >= 99.9 && target >= 100) { finished = true; pct.textContent = "100%"; bar.style.transform = "scaleX(1)"; setTimeout(wipe, 350); }
+      if (p >= 99.9 && target >= 100) { finished = true; pct.textContent = "100%"; bar.style.transform = "scaleX(1)"; setTimeout(wipe, 250); }
     }
     if (!wiping || wipeActive) requestAnimationFrame(frame);
   }
   var wiping = false, wipeActive = false;
   requestAnimationFrame(frame);
 
-  /* ---- red -> black as a slow liquid wipe (blobs with turbulent edges growing from several points) ---- */
+  /* ---- red -> black: the red sinks as black liquid wells up from the bottom and the blobs melt into each other (gooey mask) ---- */
   function wipe() {
     clearInterval(poll); wiping = true; wipeActive = true; intro.classList.add("out");
-    var NS = "http://www.w3.org/2000/svg", R = Math.hypot(W, H), pts = [[0, H, 1.4, 0], [W * .72, H * .3, 1.15, 260], [W * .18, H * .15, 1.0, 520]], els = [];
+    var NS = "http://www.w3.org/2000/svg", R = Math.hypot(W, H), els = [], pts = [], N = 8, i;
+    /* a row of blobs along the bottom edge, rising one after another, plus two that come in higher up to close the gaps */
+    for (i = 0; i < N; i++) pts.push([W * (i + .5) / N + (i % 2 ? 1 : -1) * W * .02, H * (1.02 + (i % 3) * .03), 1.0 + (i % 3) * .12, 80 + Math.abs(i - N / 2 + .5) * 150 + (i % 2) * 90]);
+    pts.push([W * .3, H * .45, .85, 1100], [W * .75, H * .35, .9, 1400]);
     pts.forEach(function (q) { var e = document.createElementNS(NS, "ellipse"); e.setAttribute("fill", "#000"); e.setAttribute("cx", q[0]); e.setAttribute("cy", q[1]); e.setAttribute("rx", 0); e.setAttribute("ry", 0); holes.appendChild(e); els.push(e); });
-    var D = reduce ? 400 : 2700, s0 = performance.now();
+    var D = reduce ? 400 : 3200, s0 = performance.now(), rowGo = false, END = Math.max.apply(null, pts.map(function (q) { return q[3]; })) + D;
+    function sm(t) { return .5 - .5 * Math.cos(Math.PI * t); } /* sine in-out: no hard start, no hard stop */
     (function step(now) {
       var t = now - s0, all = true;
       els.forEach(function (e, i) {
-        var k = Math.max(0, Math.min(1, (t - pts[i][3]) / D)), r = ease(k) * R * pts[i][2];
-        e.setAttribute("rx", r.toFixed(1)); e.setAttribute("ry", (r * .92).toFixed(1)); if (k < 1) all = false;
+        var k = Math.max(0, Math.min(1, (t - pts[i][3]) / D)), r = sm(sm(k) * .35 + k * .65) * R * pts[i][2] * .62;
+        e.setAttribute("rx", r.toFixed(1)); e.setAttribute("ry", (r * 1.05).toFixed(1)); if (k < 1) all = false;
       });
-      setA(edgeO, "dx", (Math.sin(t / 600) * 120).toFixed(1)); setA(edgeO, "dy", (t / 8 % 600).toFixed(1));
+      setA(edgeO, "dx", (Math.sin(t / 1100) * 80).toFixed(1)); setA(edgeO, "dy", (t / 14 % 600).toFixed(1));
       liquid(now);
+      /* the portfolio row starts while the last of the red is still draining, so there is no dead pause */
+      if (!rowGo && t > END * .62) { rowGo = true; row_start(); }
       if (!all) return requestAnimationFrame(step);
-      wipeActive = false; red.setAttribute("display", "none"); intro.style.display = "none"; row_start();
+      wipeActive = false; red.setAttribute("display", "none"); intro.style.display = "none"; if (!rowGo) { rowGo = true; row_start(); }
     })(performance.now());
   }
 
@@ -80,28 +87,29 @@
     rw.style.marginTop = (-ch / 2) + "px";
     for (var i = 0; i < n; i++) { var d = document.createElement("div"); d.style.cssText = "width:" + cw + "px;height:" + ch + "px;background-image:url(" + list[i].image.src + ")"; rw.appendChild(d); }
     row.style.display = "block";
-    var total = n * (cw + 16), x0 = W + 40, x1 = -total - 40, D = 2600, s0 = performance.now();
+    var total = n * (cw + 16), x0 = W + 40, x1 = -total - 40, D = 3600, s0 = performance.now(), go = false;
     (function step(now) {
-      var k = Math.min(1, (now - s0) / D), x = x0 + (x1 - x0) * ease(k);
+      var k = Math.min(1, (now - s0) / D), x = x0 + (x1 - x0) * (.5 - .5 * Math.cos(Math.PI * k));
+      if (!go && k > .8) { go = true; reveal(); }
       rw.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
       if (k < 1) return requestAnimationFrame(step);
-      row.style.display = "none"; reveal();
+      row.style.display = "none"; if (!go) reveal();
     })(performance.now());
   }
 
   /* ---- the ribbon twists in from below, then the navbar and menu ---- */
   function reveal() {
     var gk = window.__galK && window.__galK.current, tl = $('[role="tablist"]'), cont = tl && tl.closest('div[style*="overflow"]');
-    var START = 1600, D = 1900, s0 = performance.now();
+    var START = 1200, D = 3600, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     root.classList.remove("intro-on");
-    if (cont && cont.animate) cont.animate([{ transform: "translateY(38vh)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: D, easing: "cubic-bezier(.22,1,.36,1)" });
+    if (cont && cont.animate) cont.animate([{ transform: "translateY(38vh)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: D, easing: "cubic-bezier(.33,0,.15,1)" });
     (function step(now) {
-      var k = Math.min(1, (now - s0) / D), v = START * (1 - easeOut(k));
+      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k));
       if (gk) { gk.ox = v; gk.tx = v; }
       if (k < 1) return requestAnimationFrame(step);
       if (gk) { gk.ox = 0; gk.tx = 0; }
     })(performance.now());
-    setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : 1100);
+    setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : 2200);
   }
 })();
