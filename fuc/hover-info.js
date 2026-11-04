@@ -33,11 +33,14 @@
     /* normal cards take the pointer, so the browser already knows which one is on top */
     var e = document.elementFromPoint(mx, my);
     for (var n = e; n && n !== document.body; n = n.parentElement) if (n.tagName === "DIV" && isCard(n) && n.closest("#main")) return n;
-    /* Twister: a card is cut into slices that ignore the pointer, so test them one by one and keep the one nearest to the viewer */
+    /* cards that ignore the pointer (Space, Twister: a Twister card is cut into slices): test them one by one and keep the one nearest to the viewer */
     var best = null, bz = -1e9, list = cards();
     for (var i = 0; i < list.length; i++) {
-      var c = list[i]; if (c.children.length <= 2) continue;
-      var r = c.getBoundingClientRect(); if (r.width < 20 || !inside(r, mx, my)) continue;
+      var c = list[i], r = c.getBoundingClientRect(); if (r.width < 20 || !inside(r, mx, my)) continue;
+      if (c.children.length <= 2) { /* a whole card: its image decides, and the one nearest to the viewer wins */
+        var im = c.querySelector("img"); if (im && !inside(im.getBoundingClientRect(), mx, my)) continue;
+        var z0 = depth(c, im || c) + (parseFloat(c.style.zIndex) || 0) * 1e-3; if (z0 > bz) { bz = z0; best = c; } continue;
+      }
       for (var k = 0; k < c.children.length; k++) {
         var sl = c.children[k]; if (!inside(sl.getBoundingClientRect(), mx, my)) continue;
         var z = depth(c, sl); if (z > bz) { bz = z; best = c; }
