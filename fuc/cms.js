@@ -2,9 +2,10 @@
    - Portfolio tab: add, edit, reorder and remove projects (image upload, name, description, category, year, link).
    - About tab: the About text, client list, email, booking link and social links.
    - Data tab: export / import everything as JSON, or reset to the original content.
-   Everything is saved in this browser (localStorage) and shows up on the site. The editor is its own page (cms.html, which
-   sets window.__cmsPage); the main page and the About page only read the data and pick up changes through the storage event.
-   Open the editor with Shift+C on the site, or go to cms.html. */
+   With server.py running, the editor asks for the CMS password once, then every change is published to content.json / uploads/
+   (visitors load content.json). Without the server it falls back to this browser only (localStorage).
+   The editor is its own page (cms.html, which sets window.__cmsPage); the main page and the About page only read the data
+   and pick up changes through the storage event. Open the editor with Shift+C on the site, or go to /cms. */
 (function () {
   if (window.__cmsLoaded) return;
   window.__cmsLoaded = 1;
@@ -25,12 +26,52 @@
   function read() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
   var data = read() || { items: null, about: {} };
   function site() { var o = Object.assign({}, DEF_SITE, (data && data.site) || {}); o.modes = DEF_SITE.modes.map(function (d, i) { return ((data.site || {}).modes || [])[i] || d; }); return o; }
-  function about() { return Object.assign({}, DEF_ABOUT, data.about || {}); }
+  function about() {
+    var o = Object.assign({}, DEF_ABOUT, data.about || {});
+    if (!Array.isArray(o.socials)) o.socials = SOCIALS.map(function (s) { return { label: s[1], url: o[s[0]] || "" }; });
+    return o;
+  }
+  var API = false, AUTHED = false, pushTimer = 0, pushing = false, pushAgain = false;
   var saveTimer = 0, statusEl = null;
   function setStatus(t, bad) { if (statusEl) { statusEl.textContent = t; statusEl.style.color = bad ? "#ff6b5e" : "rgba(242,242,242,.55)"; } }
   function persist() {
-    try { localStorage.setItem(KEY, JSON.stringify(data)); setStatus("Saved"); }
-    catch (e) { setStatus("Storage is full. Remove a project or use smaller images.", true); }
+    var ok = true;
+    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { ok = false; }
+    if (PAGE && API && AUTHED) { push(); return; }
+    if (ok) setStatus(PAGE && !API ? "Saved in this browser only" : "Saved"); else setStatus("Storage is full. Remove a project or use smaller images.", true);
+  }
+  /* publish to the server (content.json); runs one request at a time and re-runs if more edits came in meanwhile */
+  function push() {
+    if (pushing) { pushAgain = true; return; }
+    pushing = true; pushAgain = false; setStatus("Publishing…");
+    fetch("api/content", { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: data.items, about: data.about || {}, site: data.site || {} }) })
+      .then(function (r) { if (r.status === 401) { AUTHED = false; throw "auth"; } if (!r.ok) throw 0; return r.json(); })
+      .then(function (saved) {
+        var fix = false;
+        (saved.items || []).forEach(function (s) { (data.items || []).forEach(function (x) { if (x.id === s.id && /^data:/.test(x.src || "") && s.src !== x.src) { x.src = s.src; fix = true; } }); });
+        if (fix) { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} if (tab === "portfolio" && body) render(); }
+        pushing = false; if (pushAgain) push(); else setStatus("Published");
+      })
+      .catch(function (e) {
+        pushing = false;
+        if (e === "auth") { showLogin(); setStatus("Signed out", true); } else setStatus("Could not publish. Your edits are kept in this browser.", true);
+      });
+  }
+  /* take content.json from the server as the truth (visitors and the editor both do this) */
+  function applyRemote(j) {
+    if (!j || typeof j !== "object") return;
+    var next = { items: Array.isArray(j.items) ? j.items : null, about: j.about || {}, site: j.site || {} };
+    if (JSON.stringify(next) === JSON.stringify(data)) return;
+    data = next;
+    var ok = true; try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { ok = false; }
+    applyAbout();
+    if (ok) { try { window.dispatchEvent(new StorageEvent("storage", { key: KEY })); return; } catch (e) {} }
+    window.dispatchEvent(new Event("cms-change"));
+  }
+  function loadRemote(cb) {
+    fetch("content.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      .then(function (j) { if (j) applyRemote(j); if (cb) cb(!!j); });
   }
   function changed(immediate) {
     window.dispatchEvent(new Event("cms-change"));
@@ -89,14 +130,23 @@
     });
     var mail = document.querySelector('a[href^="mailto:"]');
     if (mail && a.email) { if (mail.getAttribute("href") !== "mailto:" + a.email) mail.setAttribute("href", "mailto:" + a.email); setLetters(mail, a.email); }
-    SOCIALS.forEach(function (s) {
-      [].forEach.call(document.querySelectorAll("a[href]"), function (el) {
-        if (el.textContent.trim().toLowerCase() !== s[1].toLowerCase()) return;
-        var url = a[s[0]];
-        el.style.display = url ? "" : "none";
-        if (url && el.getAttribute("href") !== url) el.setAttribute("href", url);
-      });
+    syncSocials(a.socials);
+  }
+  /* the "Discover" column: one link per entry, extra links are copies of the last one, unused originals are hidden */
+  function syncSocials(list) {
+    var lab = [].filter.call(document.querySelectorAll("p"), function (p) { return p.textContent.trim().toLowerCase() === "discover"; })[0];
+    var col = lab && lab.nextElementSibling; if (!col) return;
+    var as = [].filter.call(col.children, function (c) { return c.tagName === "A"; });
+    if (!as.length) return;
+    var shown = list.filter(function (s) { return s && s.label && s.url; });
+    shown.forEach(function (s, i) {
+      var a = as[i];
+      if (!a) { a = as[as.length - 1].cloneNode(true); a.setAttribute("data-cms-x", "1"); col.appendChild(a); as.push(a); }
+      a.style.display = "";
+      if (a.getAttribute("href") !== s.url) a.setAttribute("href", s.url);
+      setLetters(a, s.label);
     });
+    as.slice(shown.length).forEach(function (a) { if (a.hasAttribute("data-cms-x")) a.remove(); else a.style.display = "none"; });
   }
   var obsTimer = 0;
   function watch() {
@@ -109,7 +159,7 @@
     applyAbout(); window.dispatchEvent(new Event("cms-change"));
   });
 
-  if (ABOUT) { if (document.body) watch(); else addEventListener("DOMContentLoaded", watch); return; }
+  if (ABOUT) { if (document.body) watch(); else addEventListener("DOMContentLoaded", watch); loadRemote(); return; }
 
   /* ---------- main page: no editor here, only the shortcut and a copy of the original projects for the editor ---------- */
   if (!PAGE) {
@@ -123,7 +173,7 @@
     addEventListener("keydown", function (e) {
       if (e.shiftKey && (e.key === "C" || e.key === "c") && !/INPUT|TEXTAREA/.test((e.target || {}).tagName || "")) location.href = "cms.html";
     });
-    function start() { if (/cms/.test(location.hash)) location.href = "cms.html"; watch(); if (data.items) window.dispatchEvent(new Event("cms-change")); }
+    function start() { if (/cms/.test(location.hash)) location.href = "cms.html"; watch(); if (data.items) window.dispatchEvent(new Event("cms-change")); loadRemote(); }
     if (document.body) start(); else addEventListener("DOMContentLoaded", start);
     return;
   }
@@ -158,6 +208,30 @@
     };
     fr.onerror = function () { done(null); };
     fr.readAsDataURL(file);
+  }
+  /* with the server: store the image as a file and keep only its path; otherwise keep the data URL */
+  function uploadImage(dataUrl, done) {
+    if (!(API && AUTHED)) { done(dataUrl); return; }
+    fetch(dataUrl).then(function (r) { return r.blob(); }).then(function (b) {
+      return fetch("api/upload", { method: "POST", credentials: "same-origin", headers: { "Content-Type": b.type || "image/jpeg" }, body: b });
+    }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) { done(j.url); }).catch(function () { done(dataUrl); });
+  }
+  /* dropped / chosen image files become new projects */
+  function addFiles(files) {
+    files = [].filter.call(files || [], function (f) { return /^image\//.test(f.type); });
+    if (!files.length) return;
+    seedItems(); setStatus("Processing images…");
+    (function next(i) {
+      if (i >= files.length) { changed(true); render(); return; }
+      compress(files[i], function (out) {
+        if (!out) { next(i + 1); return; }
+        uploadImage(out, function (url) {
+          var id = "p" + Date.now().toString(36) + i;
+          data.items.unshift({ id: id, name: files[i].name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "), description: "", services: "", year: String(new Date().getFullYear()), link: "", src: url, srcSet: "" });
+          sel = id; tab = "portfolio"; next(i + 1);
+        });
+      });
+    })(0);
   }
   function bg(src) { return src ? "url('" + src.replace(/'/g, "%27") + "')" : ""; }
 
@@ -210,7 +284,7 @@
       var file = el("input", { type: "file", accept: "image/*", style: "display:none" });
       file.addEventListener("change", function () {
         if (!file.files[0]) return; setStatus("Processing image…");
-        compress(file.files[0], function (out) { if (out) setSrc(out); else setStatus("That image could not be read.", true); });
+        compress(file.files[0], function (out) { if (out) uploadImage(out, setSrc); else setStatus("That image could not be read.", true); });
       });
       var urlField = field("Or image URL", /^data:/.test(it.src) ? "" : it.src, function (v) { setSrc(v, true); }, { placeholder: "https://…" });
       right.append(
@@ -226,7 +300,7 @@
           field("Year", it.year, function (v) { it.year = v; if (rowEl) rowEl.querySelector(".cp-year").textContent = v; changed(); })
         ]),
         field("Link (optional)", it.link, function (v) { it.link = v; changed(); }, { placeholder: "https://…" }),
-        el("p", { class: "cp-hint" }, "Tip: 4:3 images fit the cards best. Images are resized to 1500px and stored in this browser.")
+        el("p", { class: "cp-hint" }, "Tip: 4:3 images fit the cards best. Drop image files anywhere on this page to add them as new projects. Images are resized to 1500px" + (API ? "." : " and stored in this browser."))
       );
     } else right.appendChild(el("p", { class: "cp-hint" }, "Select a project to edit it."));
     body.append(left, right);
@@ -241,8 +315,26 @@
       field("Trusted by", a.trustedBy, set("trustedBy"), { area: 1, rows: 3 }),
       field("Email", a.email, set("email")),
       field("Book a call link", a.call, set("call"), { placeholder: "https://…" }));
-    c2.appendChild(el("div", { class: "cp-label" }, "Social links (empty hides the link)"));
-    SOCIALS.forEach(function (s) { c2.appendChild(field(s[1], a[s[0]], set(s[0]), { placeholder: "https://…" })); });
+    c2.appendChild(el("div", { class: "cp-label" }, "Social links (empty link hides it)"));
+    var socials = a.socials.map(function (s) { return { label: s.label, url: s.url }; }), box = el("div", {});
+    function saveSocials() { data.about = data.about || {}; data.about.socials = socials.map(function (s) { return { label: s.label, url: s.url }; }); changed(); }
+    function drawSocials() {
+      box.textContent = "";
+      socials.forEach(function (s, i) {
+        var l = el("input", { type: "text", placeholder: "Name", "aria-label": "Name" }), u = el("input", { type: "text", placeholder: "https://…", "aria-label": "Link" });
+        l.value = s.label; u.value = s.url;
+        l.addEventListener("input", function () { s.label = l.value; saveSocials(); }); u.addEventListener("input", function () { s.url = u.value; saveSocials(); });
+        var up = el("button", { type: "button", class: "cp-mini", title: "Move up", onclick: function () { if (i > 0) { socials.splice(i - 1, 0, socials.splice(i, 1)[0]); saveSocials(); drawSocials(); } } }, "↑");
+        var dn = el("button", { type: "button", class: "cp-mini", title: "Move down", onclick: function () { if (i < socials.length - 1) { socials.splice(i + 1, 0, socials.splice(i, 1)[0]); saveSocials(); drawSocials(); } } }, "↓");
+        var del = el("button", { type: "button", class: "cp-mini cp-del", title: "Remove" }, "✕");
+        ask(del, "✕", function () { socials.splice(i, 1); saveSocials(); drawSocials(); });
+        box.appendChild(el("div", { class: "cp-soc" }, [l, u, el("span", { class: "cp-bar" }, [up, dn, del])]));
+      });
+    }
+    drawSocials();
+    c2.appendChild(box);
+    c2.appendChild(el("div", { class: "cp-actions" }, el("button", { type: "button", class: "cp-btn", onclick: function () { socials.push({ label: "", url: "" }); drawSocials(); var ins = box.querySelectorAll("input"); if (ins.length > 1) ins[ins.length - 2].focus(); } }, "+ Add link")));
+    c2.appendChild(el("p", { class: "cp-hint" }, "Any platform works: name it and paste the link. Rows without a name or link are not shown on the site."));
     body.append(c1, c2);
   }
 
@@ -270,7 +362,7 @@
       el("div", { class: "cp-actions" }, [el("button", { type: "button", class: "cp-btn", onclick: function () {
         ta.select(); try { navigator.clipboard.writeText(ta.value).then(function () { setStatus("Copied to clipboard"); }, function () { setStatus("Select the text and copy it"); }); } catch (e) { setStatus("Select the text and copy it"); }
       } }, "Copy JSON")]),
-      el("p", { class: "cp-hint" }, "Changes live in this browser only. To make them permanent for every visitor, copy the JSON and send it to be built into the site."));
+      el("p", { class: "cp-hint" }, API ? "Backup of everything on the site. The live copy is content.json in the site folder." : "The server is not running, so changes live in this browser only. Start it with python3 server.py to publish for every visitor."));
     var rs = el("button", { type: "button", class: "cp-btn cp-danger" }, "Reset all content");
     ask(rs, "Reset all content", function () { data = { items: null, about: {} }; try { localStorage.removeItem(KEY); } catch (e) {} window.dispatchEvent(new Event("cms-change")); sel = null; render(); setStatus("Back to the original content"); });
     c2.append(el("div", { class: "cp-label" }, "Import"), imp,
@@ -324,17 +416,64 @@
     '#cp .cp-f{display:block;margin-bottom:16px;font-size:12px;color:rgba(242,242,242,.6)}',
     '#cp .cp-f span{display:block;margin-bottom:6px}',
     '#cp .cp-two{display:grid;grid-template-columns:1fr 120px;gap:16px}',
+    '#cp .cp-soc{display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;margin-bottom:8px}',
+    '#cp .cp-login{grid-column:1/6;max-width:420px}',
+    '#cp .cp-err{min-height:18px;color:#ff8a7e}',
+    '#cp .cp-link{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;opacity:.7}',
+    '#cp .cp-link:hover{opacity:1}',
     '#cp input,#cp textarea{width:100%;padding:11px 12px;border:1px solid rgba(242,242,242,.16);border-radius:10px;background:rgba(242,242,242,.05);color:#f2f2f2;font:15px/1.4 "Inter Display",Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;resize:vertical;transition:border-color .3s}',
     '#cp input:focus,#cp textarea:focus{outline:none;border-color:rgba(242,242,242,.6)}',
     '#cp .cp-hint{margin:12px 0;font:13px/1.45 "Inter Display",Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;color:rgba(242,242,242,.5)}',
     '#cp :focus-visible{outline:1px solid rgba(242,242,242,.7);outline-offset:3px}',
     '@media (max-width:1439.98px){#cp{--m:24px}#cp .cp-grid{grid-template-columns:repeat(8,1fr)}#cp .cp-back{grid-column:1/3}#cp .cp-tabs{grid-column:3/7}#cp .cp-side{grid-column:7/9}#cp .cp-list{grid-column:1/4}#cp .cp-edit{grid-column:4/9}#cp .cp-col6{grid-column:span 4}}',
-    '@media (max-width:809.98px){#cp{--m:16px}#cp .cp-back{grid-column:1/-1;grid-row:1}#cp header .cp-grid{height:auto;padding-top:12px;padding-bottom:12px;row-gap:10px}#cp .cp-tabs{grid-column:1/-1;grid-row:2;justify-content:flex-start}#cp .cp-side{grid-column:1/-1;grid-row:1;justify-self:end}#cp .cp-list,#cp .cp-edit,#cp .cp-col6{grid-column:1/-1;position:static}}'
+    '@media (max-width:809.98px){#cp{--m:16px}#cp .cp-back{grid-column:1/-1;grid-row:1}#cp header .cp-grid{height:auto;padding-top:12px;padding-bottom:12px;row-gap:10px}#cp .cp-tabs{grid-column:1/-1;grid-row:2;justify-content:flex-start}#cp .cp-side{grid-column:1/-1;grid-row:1;justify-self:end}#cp .cp-list,#cp .cp-edit,#cp .cp-col6,#cp .cp-login{grid-column:1/-1;position:static}#cp .cp-soc{grid-template-columns:1fr 1fr}#cp .cp-soc .cp-bar{grid-column:1/-1}}'
   ].join("\n");
+
+  /* ---------- start: ask the server who we are, sign in if needed, then show the editor ---------- */
+  var logoutEl = null;
+  function enter() {
+    if (logoutEl) logoutEl.style.display = API ? "" : "none";
+    var go = function () {
+      var def = window.__cmsDefaults || defaults();
+      if (data.items || def) { render(); return; }
+      body.textContent = "";
+      body.appendChild(el("p", { class: "cp-hint", style: "grid-column:1/-1" }, "Loading the current projects…"));
+      var f = el("iframe", { src: "./", style: "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none", "aria-hidden": "true", tabindex: "-1" });
+      document.body.appendChild(f);
+      var n = 0, t = setInterval(function () { if (defaults() || ++n > 60) { clearInterval(t); f.remove(); render(); } }, 300);
+    };
+    if (!API) { setStatus("Saved in this browser only"); go(); return; }
+    /* the server copy wins; if it has none yet, publish what this browser already has */
+    fetch("content.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (j) {
+      if (j) applyRemote(j);
+      else if (data.items || Object.keys(data.about || {}).length || Object.keys(data.site || {}).length) push();
+      setStatus("Published"); go();
+    });
+  }
+  function showLogin() {
+    body.textContent = "";
+    var pw = el("input", { type: "password", autocomplete: "current-password", placeholder: "Password", "aria-label": "Password" }), err = el("p", { class: "cp-err cp-hint" });
+    var form = el("form", { class: "cp-login", onsubmit: function (e) {
+      e.preventDefault(); err.textContent = "";
+      fetch("api/login", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: pw.value }) })
+        .then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
+        .then(function (x) { if (x[0]) { AUTHED = true; enter(); } else { err.textContent = x[1].error || "Could not sign in"; pw.select(); } })
+        .catch(function () { err.textContent = "Could not reach the server"; });
+    } }, [el("div", { class: "cp-label" }, "Sign in to edit the site"), pw, err, el("div", { class: "cp-actions" }, el("button", { type: "submit", class: "cp-btn cp-add", style: "margin:0" }, "Sign in")),
+      el("p", { class: "cp-hint" }, "The password is in .cms-password next to server.py (or the CMS_PASSWORD you set).")]);
+    body.appendChild(form); pw.focus();
+  }
+  function boot() {
+    fetch("api/session", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      .then(function (s) { API = !!(s && s.api); AUTHED = !!(s && s.authed); if (API && !AUTHED) { if (logoutEl) logoutEl.style.display = "none"; showLogin(); } else enter(); });
+  }
 
   function build() {
     document.head.appendChild(el("style", {}, CSS));
     statusEl = el("span", { id: "cp-status" }, "Saved");
+    logoutEl = el("button", { type: "button", class: "cp-link", style: "display:none", onclick: function () {
+      fetch("api/logout", { method: "POST", credentials: "same-origin" }).then(function () { AUTHED = false; logoutEl.style.display = "none"; setStatus(""); showLogin(); });
+    } }, "Log out");
     tabsEl = el("div", { class: "cp-tabs" }, [["portfolio", "Portfolio"], ["about", "About"], ["site", "Site"], ["data", "Data"]].map(function (t) {
       return el("button", { type: "button", class: "cp-tab", "data-tab": t[0], onclick: function () { tab = t[0]; render(); window.scrollTo(0, 0); } }, t[1]);
     }));
@@ -342,20 +481,13 @@
     var back = el("a", { class: "cp-back", href: "./" }, "← Sehzade");
     back.addEventListener("click", function (e) { if (document.referrer && history.length > 1) { e.preventDefault(); history.back(); } });
     var root = el("div", { id: "cp" }, [
-      el("header", {}, el("div", { class: "cp-grid" }, [back, tabsEl, el("div", { class: "cp-side" }, [statusEl, el("a", { href: "./" }, "View site")])])),
+      el("header", {}, el("div", { class: "cp-grid" }, [back, tabsEl, el("div", { class: "cp-side" }, [statusEl, el("a", { href: "./" }, "View site"), logoutEl])])),
       el("main", {}, [el("div", { class: "cp-grid" }, el("h1", {}, "CMS")), body])
     ]);
     document.body.appendChild(root);
-    var def = window.__cmsDefaults || defaults();
-    if (data.items || def) render();
-    else {
-      body.appendChild(el("p", { class: "cp-hint", style: "grid-column:1/-1" }, "Loading the current projects…"));
-      var f = el("iframe", { src: "./", style: "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none", "aria-hidden": "true", tabindex: "-1" });
-      document.body.appendChild(f);
-      var n = 0, t = setInterval(function () {
-        if (defaults() || ++n > 60) { clearInterval(t); f.remove(); render(); }
-      }, 300);
-    }
+    addEventListener("dragover", function (e) { if (AUTHED || !API) { var t = (e.dataTransfer || {}).types; if (t && [].indexOf.call(t, "Files") >= 0) e.preventDefault(); } });
+    addEventListener("drop", function (e) { if (!(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length)) return; e.preventDefault(); if (API && !AUTHED) return; addFiles(e.dataTransfer.files); });
+    boot();
     document.title = "CMS — Sehzade";
   }
   if (document.body) build(); else addEventListener("DOMContentLoaded", build);
