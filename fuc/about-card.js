@@ -171,7 +171,7 @@
     if (on === bending) return;
     if (on) { if (!strip()) return; syncScroll(); }
     bending = on; pauseFrame(on || !open_);
-    bend.style.opacity = on ? "1" : ""; card.style.opacity = on ? "0" : "";
+    bend.style.opacity = on ? "1" : ""; card.style.opacity = on ? ".01" : ""; /* never 0: a layer at 0 may lose its raster and come back blank (a blink) */
     if (!on) for (var i = 0; i < strips.length; i++) { strips[i].a = strips[i].g = 0; strips[i].s.style.transform = ""; }
   }
   /* every strip replays the motion of the one above it a little later, so the bend travels down the sheet like a wave */
@@ -215,7 +215,7 @@
     if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 30) { var med = dts.slice().sort(function (a, b) { return a - b; })[15]; if (med > .021 && !window.__aboutNoAuto) { slow = true; try { localStorage.setItem(SLOWKEY, "1"); } catch (e) {} } dts = []; } }
     var amp = slow || touchy || !strips.length || quality() !== builtQ ? 0 : ampNow(), moving = !calm || drag || energy > 8;
     /* the bend is only switched off after the motion has really stopped (a short hold); switching live page <-> strip copy on every small change of speed made the card blink */
-    var want = moving && amp > 0 && !reduce.matches, hold = bending && now - lastBend < 380;
+    var want = (drag || glide || energy > 8) && amp > 0 && !reduce.matches, /* only real interaction bends the sheet, not the entrance spring */ hold = bending && now - lastBend < 380;
     if (want) lastBend = now;
     if (want && !bending) setBending(true);
     if (bending) { if (want || hold) bendFrame(now, want ? amp : 0); else setBending(false); }
@@ -334,7 +334,7 @@
   }
   function open() {
     build(); layout();
-    var q = quality(); if (q !== lastQ) { if (lastQ !== undefined) { slow = false; try { localStorage.removeItem(SLOWKEY); } catch (e) {} } lastQ = q; dirty = true; scheduleBuild(200); }
+    var q = quality(); if (q !== lastQ) { if (lastQ !== undefined) { slow = false; try { localStorage.removeItem(SLOWKEY); } catch (e) {} } /* first opening: the copy built while idle is already right; rebuilding it now would land on the first drag */ var fresh = lastQ === undefined && strips.length && builtQ === q && !dirty; lastQ = q; if (!fresh) { dirty = true; scheduleBuild(200); } }
     if (open_) return; open_ = true; window.__abOpen = true;
     sheet.style.visibility = "visible";
     glide = false; var h = hiddenPose(); S.x = h.x; S.y = h.y; S.r = h.r; S.s = h.s; S.rx = h.rx; S.ry = 0;
