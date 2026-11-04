@@ -119,7 +119,7 @@
     return page;
   }
   /* a cheap fingerprint of what the live page shows; when it changes (content appears, text is edited) the copy is rebuilt */
-  var builtSig = "";
+  var builtSig = "", contentVer = 0; /* contentVer: bumps only when the page itself is (re)loaded or edited, never because of the fit (a scaled page may switch layout variant, which would re-trigger the fit and flicker) */
   function sig(win) {
     var d = win.document, m = d.getElementById("main"); if (!m) return "";
     return m.getElementsByTagName("*").length + ":" + (m.innerText || "").length + ":" + d.querySelectorAll('[style*="opacity: 0;"],[style*="opacity:0"]').length + ":" + d.querySelectorAll(".ab-type").length;
@@ -251,7 +251,7 @@
   }
   var needKey = "", needVal = 0, needBusy = false;
   function frameFit() {
-    var base = Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, key = W.toFixed(1) + ":" + H.toFixed(1) + ":" + builtSig;
+    var base = Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, key = W.toFixed(1) + ":" + H.toFixed(1) + ":" + contentVer;
     var k = base;
     if (key === needKey) { if (needVal > avail / base + 1) k = Math.max(.55, avail / needVal); }
     else if (!needBusy) {
@@ -294,9 +294,9 @@
     sheet.append(shadow, bend, card); document.body.append(backdrop, sheet);
     layout(); S = hiddenPose(); paint();
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
-    frame.addEventListener("load", function () { paused = null; pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
+    frame.addEventListener("load", function () { contentVer++; setTimeout(function () { contentVer++; layout(); }, 1800); paused = null; pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
     addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
-    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); copyEl.textContent = siteText("copyright", "\u00a9 Sehzade 2026"); layout(); dirty = true; scheduleBuild(500); } });
+    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { contentVer++; nameTxt.textContent = cardName(); copyEl.textContent = siteText("copyright", "\u00a9 Sehzade 2026"); layout(); dirty = true; scheduleBuild(500); } });
     grip.addEventListener("pointerdown", function (e) { if (e.button || e.target.closest("button")) return; e.preventDefault(); grip.setPointerCapture(e.pointerId); begin(e.clientX, e.clientY, true); });
     grip.addEventListener("pointermove", function (e) { if (drag) move(e.clientX, e.clientY); });
     grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
