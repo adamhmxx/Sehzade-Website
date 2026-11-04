@@ -53,9 +53,11 @@
 
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   var cur = null;
+  /* the logo (first link of the navbar) has no hover effect */
+  function isLogo(el) { return !!(el.matches && el.matches('nav a[href="/"], nav a[href="./"]')); }
   document.addEventListener("mouseover", function (e) {
     var el = e.target.closest && e.target.closest(SEL);
-    if (!el || el === cur) return;
+    if (!el || el === cur || isLogo(el)) return;
     cur = el;
     play(el);
   }, true);

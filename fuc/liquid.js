@@ -12,14 +12,14 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.66, blur: 0.6, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 100, pq: 2, cfa: 40, cdx: 6.5, cdy: 5, cdz: 16, cscl: 90, clift: 9, clz: 0, cspr: 60, cstep: 22, twr: 40, twp: 90, twsc: 100, twg: 101, twn: 14, fstep: 100, fnear: 560, fbl: 14, fsc: 68, fx: 44, fy: 42, grad: 34, gbl: 7, ggap: 16, gstag: 0, gpar: 20 };
+  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.66, blur: 0.6, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 100, pq: 2, cfa: 40, cdx: 6.5, cdy: 5, cdz: 16, cscl: 90, clift: 9, clz: 0, cspr: 60, cstep: 22, twr: 40, twp: 90, twsc: 100, twg: 101, twn: 14, cbl: 0, gsz: 100, fstep: 100, fnear: 560, fbl: 14, fsc: 68, fx: 44, fy: 42, grad: 34, gbl: 7, ggap: 16, gstag: 0, gpar: 20 };
   var KEY = "liquid-cfg-v1";
   function load() {
     try {
       var sv = JSON.parse(localStorage.getItem(KEY) || "{}");
       /* link hover defaults were retuned (slower, softer): drop link values saved by older versions once */
       /* defaults were retuned: drop values saved by older versions once */
-      if (sv.lv !== 8) sv = { on: sv.on, lv: 8 };
+      if (sv.lv !== 9) sv = { on: sv.on, lv: 9 };
       return Object.assign({}, DEF, sv);
     }
     catch (e) { return Object.assign({}, DEF); }
@@ -79,7 +79,7 @@
   function scan(now) {
     if (now - lastScan < 600) return;
     lastScan = now;
-    var list = [].slice.call(document.querySelectorAll(SEL));
+    var list = [].slice.call(document.querySelectorAll(SEL)).filter(function (e) { return !(e.matches && e.matches('nav a[href="/"], nav a[href="./"], nav a[href="/"] *, nav a[href="./"] *')); });
     if (!ABOUT) {
       [].forEach.call(document.querySelectorAll("div"), function (d) {
         var st = d.style;
@@ -150,7 +150,10 @@
           if (!st.warp) st.warp = makeWarp(el, b);
           /* the noise field slides with the cursor, so the distortion flows like liquid instead of pulsing */
           st.warp.map.setAttribute("scale", (st.d * st.warp.k).toFixed(2));
-          st.warp.off.setAttribute("dx", (-dx * .35).toFixed(1)); st.warp.off.setAttribute("dy", (-dy * .35).toFixed(1));
+          /* the noise field follows the cursor through a low-pass filter: raw pointer jumps made large text shimmer */
+          if (st.ox === undefined) { st.ox = -dx * .35; st.oy = -dy * .35; }
+          st.ox += (-dx * .35 - st.ox) * .12; st.oy += (-dy * .35 - st.oy) * .12;
+          st.warp.off.setAttribute("dx", st.ox.toFixed(1)); st.warp.off.setAttribute("dy", st.oy.toFixed(1));
           fl = "url(#" + st.warp.id + ") ";
         }
         if (st.b > .03) fl += "blur(" + st.b.toFixed(2) + "px)";
@@ -212,8 +215,10 @@
       ["clift", "Hover lift", 0, 30, .5, "%"],
       ["clz", "Hover forward", 0, 120, 1, "px"],
       ["cspr", "Hover spread", 0, 200, 5, "%"],
+      ["cbl", "Depth blur", 0, 12, .5, "px"],
       ["#", "Globe"],
       ["grad", "Radius", 15, 60, 1, "%"],
+      ["gsz", "Card size", 50, 150, 1, "%"],
       ["gbl", "Depth blur", 0, 20, 1, "px"],
       ["#", "Grid"],
       ["ggap", "Gap", 0, 64, 1, "px"],
@@ -226,7 +231,24 @@
       ["twp", "Rise per turn", 50, 200, 5, "%"],
       ["twsc", "Card size", 60, 120, 1, "%"]
     ];
-    var GALLERY = /^(c(fa|dx|dy|dz|scl|step|lift|lz|spr)|tw(r|p|sc|g|n)|f(step|near|bl|sc|x|y)|grad|gbl|ggap|gstag|gpar)$/;
+    var DESC = {
+      radius: "Size of the liquid blob that follows the cursor.", softness: "How soft the blob's edge is. Lower is sharper.", brightness: "How bright the blob glows over the background.",
+      trail: "Length of the blob's tail behind the cursor.", distort: "How strongly text and cards ripple when the cursor is near.", blur: "Soft blur added to components close to the cursor.",
+      reach: "How far from the cursor components still react.",
+      ldur: "How long the letter slide on links takes.", ldist: "How far letters travel while sliding in.", lblur: "Blur on the letters during the slide.", lstag: "Delay between one letter and the next.",
+      pliq: "Ripple strength on the About card text while it moves.", pq: "Paper-bend effect on the About card while it is dragged. 0 off, 1 light, 2 full (heavier).",
+      fstep: "Distance between items along the depth of Space. Higher spreads them further apart in depth.", fnear: "How close to the screen items get before they pass you.",
+      fsc: "Size of every card in Space.", fx: "How far items spread left and right.", fy: "How far items spread up and down.", fbl: "Blur on items that are far away.",
+      cfa: "How much the cards turn sideways. 0 faces you, higher turns them toward the left.", cdx: "Horizontal gap between neighbouring cards along the diagonal.",
+      cdy: "Vertical gap between neighbouring cards along the diagonal.", cdz: "How quickly cards shrink toward the back. Higher makes the deck feel deeper.",
+      cscl: "Size of every card in Cross.", cstep: "How far the deck moves for each scroll.", clift: "How high a hovered card rises.", clz: "How far a hovered card comes toward you.",
+      cspr: "How far the neighbours of a hovered card move away.", cbl: "Blur on cards far at the back. 0 keeps them sharp.",
+      grad: "Size of the globe relative to the screen.", gsz: "Size of every card on the globe.", gbl: "Blur on cards on the far side of the globe.",
+      ggap: "Space between cards in the grid.", gstag: "Shifts every second column down to make the grid uneven.", gpar: "How much columns move at different speeds when you scroll.",
+      twr: "Radius of the spiral. Smaller is a tighter, rounder curve.", twn: "How many slices each card is cut into. More is smoother but heavier.",
+      twg: "Gap between neighbouring cards. 100 means they touch, higher opens gaps.", twp: "How steeply the ribbon climbs each turn. Lower packs the turns closer together.", twsc: "Size of every card in Twister."
+    };
+    var GALLERY = /^(c(fa|dx|dy|dz|scl|step|lift|lz|spr)|tw(r|p|sc|g|n)|f(step|near|bl|sc|x|y)|cbl|gsz|grad|gbl|ggap|gstag|gpar)$/;
     var css = document.createElement("style");
     css.textContent =
       '#liquid-ui{position:fixed;right:var(--lm,32px);bottom:88px;z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
@@ -244,6 +266,7 @@
       '#liquid-ui .lq-demo{display:inline-block;margin:0 0 12px;font-size:16px;color:#f2f2f2;text-decoration:none;cursor:pointer}' +
       '#liquid-ui .lq-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:13px}' +
       '#liquid-ui .lq-row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin-bottom:11px;font-size:11px;color:rgba(242,242,242,.72)}' +
+      '#liquid-ui .lq-desc{grid-column:1/-1;font-size:10px;line-height:1.35;color:rgba(242,242,242,.45);text-transform:none!important;letter-spacing:.01em!important;font-family:Inter,-apple-system,sans-serif!important}' +
       '#liquid-ui .lq-row b{font-weight:400;color:#f2f2f2;font-variant-numeric:tabular-nums}' +
       '#liquid-ui input[type=range]{grid-column:1/-1;width:100%;height:16px;margin:0;background:none;-webkit-appearance:none;appearance:none;cursor:pointer}' +
       '#liquid-ui input[type=range]::-webkit-slider-runnable-track{height:2px;border-radius:2px;background:rgba(242,242,242,.22)}' +
@@ -301,7 +324,9 @@
       inp.value = own[r[0]]; show();
       inp.addEventListener("input", function () { own[r[0]] = +inp.value; show(); save(); kick(); if (GALLERY.test(r[0])) { window.__gcfgV = (window.__gcfgV || 0) + 1; if (r[0][0] !== "c") dispatchEvent(new Event("cms-change")); } });
       inputs[r[0]] = [inp, show];
-      row.append(name, val, inp); host.appendChild(row);
+      row.append(name, val, inp);
+      if (DESC[r[0]]) { var dsc = document.createElement("small"); dsc.className = "lq-desc"; dsc.textContent = DESC[r[0]]; row.appendChild(dsc); }
+      host.appendChild(row);
     });
     var savedTab = "Cursor"; try { savedTab = localStorage.getItem(KEY + "-tab") || "Cursor"; } catch (e) {}
     setPage(pages[savedTab] ? savedTab : "Cursor");
