@@ -50,7 +50,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
 #panel button,#pn-toggle{font:inherit;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--paper);background:transparent;border:1px solid rgba(242,242,242,.22);border-radius:999px;padding:8px 6px;cursor:pointer;transition:border-color .4s,background .4s}
 #panel button:hover,#pn-toggle:hover{border-color:rgba(242,242,242,.6);background:rgba(242,242,242,.08)}
 #panel :focus-visible,#pn-toggle:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
-#pn-toggle{position:fixed;top:max(16px,env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));z-index:5;padding:8px 14px;background:rgba(14,14,14,.7)}
+#pn-toggle{font-family:"Anton",Impact,sans-serif;position:fixed;top:max(16px,env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));z-index:5;padding:8px 14px;background:rgba(14,14,14,.7)}
 #panel:not(.shut)~#pn-toggle{opacity:0;pointer-events:none}
 @media (max-width:600px){#panel{top:auto;bottom:max(16px,env(safe-area-inset-bottom,0px));max-height:55%}#pn-toggle{top:auto;bottom:max(16px,env(safe-area-inset-bottom,0px))}#replay{display:none}}
 </style>
@@ -64,12 +64,12 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
 (function () {
   var TEMPLATE = '<div id="intro" aria-hidden="true">\n<svg class="in-bg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><defs>\n<filter id="in-edge" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur id="in-edge-b" in="SourceGraphic" stdDeviation="22" result="b"/><feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 13 -5" result="g"/><feGaussianBlur in="g" stdDeviation="1.2"/></filter>\n<mask id="in-mask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="4000" height="3000"><rect x="-200" y="-200" width="4000" height="3000" fill="#fff"/><g id="in-holes"></g></mask>\n<filter id="in-liquid" x="-25%" y="-60%" width="150%" height="240%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>\n</defs><rect id="in-red" x="-200" y="-200" width="4000" height="3000" fill="#ff2d20" mask="url(#in-mask)"/></svg>\n<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Designer</span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>\n</div>\n';
   var CFG = {
-    min: 3300,          /* shortest time the loading screen stays (ms) */
+    min: 2400,          /* shortest time the loading screen stays (ms) */
     line: 2,            /* loading line thickness (px) */
-    letterDelay: 250, letterTime: 1100, letterStagger: 85,           /* SEHZADE letters rising (ms) */
-    liquid: 9, liquidBurst: 22, liquidBurstTime: 2600,               /* ripple on the letters: steady, opening burst (px), how long the burst takes */
-    exitTime: 1100, exitMelt: 70, exitStagger: 50,                   /* text leaving: time (ms), liquid melt (px), letter stagger (ms) */
-    wipeTime: 3200, wipeStagger: 100, wipeSoft: 22, wipeWobble: 110  /* red to black: blob grow time (ms), start spacing (%), goo softness (px), edge wobble */
+    letterDelay: 600, letterTime: 1100, letterStagger: 50,           /* SEHZADE letters rising (ms) */
+    liquid: 10, liquidBurst: 10, liquidBurstTime: 3100,               /* ripple on the letters: steady, opening burst (px), how long the burst takes */
+    exitTime: 1000, exitMelt: 80, exitStagger: 50,                   /* text leaving: time (ms), liquid melt (px), letter stagger (ms) */
+    wipeTime: 3300, wipeStagger: 130, wipeSoft: 50, wipeWobble: 300  /* red to black: blob grow time (ms), start spacing (%), goo softness (px), edge wobble */
   };
   window.__run = 0;
   function play() {
@@ -175,8 +175,8 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     ["#", "Red to black"],
     ["wipeTime", "Blob grow time", 800, 8000, 100, "ms", "How long each black blob takes to grow. Higher is slower and smoother."],
     ["wipeStagger", "Blob stagger", 0, 250, 5, "%", "Spacing between blobs starting. 0 all at once, 100 default, higher is a longer rolling wipe."],
-    ["wipeSoft", "Goo softness", 4, 50, 1, "px", "How much the blobs melt into each other. Higher is gooier, lower is sharper."],
-    ["wipeWobble", "Edge wobble", 0, 300, 5, "", "How much each blob breathes, which keeps the edge flowing."]
+    ["wipeSoft", "Goo softness", 4, 80, 1, "px", "How much the blobs melt into each other. Higher is gooier, lower is sharper."],
+    ["wipeWobble", "Edge wobble", 0, 600, 5, "", "How much each blob breathes, which keeps the edge flowing."]
   ];
   var ui = document.getElementById("panel"), list = document.getElementById("panel-list"), inputs = {}, pend = 0;
   function replayLater() { clearTimeout(pend); pend = setTimeout(play, 350); }

@@ -3,8 +3,8 @@
    twisting from below, and last the navbar and the mode menu appear. Add #nointro to the address to skip it. */
 (function () {
   /* every value of the loading sequence; the Liquid panel (Shift+L, tab "Intro") edits them and "Replay intro" runs it again */
-  var DEF = { imin: 3300, iline: 2, iltr: 1100, ildl: 250, ilst: 85, iliq: 9, iliqp: 22, iliqd: 2600, ioutd: 1100, ioutl: 70, ioutst: 50,
-    iwdur: 3200, iwst: 100, iwsoft: 22, iwedge: 110, ircard: 26, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itstag: 150, itcdur: 1800, itdist: 100, itstart: 500, itgo: 80, itui: 2200 };
+  var DEF = { imin: 2400, iline: 2, iltr: 1100, ildl: 600, ilst: 50, iliq: 10, iliqp: 10, iliqd: 3100, ioutd: 1000, ioutl: 80, ioutst: 50,
+    iwdur: 3300, iwst: 130, iwsoft: 50, iwedge: 300, ircard: 26, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itstag: 150, itcdur: 1800, itdist: 100, itstart: 500, itgo: 80, itui: 2200 };
   window.__introDef = DEF;
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
   var root = document.documentElement;
