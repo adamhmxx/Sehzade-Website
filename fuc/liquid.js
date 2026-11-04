@@ -75,23 +75,54 @@
   }
 
   /* ---------- components: blur only ---------- */
-  var states = new Map(), els = [], lastScan = 0;
+  var states = new Map(), els = [], twCards = [], lastScan = 0;
   var SEL = ABOUT ? "h1,p,a[href],.abx-top span,.abx-name span" : "nav a,nav span,[role=tab]";
   function scan(now) {
     if (now - lastScan < 600) return;
     lastScan = now;
-    var list = [].slice.call(document.querySelectorAll(SEL));
+    var list = [].slice.call(document.querySelectorAll(SEL)), tw = [];
     if (!ABOUT) {
       [].forEach.call(document.querySelectorAll("div"), function (d) {
         var st = d.style;
         /* gallery cards. A Twister card is built from many 3D slices: a filter on it (or on one slice) flattens or tears the ribbon, so those cards take no distortion or blur, only the cursor blob */
-        if (st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex) { if (d.childElementCount <= 1) list.push(d); }
+        if (st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex) { if (d.childElementCount <= 1) list.push(d); else tw.push(d); }
         else if (st.zIndex === "7000") [].forEach.call(d.children, function (c) { list.push(c); });           /* project caption */
       });
     }
     /* forget components React has removed, together with their filters */
     states.forEach(function (st, el) { if (!el.isConnected) { if (st.warp) { var f = document.getElementById(st.warp.id); if (f) f.remove(); } states.delete(el); } });
     els = list.filter(function (e) { return !e.closest("#liquid-ui") && (!e.querySelector("p,h1,h2") || e.matches("a,span")); });
+    twCards = tw;
+  }
+  /* Twister cards are built from many 3D slices, and a filter would flatten or tear the ribbon. So the liquid is made out of geometry instead:
+     the slices under the cursor ride a soft travelling wave (a seamless ripple of the picture itself), with the same strength, reach and
+     springs as the other components. It uses the separate CSS "translate" property, which never disturbs the slice's own 3D transform. */
+  function twStep(c, sp, on, now) {
+    var reach = c.reach + 80, any = 0, todo = [];
+    for (var n = 0; n < twCards.length; n++) {
+      var card = twCards[n];
+      if (!card.isConnected) continue;
+      var cb = card.getBoundingClientRect();
+      var near = on && Math.hypot(cb.left + cb.width / 2 - mx, cb.top + cb.height / 2 - my) < reach + 480;
+      if (!near && !card.__lqOn) continue;
+      var kids = card.children, rs = [];
+      for (var k = 0; k < kids.length; k++) { var r = kids[k].getBoundingClientRect(); rs.push(r); }
+      todo.push([card, kids, rs, near]);
+    }
+    for (var t = 0; t < todo.length; t++) {
+      var card = todo[t][0], kids = todo[t][1], rs = todo[t][2], still = 1;
+      for (var j = 0; j < kids.length; j++) {
+        var r = rs[j], x = r.left + r.width / 2, y = r.top + r.height / 2, st = kids[j].__lq || (kids[j].__lq = { y: 0, vy: 0, x: 0, vx: 0 });
+        var d = Math.hypot(x - mx, y - my), f = todo[t][3] ? Math.exp(-Math.pow(d / reach, 2) * 1.8) : 0;
+        var amp = f * c.distort * (.8 + sp * .7) * 1.4, ph = x * .03 + y * .018 + now * .0055;
+        spring(st, "y", amp * Math.sin(ph), .14, .72); spring(st, "x", amp * .4 * Math.cos(ph * .8 + 1), .14, .72);
+        if (Math.abs(st.y) > .08 || Math.abs(st.x) > .08) { kids[j].style.translate = st.x.toFixed(2) + "px " + st.y.toFixed(2) + "px"; still = 0; }
+        else if (st.set !== 0) { kids[j].style.translate = ""; st.set = 0; st.y = st.x = st.vy = st.vx = 0; }
+        if (Math.abs(st.y) > .08) st.set = 1;
+      }
+      card.__lqOn = !still; if (!still) any = 1;
+    }
+    return any;
   }
   var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
   function makeWarp(el, b) {
@@ -162,7 +193,8 @@
         tgt.style.filter = fl;
       } else if (st.set) { tgt.style.filter = ""; st.set = 0; }
     }
-    idle = active || inside ? 0 : idle + 1;
+    var twAny = twStep(c, sp, inside && c.on && !drag_ && !(TOP && window.__abOpen), now);
+    idle = active || twAny || inside ? 0 : idle + 1;
     if (inside || active || idle < 40) requestAnimationFrame(step); else run = false;
   }
   function kick() { if (!run) { run = true; requestAnimationFrame(step); } }
@@ -211,13 +243,14 @@
       ["iseepb", "Red seeps: direction (100 = from bottom)", 0, 100, 1, "%"],
       ["iseepr", "Red seeps: hot edge glow", 0, 100, 1, "%"],
       ["iseepg", "Red seeps: grain", 0, 10, 1, "%"],
-      ["ircard", "Portfolio row: card size", 12, 50, 1, "% of width"],
+      ["ircard", "Portfolio row: card size vs Twister card", 40, 160, 1, "%"],
       ["irgap", "Portfolio row: gap", 0, 80, 1, "px"],
       ["irn", "Portfolio row: cards", 3, 14, 1, ""],
       ["irdur", "Portfolio row: travel time", 1200, 8000, 100, "ms"],
       ["irgo", "Portfolio row starts at", 20, 100, 1, "% of seep"],
       ["itdelay", "Pause before the Twister (row gone)", 0, 6000, 100, "ms"],
       ["itdur", "Twister: rise time", 1200, 8000, 100, "ms"],
+      ["itslices", "Twister: slices while rising (fewer is smoother)", 4, 40, 1, ""],
       ["itdist", "Twister: start distance below screen", 20, 200, 5, "vh"],
       ["itstart", "Twister: ribbon turn while rising", 0, 3000, 50, "px"],
       ["itui", "Navbar & menu appear after", 0, 6000, 100, "ms"],
@@ -271,10 +304,10 @@
       iseepl: "How far the deeper layers of red (dark red, then smoky ember) trail behind the surface. 0 is a single flat layer.", iseepd: "Size of the patches the red breaks into. Low is a few big areas, high is many fine ones.",
       iseepf: "How fast the patches drift while they dissolve. 0 keeps them still.", iseepb: "0 soaks in at random places, 100 soaks in from the bottom of the screen upward.",
       iseepr: "Warm glow along the edge of the red as it is absorbed.", iseepg: "Fine film grain that keeps the gradients from banding.",
-      ircard: "Size of each portfolio card in the row, as a share of the screen width.", irgap: "Space between the portfolio cards.", irn: "How many portfolio cards pass by.",
+      ircard: "Size of each portfolio card in the row compared with the front card of the Twister. 100 makes them exactly as large.", irgap: "Space between the portfolio cards.", irn: "How many portfolio cards pass by.",
       irdur: "Time the portfolio row takes to cross the screen.", irgo: "When the portfolio row starts, as a share of the red being absorbed. Lower starts it earlier.",
       itdelay: "How long the screen stays empty and black after the portfolio row has sunk off the left, before the Twister comes up.", itdur: "How long the whole ribbon takes to rise from below into place.",
-      itdist: "How far below the screen the ribbon starts, in screen heights. 100 starts fully out of sight.", itstart: "How far the ribbon turns while it rises. 0 keeps it still, higher turns it more.",
+      itslices: "While the ribbon rises it is drawn with fewer slices so the motion stays smooth; the full count returns when it has landed.", itdist: "How far below the screen the ribbon starts, in screen heights. 100 starts fully out of sight.", itstart: "How far the ribbon turns while it rises. 0 keeps it still, higher turns it more.",
       itui: "When the navbar and the mode menu fade in after the Twister starts rising.",
       radius: "Size of the liquid blob that follows the cursor.", softness: "How soft the blob's edge is. Lower is sharper.", brightness: "How bright the blob glows over the background.",
       trail: "Length of the blob's tail behind the cursor.", distort: "How strongly text and cards ripple when the cursor is near.", blur: "Soft blur added to components close to the cursor.",

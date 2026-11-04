@@ -7,7 +7,7 @@
 (function () {
   var DEF = { imin: 2400, iline: 2, ildl: 600, iltr: 1300, ilst: 60, iliq: 8, iliqp: 20, iliqd: 3100, ioutd: 800, ioutl: 200,
     iseept: 3200, iseeps: 18, iseepl: 20, iseepd: 60, iseepf: 130, iseepb: 30, iseepr: 30, iseepg: 4,
-    ircard: 26, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itdelay: 1000, itdur: 3600, itdist: 100, itstart: 1200, itui: 2200 };
+    ircard: 100, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itdelay: 500, itslices: 10, itdur: 3600, itdist: 100, itstart: 1200, itui: 2200 };
   window.__introDef = DEF;
   var CFG = {};
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
@@ -173,10 +173,25 @@
     var a = (window.__cmsItems && window.__cmsItems()) || window.__cmsDefaults || [];
     return [].filter.call(a, function (it) { return it && it.image && it.image.src; });
   }
+  /* the portfolio row cards are exactly as large as the front card of the Twister that follows: measured from the live ribbon (hidden behind the intro) */
+  function twisterCardWidth() {
+    var best = 0;
+    [].forEach.call(document.querySelectorAll("#main div"), function (d) {
+      var st = d.style; if (!(st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex && d.childElementCount > 1)) return;
+      var b = d.getBoundingClientRect(); if (b.left + b.width / 2 < 0 || b.left + b.width / 2 > W) return;
+      var f = d.children[0].getBoundingClientRect(), l = d.children[d.children.length - 1].getBoundingClientRect();
+      best = Math.max(best, Math.abs(l.right - f.left));
+    });
+    return best > 60 ? Math.min(best, W * .95) : W * .3;
+  }
+  /* the Twister is built from many slices; while it rises it uses fewer (the same ribbon, lighter), then the full count comes back */
+  var effBefore;
+  function lighten() { effBefore = window.__twEff; window.__twEff = Math.min(effBefore || 99, CFG.itslices); window.dispatchEvent(new Event("cms-change")); }
+  function restore() { window.__twEff = effBefore; window.dispatchEvent(new Event("cms-change")); }
   function row_start() {
     var list = items(), rw = $(".rw", row);
     if (!list.length || reduce) return reveal();
-    var cw = Math.max(160, Math.min(520, W * CFG.ircard / 100)), ch = cw * .75, n = Math.min(list.length, CFG.irn), gap = CFG.irgap;
+    var cw = Math.max(120, twisterCardWidth() * CFG.ircard / 100), ch = cw * .75, n = Math.min(list.length, CFG.irn), gap = CFG.irgap;
     rw.style.gap = gap + "px";
     rw.style.marginTop = (-ch / 2) + "px";
     for (var i = 0; i < n; i++) { var d = document.createElement("div"); d.style.cssText = "width:" + cw + "px;height:" + ch + "px;background-image:url(" + list[i].image.src + ")"; rw.appendChild(d); }
@@ -187,13 +202,14 @@
       rw.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
       if (k < 1) return requestAnimationFrame(step);
       /* the row has sunk off the left edge completely: a calm pause on the empty black, then the Twister comes up */
-      row.style.display = "none"; setTimeout(reveal, CFG.itdelay);
+      row.style.display = "none"; lighten(); setTimeout(reveal, CFG.itdelay);
     })(performance.now());
   }
 
   /* ---- the Twister rises from below as ONE piece while the ribbon turns upward; then the page is live and scrolls forever ---- */
   function reveal() {
     if (wipeActive) return setTimeout(reveal, 50); /* never cut the red short */
+    if (effBefore === undefined && window.__twEff === undefined) lighten();
     var gk = window.__galK && window.__galK.current, tl = $('[role="tablist"]'), cont = tl && tl.closest('div[style*="overflow"]');
     var START = CFG.itstart, D = CFG.itdur, s0 = performance.now(), an = null;
     if (gk) { gk.ox = gk.tx = START; }
@@ -206,6 +222,7 @@
       if (k < 1) return requestAnimationFrame(step);
       if (gk) { gk.ox = 0; gk.tx = 0; }
       if (an) an.cancel();
+      setTimeout(restore, 150); /* full slice count again, once the ribbon has landed */
     })(performance.now());
     setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : CFG.itui);
   }
