@@ -3,7 +3,8 @@
 (function () {
   if (window.__linkfx) return;
   window.__linkfx = 1;
-  var SEL = 'a[href], #about-close, [role="tab"]';
+  var SPLIT = "#about-close, .ab-copy, .ab-name > span"; /* plain-text pieces of the About card, split into letters on first hover */
+  var SEL = 'a[href], [role="tab"], ' + SPLIT;
   var css = document.createElement("style");
   css.textContent =
     'a[href],#about-close{text-decoration:none!important}' +
@@ -15,9 +16,9 @@
 
   function letters(el) {
     var s = [].filter.call(el.querySelectorAll("span"), function (x) { return !x.children.length && x.textContent.length === 1; });
-    if (s.length || el.id !== "about-close" || el.dataset.fx) return s;
-    /* plain-text controls (the panel's Close button) are split into letters once */
-    var t = el.textContent; el.textContent = ""; el.dataset.fx = 1;
+    if (s.length || !el.matches(SPLIT) || !el.textContent) return s;
+    /* plain-text pieces (the card's Close button, copyright line and name) are split into letters, again whenever their text is replaced */
+    var t = el.textContent; el.textContent = "";
     for (var i = 0; i < t.length; i++) {
       var c = document.createElement("span");
       c.style.cssText = "display:inline-block;white-space:pre";

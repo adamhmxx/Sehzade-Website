@@ -284,7 +284,7 @@
     shadow = mk("div", "ab-shadow");
     card = mk("aside", "ab-card"); card.setAttribute("aria-label", "About"); card.setAttribute("role", "dialog");
     grip = mk("div", "ab-grip"); grip.title = "Drag to move";
-    copyEl = mk("span", "ab-copy"); copyEl.textContent = siteText("copyright", "Copyright Sehzade 2026");
+    copyEl = mk("span", "ab-copy"); copyEl.textContent = siteText("copyright", "\u00a9 Sehzade 2026");
     var btn = mk("button", "ab-close"); btn.id = "about-close"; btn.type = "button"; btn.textContent = "Close"; btn.onclick = close; grip.append(copyEl, btn);
     frame = mk("iframe"); frame.title = "About"; frame.src = "about.html";
     nameEl = mk("div", "ab-name"); nameEl.setAttribute("aria-hidden", "true");
@@ -296,7 +296,7 @@
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
     frame.addEventListener("load", function () { paused = null; pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
     addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
-    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); copyEl.textContent = siteText("copyright", "Copyright Sehzade 2026"); layout(); dirty = true; scheduleBuild(500); } });
+    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { nameTxt.textContent = cardName(); copyEl.textContent = siteText("copyright", "\u00a9 Sehzade 2026"); layout(); dirty = true; scheduleBuild(500); } });
     grip.addEventListener("pointerdown", function (e) { if (e.button || e.target.closest("button")) return; e.preventDefault(); grip.setPointerCapture(e.pointerId); begin(e.clientX, e.clientY, true); });
     grip.addEventListener("pointermove", function (e) { if (drag) move(e.clientX, e.clientY); });
     grip.addEventListener("pointerup", end); grip.addEventListener("pointercancel", end);
