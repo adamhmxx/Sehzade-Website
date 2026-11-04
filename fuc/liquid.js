@@ -13,6 +13,7 @@
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
   var DEF = { radius: 140, softness: 1, brightness: 0.03, trail: 0.66, blur: 0.6, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, pq: 2, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
+  if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
     try {
@@ -190,6 +191,33 @@
       ["distort", "Distortion", 0, 30, .5, "px"],
       ["blur", "Component blur", 0, 4, .1, "px"],
       ["reach", "Blur reach", 60, 420, 5, "px"],
+      ["#", "Intro"],
+      ["imin", "Minimum loading time", 1000, 10000, 100, "ms"],
+      ["iline", "Loading line thickness", 1, 16, 1, "px"],
+      ["ildl", "SEHZADE start delay", 0, 1500, 25, "ms"],
+      ["iltr", "SEHZADE letter rise time", 300, 3000, 50, "ms"],
+      ["ilst", "SEHZADE letter stagger", 0, 300, 5, "ms"],
+      ["iliq", "SEHZADE liquid (steady)", 0, 40, 1, "px"],
+      ["iliqp", "SEHZADE liquid (opening burst)", 0, 80, 1, "px"],
+      ["iliqd", "Opening burst fades over", 300, 6000, 100, "ms"],
+      ["ioutd", "Text exit time", 200, 3000, 50, "ms"],
+      ["ioutl", "Text exit liquid melt", 0, 200, 5, "px"],
+      ["ioutst", "Text exit letter stagger", 0, 200, 5, "ms"],
+      ["iwdur", "Red to black: blob grow time", 800, 8000, 100, "ms"],
+      ["iwst", "Red to black: blob stagger", 0, 250, 5, "%"],
+      ["iwsoft", "Red to black: goo softness", 4, 50, 1, "px"],
+      ["iwedge", "Red to black: edge wobble", 0, 300, 5, "px"],
+      ["ircard", "Portfolio row: card size", 12, 50, 1, "% of width"],
+      ["irgap", "Portfolio row: gap", 0, 80, 1, "px"],
+      ["irn", "Portfolio row: cards", 3, 14, 1, ""],
+      ["irdur", "Portfolio row: travel time", 1200, 8000, 100, "ms"],
+      ["irgo", "Portfolio row starts at", 20, 100, 1, "% of wipe"],
+      ["itgo", "Twister starts at", 20, 100, 1, "% of row"],
+      ["itcdur", "Twister: card rise time", 600, 5000, 50, "ms"],
+      ["itstag", "Twister: delay between cards", 0, 500, 10, "ms"],
+      ["itdist", "Twister: rise distance", 20, 200, 5, "vh"],
+      ["itstart", "Twister: ribbon turn", 0, 2000, 50, "px"],
+      ["itui", "Navbar & menu appear after", 0, 6000, 100, "ms"],
       ["#", "Link hover"],
       ["ldur", "Duration", 300, 2000, 10, "ms"],
       ["ldist", "Slide distance", 0, 60, 1, "px"],
@@ -232,6 +260,17 @@
       ["twsc", "Card size", 60, 120, 1, "%"]
     ];
     var DESC = {
+      imin: "Shortest time the loading screen stays, even if the site is ready sooner.", iline: "Thickness of the black loading line (it always spans the full screen width).",
+      ildl: "Wait before the first SEHZADE letter rises.", iltr: "How long each letter takes to rise into place.", ilst: "Delay between one SEHZADE letter and the next.",
+      iliq: "Constant liquid ripple on the SEHZADE letters.", iliqp: "Extra liquid ripple right when the loading starts.", iliqd: "How long the opening ripple takes to calm down.",
+      ioutd: "How long the SEHZADE text takes to disappear when loading ends.", ioutl: "How strongly the letters melt (liquid distortion) while they disappear.", ioutst: "Delay between one letter and the next while they disappear.",
+      iwdur: "How long each black blob takes to grow. Higher is slower and smoother.", iwst: "Spacing between blobs starting. 0 all at once, 100 default, higher means a longer rolling wipe.",
+      iwsoft: "How much the black blobs melt into each other. Higher is gooier and smoother, lower is sharper.", iwedge: "How wavy the edge of the black liquid is.",
+      ircard: "Size of each portfolio card in the row, as a share of the screen width.", irgap: "Space between the portfolio cards.", irn: "How many portfolio cards pass by.",
+      irdur: "Time the portfolio row takes to cross the screen.", irgo: "When the portfolio row starts, as a share of the red-to-black wipe. Lower starts it earlier.",
+      itgo: "When the Twister starts rising, as a share of the portfolio row crossing. Lower starts it earlier.", itcdur: "How long each Twister card takes to rise from below.",
+      itstag: "Delay between one Twister card and the next rising.", itdist: "How far below the screen each card starts, in screen heights.", itstart: "How far the ribbon turns while the cards rise. 0 keeps it still.",
+      itui: "When the navbar and the mode menu fade in after the Twister starts.",
       radius: "Size of the liquid blob that follows the cursor.", softness: "How soft the blob's edge is. Lower is sharper.", brightness: "How bright the blob glows over the background.",
       trail: "Length of the blob's tail behind the cursor.", distort: "How strongly text and cards ripple when the cursor is near.", blur: "Soft blur added to components close to the cursor.",
       reach: "How far from the cursor components still react.",
@@ -259,7 +298,7 @@
       '#liquid-ui.off .lq-dot{opacity:.25;box-shadow:none}' +
       '#liquid-ui .lq-card{width:calc(3 * (100vw - 2 * var(--lm,32px) - 176px) / 12 + 32px);max-height:calc(100vh - 168px);overflow:auto;margin-bottom:10px;padding:16px 16px 12px;border:1px solid rgba(242,242,242,.14);border-radius:16px;background:rgba(14,14,14,.7);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);visibility:hidden;pointer-events:none;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1),visibility 0s .7s}' +
       '#liquid-ui.open .lq-card{opacity:1;transform:none;visibility:visible;pointer-events:auto;transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}' +
-      '#liquid-ui .lq-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:14px;padding:3px;border:1px solid rgba(242,242,242,.14);border-radius:20px}' +
+      '#liquid-ui .lq-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:14px;padding:3px;border:1px solid rgba(242,242,242,.14);border-radius:20px}' +
       '#liquid-ui .lq-tabs button{padding:6px 0;font-size:10px;border:0;border-radius:999px;background:none;color:rgba(242,242,242,.7);font-size:11px;cursor:pointer;transition:background .4s,color .4s}' +
       '#liquid-ui .lq-tabs button.on{background:#f2f2f2;color:#0b0b0b}' +
       '#liquid-ui .lq-sec{margin:16px 0 10px;padding-top:12px;border-top:1px solid rgba(242,242,242,.12);font-size:11px;color:rgba(242,242,242,.5)}' +
@@ -296,7 +335,7 @@
     card.innerHTML = '<div class="lq-title"><span>Liquid hover</span></div>';
     var inputs = {}, pages = {}, tabs = document.createElement("div"), cur = null;
     tabs.className = "lq-tabs";
-    [["Cursor", "Cursor"], ["Link hover", "Links"], ["About popup", "Popup"], ["Space", "Space"], ["Cross", "Cross"], ["Globe", "Globe"], ["Grid", "Grid"], ["Twister", "Twist"]].forEach(function (t) {
+    [["Cursor", "Cursor"], ["Link hover", "Links"], ["About popup", "Popup"], ["Intro", "Intro"], ["Space", "Space"], ["Cross", "Cross"], ["Globe", "Globe"], ["Grid", "Grid"], ["Twister", "Twist"]].forEach(function (t) {
       var pg = document.createElement("div"); pg.className = "lq-page"; pages[t[0]] = pg;
       var tb = document.createElement("button"); tb.type = "button"; tb.textContent = t[1]; tb.dataset.page = t[0];
       tb.onclick = function () { setPage(t[0]); try { localStorage.setItem(KEY + "-tab", t[0]); } catch (e) {} };
@@ -308,6 +347,12 @@
     ROWS.forEach(function (r) {
       if (r[0] === "#") {
         host = pages[r[1]];
+        if (r[1] === "Intro") {
+          var rp = document.createElement("button"); rp.type = "button"; rp.textContent = "Replay intro"; rp.className = "lq-demo";
+          rp.style.cssText = "border:1px solid rgba(242,242,242,.4);border-radius:999px;background:none;padding:7px 14px;font-size:12px";
+          rp.onclick = function () { save(); if (/nointro/.test(location.hash)) location.hash = "liquid"; location.reload(); };
+          host.appendChild(rp);
+        }
         if (r[1] === "Link hover") {
           var demo = document.createElement("a"); demo.href = "#"; demo.className = "lq-demo";
           "Hover to preview".split("").forEach(function (ch) { var sp = document.createElement("span"); sp.style.cssText = "display:inline-block;white-space:pre"; sp.textContent = ch; demo.appendChild(sp); });

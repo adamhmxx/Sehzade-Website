@@ -2,6 +2,11 @@
    black as a slow liquid wipe, the portfolio row slides from the right and sinks off the left, the Twister ribbon rises in
    twisting from below, and last the navbar and the mode menu appear. Add #nointro to the address to skip it. */
 (function () {
+  /* every value of the loading sequence; the Liquid panel (Shift+L, tab "Intro") edits them and "Replay intro" runs it again */
+  var DEF = { imin: 3300, iline: 2, iltr: 1100, ildl: 250, ilst: 85, iliq: 9, iliqp: 22, iliqd: 2600, ioutd: 1100, ioutl: 70, ioutst: 50,
+    iwdur: 3200, iwst: 100, iwsoft: 22, iwedge: 110, ircard: 26, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itstag: 150, itcdur: 1800, itdist: 100, itstart: 500, itgo: 80, itui: 2200 };
+  window.__introDef = DEF;
+  function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
   var root = document.documentElement;
   if (!root.classList.contains("intro-on")) return;
   var intro = document.getElementById("intro"), row = document.getElementById("intro-row");
@@ -13,11 +18,13 @@
   function twist(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; } /* gentle start, long soft landing */
   function setA(el, k, v) { if (el) el.setAttribute(k, v); }
   var big = $(".in-big", intro), pct = $(".in-pct", intro), bar = $(".in-line i", intro),
-      liqO = $("#in-liq-o"), liqD = $("#in-liq-d"), edgeO = $("#in-edge-o"), holes = $("#in-holes"), red = $("#in-red");
+      edgeD = $("#in-edge-d"), edgeB = $("#in-edge-b"), line = $(".in-line", intro), liqO = $("#in-liq-o"), liqD = $("#in-liq-d"), edgeO = $("#in-edge-o"), holes = $("#in-holes"), red = $("#in-red");
+  line.style.height = cfg("iline") + "px";
+  setA(edgeB, "stdDeviation", cfg("iwsoft")); setA(edgeD, "scale", cfg("iwedge"));
   "SEHZADE".split("").forEach(function (c, i) {
     var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp);
     sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
-      { duration: reduce ? 1 : 1100, delay: (reduce ? 0 : 250) + i * 85, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
+      { duration: reduce ? 1 : cfg("iltr"), delay: (reduce ? 0 : cfg("ildl")) + i * cfg("ilst"), easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
   });
 
   /* the word always spans the full screen width: measure it at a known size, then scale the font to fill the space between the side margins */
@@ -31,7 +38,7 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 
   /* ---- progress: real signals, but never faster than the minimum show time ---- */
-  var target = 8, p = 0, last = T0, finished = false, MIN = reduce ? 600 : 3300;
+  var target = 8, p = 0, last = T0, finished = false, MIN = reduce ? 600 : cfg("imin");
   function stage(v) { if (v > target) target = v; }
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { stage(45); });
   if (document.readyState === "complete") stage(75); else addEventListener("load", function () { stage(75); });
@@ -40,10 +47,12 @@
     if (performance.now() - T0 > 9000) stage(100); /* never hang */
   }, 120);
 
-  var liqT0 = T0;
+  var liqT0 = T0, exitT0 = 0;
   function liquid(now) {
-    var t = now - liqT0, pulse = reduce ? 0 : Math.max(0, 1 - t / 2600);
-    setA(liqD, "scale", (reduce ? 0 : 9 + 22 * pulse + 4 * Math.sin(t / 700)).toFixed(1));
+    var t = now - liqT0, pulse = reduce ? 0 : Math.max(0, 1 - t / cfg("iliqd")), ek = 0;
+    /* while the text leaves, the liquid distortion keeps growing so the letters melt away instead of just fading */
+    if (exitT0) { ek = Math.max(0, Math.min(1, (now - exitT0) / cfg("ioutd"))); ek = ek * ek; }
+    setA(liqD, "scale", (reduce ? 0 : cfg("iliq") + cfg("iliqp") * pulse + 4 * Math.sin(t / 700) + cfg("ioutl") * ek).toFixed(1));
     setA(liqO, "dx", (Math.sin(t / 900) * 90).toFixed(1)); setA(liqO, "dy", (t / 18 % 400).toFixed(1));
   }
   function frame(now) {
@@ -62,13 +71,17 @@
 
   /* ---- red -> black: the red sinks as black liquid wells up from the bottom and the blobs melt into each other (gooey mask) ---- */
   function wipe() {
-    clearInterval(poll); wiping = true; wipeActive = true; intro.classList.add("out");
+    clearInterval(poll); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
+    [].forEach.call(big.children, function (sp, i) {
+      sp.animate([{ transform: "translateY(0)", opacity: 1, filter: "blur(0px)" }, { transform: "translateY(60%)", opacity: 0, filter: "blur(6px)" }],
+        { duration: reduce ? 1 : cfg("ioutd"), delay: reduce ? 0 : i * cfg("ioutst"), easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards" });
+    });
     var NS = "http://www.w3.org/2000/svg", R = Math.hypot(W, H), els = [], pts = [], N = 8, i;
     /* a row of blobs along the bottom edge, rising one after another, plus two that come in higher up to close the gaps */
-    for (i = 0; i < N; i++) pts.push([W * (i + .5) / N + (i % 2 ? 1 : -1) * W * .02, H * (1.02 + (i % 3) * .03), 1.0 + (i % 3) * .12, 80 + Math.abs(i - N / 2 + .5) * 150 + (i % 2) * 90]);
-    pts.push([W * .3, H * .45, .85, 1100], [W * .75, H * .35, .9, 1400]);
+    for (i = 0; i < N; i++) pts.push([W * (i + .5) / N + (i % 2 ? 1 : -1) * W * .02, H * (1.02 + (i % 3) * .03), 1.0 + (i % 3) * .12, (80 + Math.abs(i - N / 2 + .5) * 150 + (i % 2) * 90) * cfg("iwst") / 100]);
+    pts.push([W * .3, H * .45, .85, 1100 * cfg("iwst") / 100], [W * .75, H * .35, .9, 1400 * cfg("iwst") / 100]);
     pts.forEach(function (q) { var e = document.createElementNS(NS, "ellipse"); e.setAttribute("fill", "#000"); e.setAttribute("cx", q[0]); e.setAttribute("cy", q[1]); e.setAttribute("rx", 0); e.setAttribute("ry", 0); holes.appendChild(e); els.push(e); });
-    var D = reduce ? 400 : 3200, s0 = performance.now(), rowGo = false, END = Math.max.apply(null, pts.map(function (q) { return q[3]; })) + D;
+    var D = reduce ? 400 : cfg("iwdur"), s0 = performance.now(), rowGo = false, END = Math.max.apply(null, pts.map(function (q) { return q[3]; })) + D;
     function sm(t) { return .5 - .5 * Math.cos(Math.PI * t); } /* sine in-out: no hard start, no hard stop */
     (function step(now) {
       var t = now - s0, all = true;
@@ -79,7 +92,7 @@
       setA(edgeO, "dx", (Math.sin(t / 1100) * 80).toFixed(1)); setA(edgeO, "dy", (t / 14 % 600).toFixed(1));
       liquid(now);
       /* the portfolio row starts while the last of the red is still draining, so there is no dead pause */
-      if (!rowGo && t > END * .62) { rowGo = true; row_start(); }
+      if (!rowGo && t > END * cfg("irgo") / 100) { rowGo = true; row_start(); }
       if (!all) return requestAnimationFrame(step);
       wipeActive = false; red.setAttribute("display", "none"); intro.style.display = "none"; if (!rowGo) { rowGo = true; row_start(); }
     })(performance.now());
@@ -93,33 +106,44 @@
   function row_start() {
     var list = items(), rw = $(".rw", row);
     if (!list.length || reduce) return reveal();
-    var cw = Math.max(200, Math.min(380, W * .26)), ch = cw * .75, n = Math.min(list.length, 9);
+    var cw = Math.max(160, Math.min(520, W * cfg("ircard") / 100)), ch = cw * .75, n = Math.min(list.length, cfg("irn")), gap = cfg("irgap");
+    rw.style.gap = gap + "px";
     rw.style.marginTop = (-ch / 2) + "px";
     for (var i = 0; i < n; i++) { var d = document.createElement("div"); d.style.cssText = "width:" + cw + "px;height:" + ch + "px;background-image:url(" + list[i].image.src + ")"; rw.appendChild(d); }
     row.style.display = "block";
-    var total = n * (cw + 16), x0 = W + 40, x1 = -total - 40, D = 3600, s0 = performance.now(), go = false;
+    var total = n * (cw + gap), x0 = W + 40, x1 = -total - 40, D = cfg("irdur"), s0 = performance.now(), go = false;
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), x = x0 + (x1 - x0) * (.5 - .5 * Math.cos(Math.PI * k));
-      if (!go && k > .8) { go = true; reveal(); }
+      if (!go && k > cfg("itgo") / 100) { go = true; reveal(); }
       rw.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
       if (k < 1) return requestAnimationFrame(step);
       row.style.display = "none"; if (!go) reveal();
     })(performance.now());
   }
 
-  /* ---- the ribbon twists in from below, then the navbar and menu ---- */
+  /* ---- the ribbon builds itself: every card rises from below, one after another, while the ribbon turns; then the page is live and scrolls forever ---- */
   function reveal() {
-    var gk = window.__galK && window.__galK.current, tl = $('[role="tablist"]'), cont = tl && tl.closest('div[style*="overflow"]');
-    var START = 1200, D = 3600, s0 = performance.now();
+    var gk = window.__galK && window.__galK.current, START = cfg("itstart"), cdur = cfg("itcdur"), stag = cfg("itstag");
+    var cards = [].filter.call(document.querySelectorAll("#main div"), function (d) {
+      var st = d.style; return st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex && d.getBoundingClientRect().width > 0;
+    });
+    /* lowest card on screen goes first, so the ribbon grows upward */
+    cards.forEach(function (c) { var r = c.getBoundingClientRect(); c.__ry = r.top + r.height / 2; });
+    cards.sort(function (a, z) { return z.__ry - a.__ry; });
+    var D = Math.max(1, (cards.length - 1) * stag + cdur), s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     root.classList.remove("intro-on");
-    if (cont && cont.animate) cont.animate([{ transform: "translateY(38vh)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: D, easing: "cubic-bezier(.33,0,.15,1)" });
+    if (!reduce) cards.forEach(function (c, i) {
+      if (!c.animate) return;
+      var an = c.animate([{ translate: "0 " + cfg("itdist") + "vh" }, { translate: "0 0" }], { duration: cdur, delay: i * stag, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" });
+      an.onfinish = function () { an.cancel(); };
+    });
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k));
       if (gk) { gk.ox = v; gk.tx = v; }
       if (k < 1) return requestAnimationFrame(step);
       if (gk) { gk.ox = 0; gk.tx = 0; }
     })(performance.now());
-    setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : 2200);
+    setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : cfg("itui"));
   }
 })();
