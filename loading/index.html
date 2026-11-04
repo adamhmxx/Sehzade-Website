@@ -66,10 +66,10 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
   var CFG = {
     min: 2400,          /* shortest time the loading screen stays (ms) */
     line: 2,            /* loading line thickness (px) */
-    letterDelay: 600, letterTime: 1100, letterStagger: 50,           /* SEHZADE letters rising (ms) */
-    liquid: 10, liquidBurst: 10, liquidBurstTime: 3100,               /* ripple on the letters: steady, opening burst (px), how long the burst takes */
-    exitTime: 1000, exitMelt: 80,                   /* text leaving: time of the melt (ms), liquid melt (px) */
-    seepTime: 4200, seepSoft: 22, seepLag: 18, seepScale: 22, seepFlow: 100, seepBias: 35, seepRim: 40, seepGrain: 3  /* red seeps into black: time (ms), edge softness (%), depth layer spread (%), pattern detail, flow (%), from-bottom bias (%), hot edge glow (%), grain (%) */
+    letterDelay: 600, letterTime: 1300, letterStagger: 60,           /* SEHZADE letters rising (ms) */
+    liquid: 8, liquidBurst: 20, liquidBurstTime: 3100,               /* ripple on the letters: steady, opening burst (px), how long the burst takes */
+    exitTime: 800, exitMelt: 200,                   /* text leaving: time of the melt (ms), liquid melt (px) */
+    seepTime: 3200, seepSoft: 18, seepLag: 20, seepScale: 60, seepFlow: 130, seepBias: 30, seepRim: 30, seepGrain: 4  /* red seeps into black: time (ms), edge softness (%), depth layer spread (%), pattern detail, flow (%), from-bottom bias (%), hot edge glow (%), grain (%) */
   };
   window.__run = 0;
   function play() {
@@ -104,6 +104,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     var t = now - T0, pulse = reduce ? 0 : Math.max(0, 1 - t / CFG.liquidBurstTime), ek = 0;
     if (exitT0) { ek = Math.max(0, Math.min(1, (now - exitT0) / CFG.exitTime)); ek *= ek; }
     liqAmp = reduce ? 0 : CFG.liquid + CFG.liquidBurst * pulse + 4 * Math.sin(t / 700) + CFG.exitMelt * ek;
+    uiAmp = reduce ? 0 : .9 + CFG.liquidBurst * pulse * .06 + CFG.exitMelt * ek * .45;
     if (!gl) { setA(liqD, "scale", liqAmp.toFixed(1)); setA(liqO, "dx", (Math.sin(t / 900) * 90).toFixed(1)); setA(liqO, "dy", (t / 18 % 400).toFixed(1)); }
   }
   function frame(now) {
@@ -123,7 +124,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
      red, smoky ember) sit at different depths; each is eaten by its own slowly drifting noise field, so patches go at different times
      and the deeper layers linger below the surface. Drawn with a small WebGL shader. */
   var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
-  var FS = "precision highp float;uniform vec2 res,tAmp;uniform sampler2D tex;uniform float time,front,soft,lag,scale,flow,bias,rim,grain,tOn;" +
+  var FS = "precision highp float;uniform vec2 res,tAmp,uAmp;uniform sampler2D tex,tex2;uniform float time,front,soft,lag,scale,flow,bias,rim,grain,tOn;" +
     "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}" +
     "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*f*(f*(f*6.-15.)+10.);float a=hash(i),b=hash(i+vec2(1.,0.)),c=hash(i+vec2(0.,1.)),d=hash(i+vec2(1.,1.));return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}" +
     "float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,-.6,.6,.8);for(int i=0;i<4;i++){v+=a*noise(p);p=r*p*2.03+11.7;a*=.48;}return v;}" +
@@ -136,9 +137,9 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     "float aA=smoothstep(front-sA,front+sA,fA),aB=smoothstep(front-lB-sB,front-lB+sB,fB),aC=smoothstep(front-lC-sC,front-lC+sC,fC);" +
     "vec3 col=vec3(.043);col=mix(col,vec3(.2,.035,.03),aC);col=mix(col,vec3(.55,.09,.06),aB);col=mix(col,vec3(1.,.176,.125),aA);" +
     "float edge=aA*(1.-aA)*4.;col=mix(col,vec3(1.,.42,.22),edge*rim);" +
-    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(fbm(p2+vec2(0.,t2)),fbm(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;float ta=texture2D(tex,uv+w*tAmp).a;col=mix(col,vec3(.043),ta);}" +
+    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(fbm(p2+vec2(0.,t2)),fbm(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;float ta=texture2D(tex,uv+w*tAmp).a;col=mix(col,vec3(.043),ta);float ua=texture2D(tex2,uv+w*uAmp).a;col=mix(col,vec3(.043),ua);}" +
     "col+=(hash(gl_FragCoord.xy+fract(time)*97.)-.5)*grain;gl_FragColor=vec4(col,1.);}";
-  var gl = null, prog = null, U = {}, seepT = 0, seepNow = 0, tc = document.createElement("canvas"), tx = tc.getContext("2d"), tex = null, sc = 1;
+  var gl = null, prog = null, U = {}, seepT = 0, seepNow = 0, tc = document.createElement("canvas"), tx = tc.getContext("2d"), uc = document.createElement("canvas"), ux = uc.getContext("2d"), tex = null, tex2 = null, sc = 1, uiAmp = 0;
   try {
     gl = cv.getContext("webgl", { antialias: false, alpha: false });
     if (gl) {
@@ -146,15 +147,19 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
       prog = gl.createProgram(); gl.attachShader(prog, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
       var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
       var loc = gl.getAttribLocation(prog, "a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-      ["res", "tAmp", "tex", "tOn", "time", "front", "soft", "lag", "scale", "flow", "bias", "rim", "grain"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+      ["res", "tAmp", "uAmp", "tex", "tex2", "tOn", "time", "front", "soft", "lag", "scale", "flow", "bias", "rim", "grain"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
       tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.uniform1i(U.tex, 0);
+      gl.activeTexture(gl.TEXTURE1); tex2 = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex2);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.uniform1i(U.tex2, 1); gl.activeTexture(gl.TEXTURE0);
     }
   } catch (err) { gl = null; }
   /* the word is drawn into the same shader as the red, so its liquid ripple and its melting use the very same flowing noise */
-  if (gl) { big.style.visibility = "hidden"; big.style.filter = "none"; [].forEach.call(big.children, function (sp) { sp.style.transform = "none"; }); }
+  if (gl) { [pct, intro.querySelector(".in-welcome"), line].forEach(function (el) { el.style.visibility = "hidden"; }); big.style.visibility = "hidden"; big.style.filter = "none"; [].forEach.call(big.children, function (sp) { sp.style.transform = "none"; }); }
   else [].forEach.call(big.children, function (sp, i) {
     sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
       { duration: reduce ? 1 : CFG.letterTime, delay: (reduce ? 0 : CFG.letterDelay) + i * CFG.letterStagger, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
@@ -170,19 +175,29 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
       tx.globalAlpha = e; tx.fillText(sp.textContent, r.left, y);
     });
     tx.globalAlpha = 1;
+    /* percentage, "Designer" and the loading line live in their own layer, so they ripple and dissolve exactly like the word but at their own, smaller scale */
+    ux.setTransform(1, 0, 0, 1, 0, 0); ux.clearRect(0, 0, uc.width, uc.height); ux.setTransform(sc, 0, 0, sc, 0, 0);
+    ux.font = '16px "Anton", Impact, sans-serif'; ux.textBaseline = "alphabetic"; ux.fillStyle = "#fff";
+    var um = ux.measureText("H"), ua = um.fontBoundingBoxAscent || 15, ud = um.fontBoundingBoxDescent || 4;
+    [pct, intro.querySelector(".in-welcome")].forEach(function (el) {
+      var r = el.getBoundingClientRect(); ux.fillText(el.textContent.toUpperCase(), r.left, r.top + (r.height - (ua + ud)) / 2 + ua);
+    });
+    var lr = line.getBoundingClientRect(); ux.fillRect(lr.left, lr.top, lr.width * Math.max(0, Math.min(1, p / 100)), CFG.line);
   }
   function draw() {
     if (!gl) { cv.style.opacity = String(1 - seepT); return; }
     var soft = CFG.seepSoft / 100, lag = CFG.seepLag / 100, sC = soft * 2.4, lC = lag * 2;
     var f0 = Math.min(-soft, lC - sC, lag - soft * 1.6) - .02, f1 = 1 + Math.max(soft, lag + soft * 1.6, lC + sC) + .02;
-    renderText(performance.now()); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tc);
+    renderText(performance.now()); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tc);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex2); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, uc); gl.activeTexture(gl.TEXTURE0);
+    var ua2 = uiAmp * 2.2 * sc; gl.uniform2f(U.uAmp, ua2 / cv.width, ua2 / cv.height);
     var ta = liqAmp * 2.2 * sc; gl.uniform2f(U.tAmp, ta / cv.width, ta / cv.height); gl.uniform1f(U.tOn, 1);
     gl.uniform2f(U.res, cv.width, cv.height); gl.uniform1f(U.time, (performance.now() - T0) / 1000); gl.uniform1f(U.front, f0 + (f1 - f0) * seepT);
     gl.uniform1f(U.soft, soft); gl.uniform1f(U.lag, lag); gl.uniform1f(U.scale, CFG.seepScale / 10); gl.uniform1f(U.flow, CFG.seepFlow / 100);
     gl.uniform1f(U.bias, CFG.seepBias / 100); gl.uniform1f(U.rim, CFG.seepRim / 100); gl.uniform1f(U.grain, CFG.seepGrain / 100);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
-  function sizeCv() { sc = Math.min(1, 1500 / innerWidth); cv.width = tc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
+  function sizeCv() { sc = Math.min(1, 1500 / innerWidth); cv.width = tc.width = uc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = uc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
   sizeCv(); window.__size = sizeCv;
 
   function wipe() {
@@ -223,12 +238,12 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     ["liquidBurstTime", "Burst calms down over", 300, 6000, 100, "ms", "How long the opening ripple takes to settle."],
     ["#", "Text leaves"],
     ["exitTime", "Melt build-up time", 200, 3000, 50, "ms", "How long the melting of the text builds up once loading is done. The red itself is absorbed over its own time below."],
-    ["exitMelt", "Liquid melt", 0, 200, 5, "px", "How strongly the letters warp and melt while they go."],
+    ["exitMelt", "Liquid melt", 0, 400, 5, "px", "How strongly the letters warp and melt while they go."],
     ["#", "Red seeps into black"],
     ["seepTime", "Absorb time", 1500, 10000, 100, "ms", "How long the red takes to be soaked up completely. Higher is slower and calmer."],
     ["seepSoft", "Edge softness", 3, 50, 1, "%", "How wide and blurry the front between red and black is. Low is a sharper stain, high is a diffuse fade."],
     ["seepLag", "Depth layers spread", 0, 60, 1, "%", "How far the deeper layers of red (dark red, then smoky ember) trail behind the surface. 0 is a single flat layer."],
-    ["seepScale", "Patch detail", 5, 60, 1, "", "Size of the patches the red breaks into. Low is a few big areas, high is many fine ones."],
+    ["seepScale", "Patch detail", 5, 120, 1, "", "Size of the patches the red breaks into. Low is a few big areas, high is many fine ones."],
     ["seepFlow", "Flow", 0, 300, 5, "%", "How fast the patches drift while they dissolve. 0 keeps them still."],
     ["seepBias", "Direction", 0, 100, 1, "%", "0 soaks in at random places, 100 soaks in from the bottom of the screen upward."],
     ["seepRim", "Hot edge glow", 0, 100, 1, "%", "Warm glow along the edge of the red as it is absorbed."],
