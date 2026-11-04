@@ -20,6 +20,16 @@
       { duration: reduce ? 1 : 1100, delay: (reduce ? 0 : 250) + i * 85, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
   });
 
+  /* the word always spans the full screen width: measure it at a known size, then scale the font to fill the space between the side margins */
+  function fit() {
+    var m = parseFloat(getComputedStyle(big).left) || 24;
+    big.style.fontSize = "100px";
+    var w = big.getBoundingClientRect().width;
+    if (w > 0) big.style.fontSize = (100 * (innerWidth - 2 * m) / w).toFixed(2) + "px";
+  }
+  fit(); addEventListener("resize", fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+
   /* ---- progress: real signals, but never faster than the minimum show time ---- */
   var target = 8, p = 0, last = T0, finished = false, MIN = reduce ? 600 : 3300;
   function stage(v) { if (v > target) target = v; }
