@@ -92,7 +92,7 @@
     els = list.filter(function (e) { return !e.closest("#liquid-ui") && (!e.querySelector("p,h1,h2") || e.matches("a,span")); });
   }
   var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
-  function makeWarp(el, b) {
+  function makeWarp(el, b, vOnly) {
     if (!defs) {
       var svg = document.createElementNS(NS, "svg");
       svg.setAttribute("width", "0"); svg.setAttribute("height", "0"); svg.setAttribute("aria-hidden", "true");
@@ -105,12 +105,12 @@
     /* wavelength follows the size of the element, so small text ripples as clearly as a large card */
     var fq = Math.max(.004, Math.min(.05, 3.2 / Math.max(60, Math.max(b.width, b.height))));
     f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="' + fq.toFixed(4) + ' ' + (fq * 1.5).toFixed(4) + '" numOctaves="1" seed="' + (fid % 7 + 2) + '" result="n"/>' +
-      '<feOffset in="n" dx="0" dy="0" result="o"/>' +
+      '<feOffset in="n" dx="0" dy="0" result="o0"/>' + (vOnly ? '<feComponentTransfer in="o0" result="o"><feFuncR type="linear" slope="0" intercept=".5"/></feComponentTransfer>' : '<feOffset in="o0" dx="0" dy="0" result="o"/>') +
       '<feDisplacementMap in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G" result="w"/>' +
       '<feGaussianBlur in="w" stdDeviation="0.45"/>';
     defs.appendChild(f);
     /* small text gets a fraction of the strength a large card gets, so every component distorts to the same degree visually */
-    return { id: id, off: f.children[1], map: f.children[2], k: ABOUT || (el.__fxt && el.__fxt !== el) || (el.closest && el.closest(".ab-card")) ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
+    return { id: id, off: f.children[1], map: f.querySelector("feDisplacementMap"), k: ABOUT || (el.__fxt && el.__fxt !== el) || (el.closest && el.closest(".ab-card")) ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
   }
   function spring(st, key, target, k, damp) { st["v" + key] = (st["v" + key] + (target - st[key]) * k) * damp; st[key] += st["v" + key]; }
 
@@ -147,6 +147,19 @@
         active++; st.set = 1;
         var fl = "";
         if (warp) {
+          if (multi) {
+            /* a card made of slices: vertical-only ripples, with the noise continuing from slice to slice so there are no seams */
+            st.wl = st.wl || []; var kids = el.children, sw = kids[0].offsetWidth || 12;
+            if (st.ox === undefined) { st.ox = -dx * .35; st.oy = -dy * .35; }
+            st.ox += (-dx * .35 - st.ox) * .12; st.oy += (-dy * .35 - st.oy) * .12;
+            for (var wi = 0; wi < kids.length; wi++) {
+              var w1 = st.wl[wi] || (st.wl[wi] = makeWarp(el, b, true));
+              w1.map.setAttribute("scale", (st.d * .6).toFixed(2));
+              w1.off.setAttribute("dx", (st.ox - wi * sw).toFixed(1)); w1.off.setAttribute("dy", st.oy.toFixed(1));
+              kids[wi].style.filter = "url(#" + w1.id + ")" + (st.b > .03 ? " blur(" + (st.b * .5).toFixed(2) + "px)" : "");
+            }
+            continue;
+          }
           if (!st.warp) st.warp = makeWarp(el, b);
           /* the noise field slides with the cursor, so the distortion flows like liquid instead of pulsing */
           st.warp.map.setAttribute("scale", (st.d * st.warp.k).toFixed(2));
@@ -157,7 +170,7 @@
           fl = "url(#" + st.warp.id + ") ";
         }
         if (st.b > .03) fl += "blur(" + st.b.toFixed(2) + "px)";
-        if (multi) { for (var ci = 0; ci < el.children.length; ci++) el.children[ci].style.filter = fl; } else tgt.style.filter = fl;
+        if (multi) { if (!warp) for (var ci = 0; ci < el.children.length; ci++) el.children[ci].style.filter = fl; } else tgt.style.filter = fl;
       } else if (st.set) { if (multi) { for (var cj = 0; cj < el.children.length; cj++) el.children[cj].style.filter = ""; } else tgt.style.filter = ""; st.set = 0; }
     }
     idle = active || inside ? 0 : idle + 1;
