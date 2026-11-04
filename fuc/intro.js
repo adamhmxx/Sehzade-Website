@@ -7,6 +7,7 @@
   var intro = document.getElementById("intro"), row = document.getElementById("intro-row");
   if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
+  var C = window.__introCfg || { min: 3300, lstag: 85, lrise: 1100, lstr: 22, ldecay: 2600, hold: 350, wdur: 2700, wstag: 260, rdur: 2600, rn: 9, rsz: 26, tdur: 1900, tstart: 1600, trise: 38, udel: 1100 }; /* tuned from the Shift+I panel */
   function $(s, r) { return (r || document).querySelector(s); }
   function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
   function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
@@ -16,11 +17,11 @@
   "SEHZADE".split("").forEach(function (c, i) {
     var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp);
     sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
-      { duration: reduce ? 1 : 1100, delay: (reduce ? 0 : 250) + i * 85, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
+      { duration: reduce ? 1 : C.lrise, delay: (reduce ? 0 : 250) + i * C.lstag, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
   });
 
   /* ---- progress: real signals, but never faster than the minimum show time ---- */
-  var target = 8, p = 0, last = T0, finished = false, MIN = reduce ? 600 : 3300;
+  var target = 8, p = 0, last = T0, finished = false, MIN = reduce ? 600 : C.min;
   function stage(v) { if (v > target) target = v; }
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { stage(45); });
   if (document.readyState === "complete") stage(75); else addEventListener("load", function () { stage(75); });
@@ -31,8 +32,8 @@
 
   var liqT0 = T0;
   function liquid(now) {
-    var t = now - liqT0, pulse = reduce ? 0 : Math.max(0, 1 - t / 2600);
-    setA(liqD, "scale", (reduce ? 0 : 9 + 22 * pulse + 4 * Math.sin(t / 700)).toFixed(1));
+    var t = now - liqT0, pulse = reduce ? 0 : Math.max(0, 1 - t / C.ldecay);
+    setA(liqD, "scale", (reduce ? 0 : 9 + C.lstr * pulse + 4 * Math.sin(t / 700)).toFixed(1));
     setA(liqO, "dx", (Math.sin(t / 900) * 90).toFixed(1)); setA(liqO, "dy", (t / 18 % 400).toFixed(1));
   }
   function frame(now) {
@@ -42,7 +43,7 @@
       var cap = Math.min(100, (now - T0) / MIN * 100);
       p = Math.min(target, cap, p + Math.max((target - p) * 2.4, 12) * dt);
       pct.textContent = Math.floor(p) + "%"; bar.style.transform = "scaleX(" + (p / 100).toFixed(4) + ")";
-      if (p >= 99.9 && target >= 100) { finished = true; pct.textContent = "100%"; bar.style.transform = "scaleX(1)"; setTimeout(wipe, 350); }
+      if (p >= 99.9 && target >= 100) { finished = true; pct.textContent = "100%"; bar.style.transform = "scaleX(1)"; setTimeout(wipe, C.hold); }
     }
     if (!wiping || wipeActive) requestAnimationFrame(frame);
   }
@@ -52,9 +53,9 @@
   /* ---- red -> black as a slow liquid wipe (blobs with turbulent edges growing from several points) ---- */
   function wipe() {
     clearInterval(poll); wiping = true; wipeActive = true; intro.classList.add("out");
-    var NS = "http://www.w3.org/2000/svg", R = Math.hypot(W, H), pts = [[0, H, 1.4, 0], [W * .72, H * .3, 1.15, 260], [W * .18, H * .15, 1.0, 520]], els = [];
+    var NS = "http://www.w3.org/2000/svg", R = Math.hypot(W, H), pts = [[0, H, 1.4, 0], [W * .72, H * .3, 1.15, C.wstag], [W * .18, H * .15, 1.0, C.wstag * 2]], els = [];
     pts.forEach(function (q) { var e = document.createElementNS(NS, "ellipse"); e.setAttribute("fill", "#000"); e.setAttribute("cx", q[0]); e.setAttribute("cy", q[1]); e.setAttribute("rx", 0); e.setAttribute("ry", 0); holes.appendChild(e); els.push(e); });
-    var D = reduce ? 400 : 2700, s0 = performance.now();
+    var D = reduce ? 400 : C.wdur, s0 = performance.now();
     (function step(now) {
       var t = now - s0, all = true;
       els.forEach(function (e, i) {
@@ -76,11 +77,11 @@
   function row_start() {
     var list = items(), rw = $(".rw", row);
     if (!list.length || reduce) return reveal();
-    var cw = Math.max(200, Math.min(380, W * .26)), ch = cw * .75, n = Math.min(list.length, 9);
+    var cw = Math.max(120, W * C.rsz / 100), ch = cw * .75, n = C.rn;
     rw.style.marginTop = (-ch / 2) + "px";
-    for (var i = 0; i < n; i++) { var d = document.createElement("div"); d.style.cssText = "width:" + cw + "px;height:" + ch + "px;background-image:url(" + list[i].image.src + ")"; rw.appendChild(d); }
+    for (var i = 0; i < n; i++) { var d = document.createElement("div"); d.style.cssText = "width:" + cw + "px;height:" + ch + "px;background-image:url(" + list[i % list.length].image.src + ")"; rw.appendChild(d); }
     row.style.display = "block";
-    var total = n * (cw + 16), x0 = W + 40, x1 = -total - 40, D = 2600, s0 = performance.now();
+    var total = n * (cw + 16), x0 = W + 40, x1 = -total - 40, D = C.rdur, s0 = performance.now();
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), x = x0 + (x1 - x0) * ease(k);
       rw.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
@@ -92,16 +93,16 @@
   /* ---- the ribbon twists in from below, then the navbar and menu ---- */
   function reveal() {
     var gk = window.__galK && window.__galK.current, tl = $('[role="tablist"]'), cont = tl && tl.closest('div[style*="overflow"]');
-    var START = 1600, D = 1900, s0 = performance.now();
+    var START = C.tstart, D = C.tdur, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     root.classList.remove("intro-on");
-    if (cont && cont.animate) cont.animate([{ transform: "translateY(38vh)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: D, easing: "cubic-bezier(.22,1,.36,1)" });
+    if (cont && cont.animate) cont.animate([{ transform: "translateY(" + C.trise + "vh)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: D, easing: "cubic-bezier(.22,1,.36,1)" });
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), v = START * (1 - easeOut(k));
       if (gk) { gk.ox = v; gk.tx = v; }
       if (k < 1) return requestAnimationFrame(step);
       if (gk) { gk.ox = 0; gk.tx = 0; }
     })(performance.now());
-    setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : 1100);
+    setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : C.udel);
   }
 })();
