@@ -13,12 +13,10 @@
   if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
   function $(s, r) { return (r || document).querySelector(s); }
-  function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
   function twist(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; } /* gentle start, long soft landing */
   function setA(el, k, v) { if (el) el.setAttribute(k, v); }
   var big = $(".in-big", intro), pct = $(".in-pct", intro), bar = $(".in-line i", intro),
-      edgeD = $("#in-edge-d"), edgeB = $("#in-edge-b"), line = $(".in-line", intro), liqO = $("#in-liq-o"), liqD = $("#in-liq-d"), edgeO = $("#in-edge-o"), holes = $("#in-holes"), red = $("#in-red");
+      edgeB = $("#in-edge-b"), line = $(".in-line", intro), liqO = $("#in-liq-o"), liqD = $("#in-liq-d"), holes = $("#in-holes"), red = $("#in-red");
   line.style.height = cfg("iline") + "px";
   setA(edgeB, "stdDeviation", cfg("iwsoft"));
   "SEHZADE".split("").forEach(function (c, i) {
