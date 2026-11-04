@@ -18,7 +18,7 @@
   var SLOWKEY = "about-bend-slow", builtQ = -1;
   try { slow = localStorage.getItem(SLOWKEY) === "1"; } catch (e) {}
   var lastQ;
-  function nStrips() { return [0, 10, 24][quality()]; }
+  function nStrips() { return [0, 10, 16][quality()]; }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function mk(tag, cls, css) { var n = document.createElement(tag); if (cls) n.className = cls; if (css) n.style.cssText = css; return n; }
 
@@ -214,7 +214,7 @@
     var lx = hx.length ? hx[hx.length - 1] : 0, ly = hy.length ? hy[hy.length - 1] : 0; hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
     /* on a device that cannot keep up the bend is switched off, so the card still moves smoothly (tilt only) */
-    if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 30) { var med = dts.slice().sort(function (a, b) { return a - b; })[15]; if (med > .024 && !window.__aboutNoAuto) { slow = true; try { localStorage.setItem(SLOWKEY, "1"); } catch (e) {} } dts = []; } }
+    if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 30) { var med = dts.slice().sort(function (a, b) { return a - b; })[15]; if (med > .021 && !window.__aboutNoAuto) { slow = true; try { localStorage.setItem(SLOWKEY, "1"); } catch (e) {} } dts = []; } }
     var amp = slow || touchy || !strips.length || quality() !== builtQ ? 0 : ampNow(), moving = !calm || drag || energy > 8;
     /* the bend is only switched off after the motion has really stopped (a short hold); switching live page <-> strip copy on every small change of speed made the card blink */
     var want = moving && amp > 0 && !reduce.matches, hold = bending && now - lastBend < 380;
@@ -222,10 +222,11 @@
     if (want && !bending) setBending(true);
     if (bending) { if (want || hold) bendFrame(now, want ? amp : 0); else setBending(false); }
     pauseFrame(moving || hold || !open_);
+    window.__abBusy = moving || hold; /* the card text takes no liquid effect while the card itself is moving */
     paint();
     if (moving || hold) raf = requestAnimationFrame(step);
     else {
-      raf = 0;
+      raf = 0; window.__abBusy = false;
       if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); }
       else { S.x = T.x; S.y = T.y; S.r = 0; S.s = 1; S.rx = 0; S.ry = 0; paint(); pauseFrame(false); }
     }
