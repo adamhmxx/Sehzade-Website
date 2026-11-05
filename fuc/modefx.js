@@ -14,7 +14,7 @@
   }
   document.addEventListener("click", function (e) {
     var t = e.target.closest && e.target.closest("[role=tab]");
-    if (!t || t.__fxGo || innerWidth >= 810 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!t || t.__fxGo || (innerWidth >= 810 && innerHeight >= 520) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (t.getAttribute("aria-selected") === "true") return;
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
     if (busy) { pending = t; return; }   /* taps during a switch are not lost: the last one runs right after */

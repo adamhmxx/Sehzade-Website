@@ -34,6 +34,8 @@ html.intro-ui [role=tablist]{transform:translateX(-50%) translateY(12px)!importa
 <style id="mobile-fit">
 /* phones: the layout must follow the VISIBLE screen (dvh), not the tall one that hides the bottom behind the browser toolbar; the mode menu then always sits above the toolbar and the home bar */
 @supports (height:100dvh){html,body{height:100dvh!important}div[style*="min-height: 100vh"]{min-height:100dvh!important}}
+/* landscape phones: the gallery asked for at least 520px of height, which pushed the mode menu below the visible screen */
+@media (max-height:560px){div[style*="min-height: 520px"]{min-height:0!important}}
 @media (pointer:coarse){[role=tablist]{bottom:max(64px,calc(env(safe-area-inset-bottom,0px) + 40px))!important}}
 </style>
 <script>/* phones: the Twister is drawn with fewer slices (a quarter of the layers), which keeps dragging and the entrance smooth on a phone GPU */
