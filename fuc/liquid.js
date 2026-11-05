@@ -115,7 +115,7 @@
       '<feComposite in="n1" in2="m" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="map"/>' +
       '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G"/>';
     svg.appendChild(f); document.body.appendChild(svg);
-    gal = { off: f.children[1], img: f.children[4], map: f.children[7] };
+    gal = { turb: f.children[0], off: f.children[1], img: f.children[4], map: f.children[7] };
     return gal;
   }
   function galFx(c, sp, on, now, dtf) {
@@ -138,7 +138,8 @@
     var g = galFilter(), br = box.getBoundingClientRect(), R = c.reach * 1.7;
     if (galBox !== box) { box.style.filter = "url(#lq-gal)"; galBox = box; }
     g.map.setAttribute("scale", galS.toFixed(2));
-    g.off.setAttribute("dx", (Math.sin(now / 900) * 90).toFixed(1)); g.off.setAttribute("dy", ((now / 18) % 400).toFixed(1));
+    g.turb.setAttribute("baseFrequency", (.011 * (1 + .16 * Math.sin(now / 1300))).toFixed(5) + " " + (.018 * (1 + .16 * Math.cos(now / 1700))).toFixed(5));
+    g.off.setAttribute("dx", (Math.sin(now / 900) * 40).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / 1100) * 40).toFixed(1));
     g.img.setAttribute("x", (mx - br.left - R).toFixed(1)); g.img.setAttribute("y", (my - br.top - R).toFixed(1)); g.img.setAttribute("width", (R * 2).toFixed(1)); g.img.setAttribute("height", (R * 2).toFixed(1));
     return 1;
   }
@@ -161,7 +162,7 @@
       '<feGaussianBlur in="w" stdDeviation="0.45"/>';
     defs.appendChild(f);
     /* small text gets a fraction of the strength a large card gets, so every component distorts to the same degree visually */
-    return { id: id, ph: fid * 1.7, off: f.children[1], map: f.children[2], k: ABOUT || (el.__fxt && el.__fxt !== el) || (el.closest && el.closest(".ab-card")) ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
+    return { id: id, ph: fid * 1.7, fq: fq, turb: f.children[0], off: f.children[1], map: f.children[2], k: ABOUT || (el.__fxt && el.__fxt !== el) || (el.closest && el.closest(".ab-card")) ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
   }
   function spring(st, key, target, k, damp) { st["v" + key] = (st["v" + key] + (target - st[key]) * k) * damp; st[key] += st["v" + key]; }
 
@@ -204,9 +205,16 @@
         var fl = "";
         if (warp) {
           if (!st.warp) st.warp = makeWarp(el, b);
-          st.warp.map.setAttribute("scale", (st.d * st.warp.k).toFixed(2));
-          /* the noise slides on its own clock, exactly like the loading screen */
-          st.warp.off.setAttribute("dx", (Math.sin(now / 900 + st.warp.ph) * 90).toFixed(1)); st.warp.off.setAttribute("dy", ((now / 18 + st.warp.ph * 40) % 400).toFixed(1));
+          /* never more than about a third of the element\'s own height: small text (14-20px) broke into overlapping, clipped glyphs when the arrival burst pushed it by 10+ px */
+          if (!st.fs) st.fs = parseFloat(getComputedStyle(tgt).fontSize) || 16;
+          /* ...and for text, never more than about 25% of the font size: lines of a paragraph (a few px apart) otherwise slide over each other and print twice */
+          st.warp.map.setAttribute("scale", Math.min(st.d * st.warp.k, Math.max(2, b.height * .34), Math.max(2, st.fs * .25)).toFixed(2));
+          /* the noise flows on its own clock, like the loading screen. It flows by morphing (a slow change of its frequency) plus a small sway that stays
+             inside the filter margin: sliding the whole noise field by hundreds of pixels left an empty strip in it, which showed up as a hard tear
+             through the text (lines cut and printed twice) */
+          var w_ = st.warp, mx_ = Math.min(60, b.width * .22), my_ = Math.min(40, b.height * .45);
+          w_.turb.setAttribute("baseFrequency", (w_.fq * (1 + .16 * Math.sin(now / 1300 + w_.ph))).toFixed(5) + " " + (w_.fq * 1.5 * (1 + .16 * Math.cos(now / 1700 + w_.ph))).toFixed(5));
+          w_.off.setAttribute("dx", (Math.sin(now / 900 + w_.ph) * mx_).toFixed(1)); w_.off.setAttribute("dy", (Math.cos(now / 1100 + w_.ph) * my_).toFixed(1));
           fl = "url(#" + st.warp.id + ") ";
         }
         if (st.b > .03) fl += "blur(" + st.b.toFixed(2) + "px)";
