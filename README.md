@@ -14,11 +14,15 @@ Run:  python3 server.py   ->  http://localhost:8000
 - build.py        makes build/page.html for the Claude artifact and lists the files to publish with it
 
 ## Interaction scripts (fuc/)
-- liquid.js   liquid hover: a soft blob, distortion and blur near the cursor, plus a control panel for it, link hover and the About popup (Shift+L; settings kept in localStorage). Shared by index.html and about.html.
+- liquid.js   liquid hover: a soft blob, distortion and blur near the cursor, plus a control panel for it, the Intro settings and the About popup (Shift+L; settings kept in localStorage). Shared by index.html and about.html.
 - linkfx.js   one hover effect for every text link, tab and button: letters slide in from both edges with a motion blur.
 - cms.js + cms.html   the CMS as its own page (Shift+C on the site, or open cms.html): projects, About text, links, JSON export/import. Saved in the browser's localStorage.
 - about-card.js   the About card: draggable paper sheet that bends while it moves (strip copy of the page), grid overlay (Shift+G)
 
 ## Loading entrance, stand-alone (loading/)
 - loading/index.html   the loading entrance on its own, from the red screen until the background is plain black, with its control panel (Hide/Show with C, Replay with R). Every setting has a slider and a description; values are kept in localStorage, "Copy values" gives the numbers as JSON. Open it through `python3 server.py` -> http://localhost:8000/loading/
-- The same sequence runs in the site from fuc/intro.js (red seeps into black, then the portfolio row, then the Twister cards rise one by one). Its numbers live in `DEF` at the top of intro.js and in the Liquid panel (Shift+L, tab "Intro"). Keep the two in step: loading/index.html is the sandbox, fuc/intro.js is what ships.
+- The same sequence runs in the site from fuc/intro.js (red seeps into black, then the portfolio row, then the whole Twister rises as one piece). Its numbers live in `DEF` at the top of intro.js and in the Liquid panel (Shift+L, tab "Intro"). Keep the two in step: loading/index.html is the sandbox, fuc/intro.js is what ships.
+
+## Phones
+- fuc/modefx.js   below 810px wide, switching mode dips through the page background (no morph, so no card crosses another); taps during a switch are queued.
+- The Twister uses 10 slices per card on touch devices and its items are 30% smaller (see index.html and the gallery chunk). Link hover is off on touch.
