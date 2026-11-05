@@ -242,14 +242,17 @@
     var START = CFG.itstart, D = CFG.itdur, s0 = performance.now(), an = null;
     if (gk) { gk.ox = gk.tx = START; }
     /* the whole ribbon starts below the screen (no fading, it simply travels up into place), eased so it leaves gently and lands softly */
-    if (!reduce && cont && cont.animate) an = cont.animate([{ transform: "translateY(" + CFG.itdist + "vh)" }, { transform: "none" }], { duration: D, easing: "cubic-bezier(.33,0,.15,1)", fill: "both" });
+    /* the ribbon rises by itself: every card is lifted from below the screen into place through the gallery's own layout (window.__twRise, in px).
+       The gallery frame stays still, so its clipped edge and edge fades never slide across the picture */
+    var riseH = reduce ? 0 : innerHeight * CFG.itdist / 100; window.__twRise = riseH;
     root.classList.remove("intro-on");
     (function step(now) {
-      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k));
+      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
+      window.__twRise = riseH * (1 - er);
       if (gk) { gk.ox = v; gk.tx = v; }
       if (k < 1) return requestAnimationFrame(step);
       if (gk) { gk.ox = 0; gk.tx = 0; }
-      if (an) an.cancel();
+      window.__twRise = 0; if (gk) { gk.ox = 0; gk.tx = 0; }
       setTimeout(restore, 150); /* full slice count again, once the ribbon has landed */
     })(performance.now());
     setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : CFG.itui);
