@@ -113,49 +113,34 @@
     svg.setAttribute("width", "0"); svg.setAttribute("height", "0"); svg.setAttribute("aria-hidden", "true"); svg.style.cssText = "position:absolute;width:0;height:0;pointer-events:none";
     var f = document.createElementNS(NS, "filter"); f.setAttribute("id", "lq-gal"); f.setAttribute("x", "0"); f.setAttribute("y", "0"); f.setAttribute("width", "100%"); f.setAttribute("height", "100%");
     f.setAttribute("color-interpolation-filters", "sRGB");
-    f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="0.0042 0.0066" numOctaves="1" seed="3" result="n"/>' +
+    /* the loading screen's "disappear", on the picture under the cursor: (1) a melt, the pixels are pushed around by flowing noise, (2) a dissolve, the
+       picture is eaten away in patches of a second, slower noise, so it breaks up and sinks into the dark background. Both are strongest right when the
+       cursor arrives and calm down to a gentle ripple. */
+    var ID = "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1";
+    f.innerHTML =
+      '<feTurbulence type="fractalNoise" baseFrequency="0.0075 0.012" numOctaves="2" seed="3" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="no"/>' +
       '<feColorMatrix in="no" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1" result="n1"/>' +
       '<feFlood flood-color="#000" flood-opacity="1" result="black"/>' +
       '<feImage href="' + MASK + '" x="-999" y="-999" width="256" height="256" preserveAspectRatio="none" result="spot"/>' +
       '<feComposite in="spot" in2="black" operator="over" result="m"/>' +
       '<feComposite in="n1" in2="m" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="map"/>' +
-      '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G"/>';
+      '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G" result="dm"/>' +
+      '<feTurbulence type="fractalNoise" baseFrequency="0.0055 0.009" numOctaves="2" seed="9" result="nb"/>' +
+      '<feOffset in="nb" dx="0" dy="0" result="nbo"/>' +
+      '<feColorMatrix in="nbo" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1" result="nb1"/>' +
+      '<feComponentTransfer in="m" result="sl"><feFuncR type="linear" slope="0" intercept="0"/><feFuncG type="linear" slope="0" intercept="0"/><feFuncB type="linear" slope="0" intercept="0"/></feComponentTransfer>' +
+      '<feComposite in="sl" in2="nb1" operator="arithmetic" k1="0" k2="-1" k3="1" k4="1" result="df"/>' +
+      '<feComponentTransfer in="df" result="kp"><feFuncR type="linear" slope="7" intercept="-5.6"/></feComponentTransfer>' +
+      '<feColorMatrix in="kp" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" result="ka"/>' +
+      '<feComposite in="dm" in2="ka" operator="in"/>';
     svg.appendChild(f); document.body.appendChild(svg);
-    gal = { turb: f.children[0], off: f.children[1], img: f.children[4], map: f.children[7] };
+    var ch = f.children;
+    gal = { turb: ch[0], off: ch[1], img: ch[4], map: ch[7], turb2: ch[8], off2: ch[9], sl: ch[11].children[0] };
     return gal;
-  }
-  /* Twister: its pictures are bent around a spiral and lie on slanted, curved edges. A raster distortion (any displacement filter) can only move
-     whole pixels, so those edges turned into broken stair-steps. So here the liquid is done with geometry only, which is always perfectly smooth:
-     the cards near the cursor swell towards you on a spring (an arrival burst, then a slow flowing sway), like a liquid surface rising under the cursor. */
-  function twCardFx(c, sp, on, now, dtf) {
-    var any = 0, reach = c.reach + 120;
-    on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
-    for (var n = 0; n < galCards.length; n++) {
-      var card = galCards[n]; if (!card.isConnected) continue;
-      var cb = card.getBoundingClientRect(), cx = cb.left + cb.width / 2, cy = cb.top + cb.height / 2, d = Math.hypot(cx - mx, cy - my);
-      var f = on ? Math.exp(-Math.pow(Math.max(0, d - Math.min(cb.width, 300) / 2) / reach, 2) * 1.6) : 0;
-      var st = card.__lq || (card.__lq = { x: 0, vx: 0, y: 0, vy: 0, z: 0, vz: 0, set: 0, hot: 0, pulse: 0 });
-      if (f < .002 && !st.set) continue;
-      if (f > .25 && !st.hot) { st.hot = 1; st.pulse = 1; } else if (f < .08) st.hot = 0;
-      st.pulse *= Math.exp(-dtf / .75);
-      var amp = f * c.distort * (.55 + sp * .4 + 1.0 * st.pulse);
-      /* well damped (no wobble back and forth), and a cursor that is gone lets everything settle quickly */
-      if (f < .02) { st.x *= .88; st.y *= .88; st.z *= .88; st.vx *= .5; st.vy *= .5; st.vz *= .5; }
-      spring(st, "z", amp * 2.4, .1, .7);
-      spring(st, "x", amp * .45 * Math.sin(now * .0016 + cy * .004), .1, .72); spring(st, "y", amp * .45 * Math.sin(now * .0013 + cx * .005 + 1.3), .1, .72);
-      if (Math.abs(st.z) > .08 || Math.abs(st.x) > .05 || Math.abs(st.y) > .05) { card.style.translate = st.x.toFixed(2) + "px " + st.y.toFixed(2) + "px " + st.z.toFixed(2) + "px"; st.set = 1; any = 1; }
-      else if (st.set) { card.style.translate = ""; st.set = 0; st.x = st.y = st.z = st.vx = st.vy = st.vz = 0; }
-    }
-    return any;
   }
   function galFx(c, sp, on, now, dtf) {
     var box = galCards.length && galCards[0].isConnected ? galCards[0].parentElement : null;
-    /* Twister (cards made of many slices) uses the geometric liquid; every other mode uses the picture distortion below */
-    if (galCards.length && galCards[0].childElementCount > 1) {
-      if (galBox) { galBox.style.filter = ""; galBox = null; galS = galV = 0; }
-      return twCardFx(c, sp, on, now, dtf);
-    }
     if (galBox && galBox !== box) { galBox.style.filter = ""; galBox = null; galS = galV = 0; }
     if (!box) return 0;
     /* which card is under the cursor: arriving on a new one fires the opening burst */
@@ -168,14 +153,21 @@
     }
     if (hover && hover !== galHover) galPulse = 1;
     galHover = hover; galPulse *= Math.exp(-dtf / .75);
-    var target = (hover || halo) ? c.distort * (1.7 + 2.6 * galPulse + sp * .9) * (hover ? 1 : .35) : 0;
-    galV = (galV + (target - galS) * .09) * .84; galS += galV;
-    if (galS < .25 && target === 0) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
+    var target = (hover || halo) ? c.distort * (2.2 + 3.4 * galPulse + sp * 1.2) * (hover ? 1 : .35) : 0;
+    /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
+    galS += (target - galS) * (target > galS ? .22 : .16);
+    if (galS < 1 && target === 0) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
     var g = galFilter(), br = box.getBoundingClientRect(), R = c.reach * 1.7;
-    if (galBox !== box) { box.style.filter = "url(#lq-gal)"; galBox = box; }
+    /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
+    if (box.style.filter !== "url(#lq-gal)") box.style.filter = "url(#lq-gal)"; galBox = box;
     g.map.setAttribute("scale", galS.toFixed(2));
-    g.turb.setAttribute("baseFrequency", (.0042 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.0066 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
+    /* how much of the picture dissolves: a lot at the arrival burst, a light veil while the cursor rests */
+    var lvl = Math.max(0, Math.min(1, (galS - c.distort * 1.2) / (c.distort * 3.6))) * .8; lvl = lvl.toFixed(3);
+    [0, 1, 2].forEach(function (i) { g.sl.parentNode.children[i].setAttribute("slope", lvl); });
+    g.turb.setAttribute("baseFrequency", (.0075 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.012 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
     g.off.setAttribute("dx", (Math.sin(now / 900) * 40).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / 1100) * 40).toFixed(1));
+    g.turb2.setAttribute("baseFrequency", (.0055 * (1 + .1 * Math.cos(now / 1900))).toFixed(5) + " " + (.009 * (1 + .1 * Math.sin(now / 2300))).toFixed(5));
+    g.off2.setAttribute("dx", (Math.cos(now / 1200) * 45).toFixed(1)); g.off2.setAttribute("dy", (Math.sin(now / 1500) * 45).toFixed(1));
     g.img.setAttribute("x", (mx - br.left - R).toFixed(1)); g.img.setAttribute("y", (my - br.top - R).toFixed(1)); g.img.setAttribute("width", (R * 2).toFixed(1)); g.img.setAttribute("height", (R * 2).toFixed(1));
     return 1;
   }
