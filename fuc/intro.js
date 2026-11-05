@@ -38,7 +38,7 @@
   }
   line.style.height = CFG.iline + "px";
   "SEHZADE".split("").forEach(function (c) { var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp); });
-  fit(); addEventListener("resize", function () { fit(); if (window.__introSize) window.__introSize(); });
+  fit(); addEventListener("resize", function () { fit(); bigDirty = uiDirty = true; if (window.__introSize) window.__introSize(); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 
   /* ---- progress: real signals, but never faster than the minimum show time ---- */
@@ -118,7 +118,8 @@
     sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
       { duration: reduce ? 1 : CFG.iltr, delay: (reduce ? 0 : CFG.ildl) + i * CFG.ilst, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
   });
-  function renderText(now) {
+  var bigDirty = true, uiDirty = true, lastUIKey = "", TOUCH = matchMedia("(pointer: coarse)").matches;
+  function renderBig(now) {
     tx.setTransform(1, 0, 0, 1, 0, 0); tx.clearRect(0, 0, tc.width, tc.height); tx.setTransform(sc, 0, 0, sc, 0, 0);
     var fs = parseFloat(big.style.fontSize) || 100; tx.font = fs + 'px "Anton", Impact, sans-serif'; tx.textBaseline = "alphabetic"; tx.fillStyle = "#fff";
     var m = tx.measureText("H"), asc = m.fontBoundingBoxAscent || fs * .9, desc = m.fontBoundingBoxDescent || fs * .2, t = now - T0;
@@ -129,6 +130,9 @@
       tx.globalAlpha = e; tx.fillText(sp.textContent, r.left, y);
     });
     tx.globalAlpha = 1;
+  }
+  function renderUI(now) {
+    var t = now - T0;
     /* percentage, "Designer" and the loading line live in their own layer, so they ripple and dissolve exactly like the word but at their own, smaller scale */
     ux.setTransform(1, 0, 0, 1, 0, 0); ux.clearRect(0, 0, uc.width, uc.height); ux.setTransform(sc, 0, 0, sc, 0, 0);
     ux.font = '16px "Anton", Impact, sans-serif'; ux.textBaseline = "alphabetic"; ux.fillStyle = "#fff";
@@ -150,8 +154,15 @@
     if (!gl) { cv.style.background = "#ff2d20"; cv.style.opacity = String(1 - seepT); return; }
     var soft = CFG.iseeps / 100, lag = CFG.iseepl / 100, sC = soft * 2.4, lC = lag * 2;
     var f0 = Math.min(-soft, lC - sC, lag - soft * 1.6) - .02, f1 = 1 + Math.max(soft, lag + soft * 1.6, lC + sC) + .02;
-    renderText(performance.now()); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tc);
-    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex2); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, uc); gl.activeTexture(gl.TEXTURE0);
+    /* the word is uploaded to the GPU only while it is still rising (or after a resize), the small texts only when they change: a still
+       frame costs the phone nothing but the shader itself */
+    var now_ = performance.now(), tt = now_ - T0, key = pct.textContent + "|" + Math.round(p * 3);
+    if (bigDirty || (!reduce && tt < CFG.ildl + 7 * CFG.ilst + CFG.iltr + 150)) {
+      renderBig(now_); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tc); bigDirty = false;
+    }
+    if (uiDirty || key !== lastUIKey || (!reduce && tt < CFG.ildl + 350 + 12 * CFG.ilst + CFG.iltr + 150)) {
+      renderUI(now_); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex2); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, uc); gl.activeTexture(gl.TEXTURE0); uiDirty = false; lastUIKey = key;
+    }
     var ua2 = uiAmp * 2.2 * sc; gl.uniform2f(U.uAmp, ua2 / cv.width, ua2 / cv.height);
     var ta = liqAmp * 2.2 * sc; gl.uniform2f(U.tAmp, ta / cv.width, ta / cv.height); gl.uniform1f(U.tOn, 1);
     gl.uniform2f(U.res, cv.width, cv.height); gl.uniform1f(U.time, (performance.now() - T0) / 1000); gl.uniform1f(U.front, f0 + (f1 - f0) * seepT);
@@ -159,13 +170,15 @@
     gl.uniform1f(U.bias, CFG.iseepb / 100); gl.uniform1f(U.rim, CFG.iseepr / 100); gl.uniform1f(U.grain, CFG.iseepg / 100);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
-  function sizeCv() { sc = Math.min(1, 1500 / innerWidth); cv.width = tc.width = uc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = uc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
+  function sizeCv() { sc = Math.min(1, 1500 / innerWidth) * (TOUCH ? .65 : 1); bigDirty = uiDirty = true; cv.width = tc.width = uc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = uc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
   sizeCv(); window.__size = sizeCv;
   window.__introSize = sizeCv;
 
   /* ---- red -> black: the text melts and the red is soaked up; the portfolio row starts while the last of the red is still draining ---- */
+  /* decode the row's pictures while the red is still being absorbed, so the row slides in without a hitch */
+  function warmRow() { items().slice(0, CFG.irn).forEach(function (it) { var im = new Image(); im.src = it.image.src; if (im.decode) im.decode().catch(function () {}); (window.__introImgs = window.__introImgs || []).push(im); }); }
   function wipe() {
-    clearInterval(poll); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
+    clearInterval(poll); warmRow(); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
     if (!gl) cv.style.background = "#ff2d20";
     if (!gl) [].forEach.call(big.children, function (sp, i) {
       sp.animate([{ transform: "translateY(0)", opacity: 1, filter: "blur(0px)" }, { transform: "translateY(60%)", opacity: 0, filter: "blur(6px)" }],
@@ -176,7 +189,7 @@
       var k = Math.min(1, (now - s0) / D);
       seepT = .5 - .5 * Math.cos(Math.PI * k); /* sine in-out: slow start, steady soak, soft tail */
       seepNow = now - s0; draw(); liquid(now);
-      if (!rowGo && k > CFG.irgo / 100) { rowGo = true; row_start(); }
+      if (!rowGo && k > Math.max(CFG.irgo, TOUCH ? 92 : 0) / 100) { rowGo = true; row_start(); }
       if (k < 1) return requestAnimationFrame(step);
       wipeActive = false; cv.style.display = "none"; intro.style.display = "none"; if (!rowGo) { rowGo = true; row_start(); }
     })(performance.now());
