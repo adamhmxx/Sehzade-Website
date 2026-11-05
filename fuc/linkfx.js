@@ -4,7 +4,7 @@
   if (window.__linkfx) return;
   window.__linkfx = 1;
   var SPLIT = "#none-split"; /* plain-text controls (the card's Close button), split into letters on first hover */
-  var SEL = 'a[href], [role="tab"], ' + SPLIT;
+  var SEL = 'a[href], [role="tab"], button.abx-close, ' + SPLIT;
   var css = document.createElement("style");
   css.textContent =
     'a[href]{text-decoration:none!important}' +

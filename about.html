@@ -122,6 +122,11 @@ h1{font-size:40px!important;line-height:1.1!important}
 .abx-top{top:0;display:flex;align-items:center;white-space:nowrap;line-height:1.2}
 .abx-name{bottom:0;overflow:hidden;white-space:nowrap;line-height:.82}
 .abx-name span{display:inline-block}
+/* the small texts of the card read 14px on screen when the card is scaled down (phones, tablets); the card tells us the size in --abx-small */
+.in-panel .ab-type{font-size:var(--abx-small,16px)!important}
+.abx-close{top:0;right:0;left:auto;width:auto;display:flex;align-items:center;margin:0;border:0;background:none;color:#0b0b0b;font-family:"Anton",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;line-height:1.2;cursor:pointer;pointer-events:auto;z-index:51;white-space:nowrap}
+.abx-close span{display:inline-block;white-space:pre}
+.abx-close:focus-visible{outline:2px solid #0b0b0b;outline-offset:-2px}
 .abt-vh-fix{min-height:var(--abx-h,100dvh)!important}
 .abt-phone,.abt-phone-grow{min-height:var(--abx-ph,100dvh)!important}
 .abt-phone{height:var(--abx-ph,100dvh)!important}
@@ -146,10 +151,17 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     abxTop.className="abx abx-top";abxName.className="abx abx-name";abxTop.appendChild(abxCopy);abxName.appendChild(abxNm);
     abxTop.setAttribute("aria-hidden","true");abxName.setAttribute("aria-hidden","true");
     document.body.appendChild(abxTop);document.body.appendChild(abxName);
+    /* a visible Close button (the card used to close only with Esc or a tap outside, which is hard to hit on a phone) */
+    var abxClose=document.createElement("button");abxClose.type="button";abxClose.className="abx abx-close";abxClose.setAttribute("aria-label","Close About");
+    "Close".split("").forEach(function(ch){var sp=document.createElement("span");sp.textContent=ch;abxClose.appendChild(sp);});
+    abxClose.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();parent.postMessage("about-panel:close","*");});
+    document.body.appendChild(abxClose);
     var abxLast=null;
     window.__abxSet=function(o){
       if(o)abxLast=o;o=abxLast;if(!o)return;var k=o.k||1;
-      abxTop.style.height=(o.top/k)+"px";abxTop.style.padding="0 "+(16/k)+"px";abxTop.style.fontSize=(16/k)+"px";abxCopy.textContent=o.copy;
+      var sm=k<1?14:16;root.style.setProperty("--abx-small",(sm/k)+"px");
+      abxTop.style.height=(o.top/k)+"px";abxTop.style.padding="0 "+(16/k)+"px";abxTop.style.fontSize=(sm/k)+"px";abxCopy.textContent=o.copy;
+      abxClose.style.height=(o.top/k)+"px";abxClose.style.padding="0 "+(16/k)+"px";abxClose.style.fontSize=(sm/k)+"px";
       abxName.style.padding=(8/k)+"px "+(16/k)+"px "+(16/k)+"px";abxNm.style.fontSize=(o.fs/k)+"px";abxNm.textContent=o.name;
       /* the page content sits below the copyright line (applied inline so the bendable copy of the page inherits it) */
       /* the page lays itself out for the height left between the two lines, not the whole card */
