@@ -35,19 +35,43 @@
     return Object.assign({}, LD, c || {});
   }
 
+  /* The hover is the loading screen's "appear" in small: the letters rise from below one after another (same ease, left to right, fading in)
+     while the whole word carries a burst of liquid ripple that calms down. The ripple is an SVG displacement whose noise flows on its own clock. */
+  var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
+  function ripple(host, amp, dur) {
+    if (!host || host.__lfx || !amp) return;
+    if (!defs) {
+      var svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("width", "0"); svg.setAttribute("height", "0"); svg.setAttribute("aria-hidden", "true");
+      svg.style.cssText = "position:absolute;width:0;height:0;pointer-events:none";
+      defs = document.createElementNS(NS, "defs"); svg.appendChild(defs); document.body.appendChild(svg);
+    }
+    var id = "lfx" + (fid++), f = document.createElementNS(NS, "filter");
+    f.setAttribute("id", id); f.setAttribute("x", "-25%"); f.setAttribute("y", "-70%"); f.setAttribute("width", "150%"); f.setAttribute("height", "240%");
+    f.setAttribute("color-interpolation-filters", "sRGB");
+    f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="0.03 0.06" numOctaves="2" seed="' + (fid % 7 + 2) + '" result="n"/><feOffset in="n" dx="0" dy="0" result="o"/><feDisplacementMap in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/>';
+    defs.appendChild(f); host.__lfx = 1; host.style.filter = "url(#" + id + ")";
+    var off = f.children[1], map = f.children[2], t0 = performance.now();
+    (function tick(now) {
+      var k = (now - t0) / dur;
+      if (k >= 1 || !host.isConnected) { host.style.filter = ""; host.__lfx = 0; f.remove(); return; }
+      map.setAttribute("scale", (amp * Math.pow(1 - k, 2)).toFixed(2));
+      off.setAttribute("dx", (Math.sin(now / 900) * 90).toFixed(1)); off.setAttribute("dy", ((now / 18) % 400).toFixed(1));
+      requestAnimationFrame(tick);
+    })(t0);
+  }
   function play(el) {
     var s = letters(el);
     if (!s.length || !s[0].animate) return;
-    var c = cfg(), mid = (s.length - 1) / 2;
-    s.forEach(function (n, i) {
-      var d = i - mid, dir = d < 0 ? -1 : d > 0 ? 1 : 0, far = Math.abs(d) / (mid || 1);
-      var off = dir * c.ldist * (.57 + far);
-      n.animate([
-        { transform: "translateX(" + off + "px)", filter: "blur(" + c.lblur + "px)", opacity: 0, offset: 0 },
-        { transform: "translateX(" + off * .45 + "px)", filter: "blur(" + c.lblur * .5 + "px)", opacity: .55, offset: .45 },
-        { transform: "translateX(0)", filter: "blur(0)", opacity: 1, offset: 1 }
-      ], { duration: c.ldur, delay: Math.pow(1 - far, 1.2) * c.lstag, easing: "cubic-bezier(.33,.1,.2,1)", fill: "backwards" });
+    var c = cfg(), n = s.length, step = Math.min(55, (c.lstag * 2) / Math.max(1, n - 1));
+    s.forEach(function (x, i) {
+      var h = x.offsetHeight || 16, rise = Math.max(c.ldist, h * .7);
+      x.animate([
+        { transform: "translateY(" + rise + "px)", opacity: 0 },
+        { transform: "translateY(0)", opacity: 1 }
+      ], { duration: c.ldur, delay: i * step, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" });
     });
+    ripple(el.querySelector("span") || el, 7, c.ldur * .9);
   }
   window.__linkfxPlay = play;
 

@@ -12,7 +12,7 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 140, softness: 1, brightness: 0.03, trail: 0.66, blur: 0.6, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
+  var DEF = { radius: 140, softness: 1, brightness: 0.03, trail: 0.66, blur: 0, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
   if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
@@ -107,8 +107,11 @@
       var f = on ? Math.exp(-Math.pow(Math.max(0, d - Math.min(cb.width, 260) / 2) / reach, 2) * 1.8) : 0;
       var st = card.__lq || (card.__lq = { x: 0, vx: 0, y: 0, vy: 0, set: 0 });
       if (f < .002 && !st.set) continue;
-      var amp = f * c.distort * (.8 + sp * .6) * 1.2, ux = d ? (cx - mx) / d : 0, uy = d ? (cy - my) / d : 0, wv = Math.sin(now * .0032 + cx * .006 + cy * .004);
-      spring(st, "x", ux * amp + wv * amp * .35, .09, .84); spring(st, "y", uy * amp + Math.cos(now * .0027 + cy * .005) * amp * .35, .09, .84);
+      if (f > .2 && !st.hot) { st.hot = 1; st.pulse = 1; } else if (f < .06) st.hot = 0;
+      st.pulse = (st.pulse || 0) * Math.exp(-.016 / .75);
+      /* the card rocks on a slow flowing wave (a burst when the cursor arrives, then a steady ripple), like the loading screen's liquid */
+      var amp = f * c.distort * (.6 + sp * .5 + 1.1 * st.pulse) * .9;
+      spring(st, "x", amp * Math.sin(now * .0021 + cy * .008), .09, .84); spring(st, "y", amp * Math.sin(now * .0017 + cx * .009 + 1.3), .09, .84);
       if (Math.abs(st.x) > .06 || Math.abs(st.y) > .06) { card.style.translate = st.x.toFixed(2) + "px " + st.y.toFixed(2) + "px"; st.set = 1; any = 1; }
       else if (st.set) { card.style.translate = ""; st.set = 0; st.x = st.y = st.vx = st.vy = 0; }
     }
@@ -133,7 +136,7 @@
       '<feGaussianBlur in="w" stdDeviation="0.45"/>';
     defs.appendChild(f);
     /* small text gets a fraction of the strength a large card gets, so every component distorts to the same degree visually */
-    return { id: id, off: f.children[1], map: f.children[2], k: ABOUT || (el.__fxt && el.__fxt !== el) || (el.closest && el.closest(".ab-card")) ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
+    return { id: id, ph: fid * 1.7, off: f.children[1], map: f.children[2], k: ABOUT || (el.__fxt && el.__fxt !== el) || (el.closest && el.closest(".ab-card")) ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
   }
   function spring(st, key, target, k, damp) { st["v" + key] = (st["v" + key] + (target - st[key]) * k) * damp; st[key] += st["v" + key]; }
 
@@ -142,6 +145,7 @@
     scan(now);
     var sp = Math.min(1, Math.hypot(cvx, cvy) / 40);
     cvx *= .88; cvy *= .88;
+    var dtf = Math.min(.05, (now - (step.last || now)) / 1000); step.last = now;
     var active = 0, follow = Math.max(.12, Math.min(.5, .46 - c.trail * .24));
     head.vx = (head.vx + (mx - head.x) * .08) * .8; head.vy = (head.vy + (my - head.y) * .08) * .8; head.x += head.vx; head.y += head.vy;
     chain[0].x = head.x; chain[0].y = head.y;
@@ -163,20 +167,21 @@
       var st = states.get(el);
       if (!st) { st = { b: 0, vb: 0, d: 0, vd: 0, set: 0, warp: null }; states.set(el, st); }
       var tgt = el.__fxt || el, vs = it.vs; /* the filter works in the element's own pixels: far (small) cards get the matching boost, so every mode shows the panel's on-screen strength */
+      /* the same recipe as the loading screen: an opening burst of ripple the moment the cursor arrives, which calms down to a steady
+         ripple while the cursor stays near; the noise flows by itself with time (it does not follow the cursor) */
+      if (f > .2 && !st.hot) { st.hot = 1; st.pulse = 1; } else if (f < .06) st.hot = 0;
+      st.pulse = (st.pulse || 0) * Math.exp(-dtf / .75);
       spring(st, "b", f * c.blur * (.55 + sp * .9) / vs, .09, .82);
-      spring(st, "d", f * c.distort * (.7 + sp * .6) / vs, .08, .84);
+      spring(st, "d", f * c.distort * (.6 + sp * .5 + 1.1 * st.pulse) / vs, .08, .84);
       var warp = st.d > .15;
       if (warp || st.b > .03) {
         active++; st.set = 1;
         var fl = "";
         if (warp) {
           if (!st.warp) st.warp = makeWarp(el, b);
-          /* the noise field slides with the cursor, so the distortion flows like liquid instead of pulsing */
           st.warp.map.setAttribute("scale", (st.d * st.warp.k).toFixed(2));
-          /* the noise field follows the cursor through a low-pass filter: raw pointer jumps made large text shimmer */
-          if (st.ox === undefined) { st.ox = -dx * .35; st.oy = -dy * .35; }
-          st.ox += (-dx * .35 - st.ox) * .12; st.oy += (-dy * .35 - st.oy) * .12;
-          st.warp.off.setAttribute("dx", st.ox.toFixed(1)); st.warp.off.setAttribute("dy", st.oy.toFixed(1));
+          /* the noise slides on its own clock, exactly like the loading screen */
+          st.warp.off.setAttribute("dx", (Math.sin(now / 900 + st.warp.ph) * 90).toFixed(1)); st.warp.off.setAttribute("dy", ((now / 18 + st.warp.ph * 40) % 400).toFixed(1));
           fl = "url(#" + st.warp.id + ") ";
         }
         if (st.b > .03) fl += "blur(" + st.b.toFixed(2) + "px)";
