@@ -75,7 +75,7 @@
   }
 
   /* ---------- components: blur only ---------- */
-  var states = new Map(), els = [], twCards = [], lastScan = 0;
+  var states = new Map(), els = [], galCards = [], lastScan = 0;
   var SEL = ABOUT ? "h1,p,a[href],.abx-top span,.abx-name span" : "nav a,nav span,[role=tab]";
   function scan(now) {
     if (now - lastScan < 600) return;
@@ -85,37 +85,62 @@
       [].forEach.call(document.querySelectorAll("div"), function (d) {
         var st = d.style;
         /* gallery cards. A Twister card is built from many 3D slices: a filter on it (or on one slice) flattens or tears the ribbon, so those cards take no distortion or blur, only the cursor blob */
-        if (st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex) { if (d.childElementCount <= 1) list.push(d); else tw.push(d); }
+        if (st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex) tw.push(d);
         else if (st.zIndex === "7000") [].forEach.call(d.children, function (c) { list.push(c); });           /* project caption */
       });
     }
     /* forget components React has removed, together with their filters */
     states.forEach(function (st, el) { if (!el.isConnected) { if (st.warp) { var f = document.getElementById(st.warp.id); if (f) f.remove(); } states.delete(el); } });
     els = list.filter(function (e) { return !e.closest("#liquid-ui") && (!e.querySelector("p,h1,h2") || e.matches("a,span")); });
-    twCards = tw;
+    galCards = tw;
   }
-  /* Twister cards are built from many 3D slices: a filter flattens or tears the ribbon, and moving slices one by one leaves hairline seams.
-     So the liquid is applied to the whole card as one piece: it is pushed away from the cursor like liquid being displaced, and rocks on a
-     slow wave, with the same strength, reach and springs as the other components. It uses the separate CSS "translate" property, which
-     never disturbs the card's own 3D transform or its slices. */
-  function twStep(c, sp, on, now) {
-    var reach = c.reach + 80, any = 0;
-    for (var n = 0; n < twCards.length; n++) {
-      var card = twCards[n];
-      if (!card.isConnected) continue;
-      var cb = card.getBoundingClientRect(), cx = cb.left + cb.width / 2, cy = cb.top + cb.height / 2, d = Math.hypot(cx - mx, cy - my);
-      var f = on ? Math.exp(-Math.pow(Math.max(0, d - Math.min(cb.width, 260) / 2) / reach, 2) * 1.8) : 0;
-      var st = card.__lq || (card.__lq = { x: 0, vx: 0, y: 0, vy: 0, set: 0 });
-      if (f < .002 && !st.set) continue;
-      if (f > .2 && !st.hot) { st.hot = 1; st.pulse = 1; } else if (f < .06) st.hot = 0;
-      st.pulse = (st.pulse || 0) * Math.exp(-.016 / .75);
-      /* the card rocks on a slow flowing wave (a burst when the cursor arrives, then a steady ripple), like the loading screen's liquid */
-      var amp = f * c.distort * (.6 + sp * .5 + 1.1 * st.pulse) * .9;
-      spring(st, "x", amp * Math.sin(now * .0021 + cy * .008), .09, .84); spring(st, "y", amp * Math.sin(now * .0017 + cx * .009 + 1.3), .09, .84);
-      if (Math.abs(st.x) > .06 || Math.abs(st.y) > .06) { card.style.translate = st.x.toFixed(2) + "px " + st.y.toFixed(2) + "px"; st.set = 1; any = 1; }
-      else if (st.set) { card.style.translate = ""; st.set = 0; st.x = st.y = st.vx = st.vy = 0; }
+  /* The gallery (every mode) gets the loading screen's liquid, applied to the pictures themselves: ONE displacement filter on the whole card layer,
+     whose strength is a soft round spot that follows the cursor. Inside the spot the pictures are warped by the same flowing noise as the loading
+     screen's word (an opening burst when the cursor arrives on a card, then a steady ripple); outside it nothing moves. The filter exists only
+     while the spot is active, and it never touches the cards' own 3D transforms, so the ribbon and the depth order stay exactly as they are. */
+  var gal = null, galBox = null, galS = 0, galV = 0, galPulse = 0, galHover = null;
+  var MASK = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><defs><radialGradient id="g"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#999"/><stop offset="1" stop-color="#000"/></radialGradient></defs><rect width="256" height="256" fill="url(#g)"/></svg>');
+  function galFilter() {
+    if (gal) return gal;
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("width", "0"); svg.setAttribute("height", "0"); svg.setAttribute("aria-hidden", "true"); svg.style.cssText = "position:absolute;width:0;height:0;pointer-events:none";
+    var f = document.createElementNS(NS, "filter"); f.setAttribute("id", "lq-gal"); f.setAttribute("x", "0"); f.setAttribute("y", "0"); f.setAttribute("width", "100%"); f.setAttribute("height", "100%");
+    f.setAttribute("color-interpolation-filters", "sRGB");
+    f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/>' +
+      '<feOffset in="n" dx="0" dy="0" result="no"/>' +
+      '<feColorMatrix in="no" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1" result="n1"/>' +
+      '<feFlood flood-color="#000" flood-opacity="1" result="black"/>' +
+      '<feImage href="' + MASK + '" x="-999" y="-999" width="256" height="256" preserveAspectRatio="none" result="spot"/>' +
+      '<feComposite in="spot" in2="black" operator="over" result="m"/>' +
+      '<feComposite in="n1" in2="m" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="map"/>' +
+      '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G"/>';
+    svg.appendChild(f); document.body.appendChild(svg);
+    gal = { off: f.children[1], img: f.children[4], map: f.children[7] };
+    return gal;
+  }
+  function galFx(c, sp, on, now, dtf) {
+    var box = galCards.length && galCards[0].isConnected ? galCards[0].parentElement : null;
+    if (galBox && galBox !== box) { galBox.style.filter = ""; galBox = null; galS = galV = 0; }
+    if (!box) return 0;
+    /* which card is under the cursor: arriving on a new one fires the opening burst */
+    var hover = null, halo = false;
+    on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
+    if (on) for (var i = 0; i < galCards.length; i++) {
+      var r = galCards[i].getBoundingClientRect(); if (r.width < 40) continue;
+      if (mx > r.left && mx < r.right && my > r.top && my < r.bottom) hover = galCards[i];
+      else if (mx > r.left - 90 && mx < r.right + 90 && my > r.top - 90 && my < r.bottom + 90) halo = true;
     }
-    return any;
+    if (hover && hover !== galHover) galPulse = 1;
+    galHover = hover; galPulse *= Math.exp(-dtf / .75);
+    var target = (hover || halo) ? c.distort * (1.7 + 2.6 * galPulse + sp * .9) * (hover ? 1 : .35) : 0;
+    galV = (galV + (target - galS) * .09) * .84; galS += galV;
+    if (galS < .25 && target === 0) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
+    var g = galFilter(), br = box.getBoundingClientRect(), R = c.reach * 1.7;
+    if (galBox !== box) { box.style.filter = "url(#lq-gal)"; galBox = box; }
+    g.map.setAttribute("scale", galS.toFixed(2));
+    g.off.setAttribute("dx", (Math.sin(now / 900) * 90).toFixed(1)); g.off.setAttribute("dy", ((now / 18) % 400).toFixed(1));
+    g.img.setAttribute("x", (mx - br.left - R).toFixed(1)); g.img.setAttribute("y", (my - br.top - R).toFixed(1)); g.img.setAttribute("width", (R * 2).toFixed(1)); g.img.setAttribute("height", (R * 2).toFixed(1));
+    return 1;
   }
   var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
   function makeWarp(el, b) {
@@ -188,7 +213,7 @@
         tgt.style.filter = fl;
       } else if (st.set) { tgt.style.filter = ""; st.set = 0; }
     }
-    var twAny = twStep(c, sp, inside && c.on && !drag_ && !(TOP && window.__abOpen), now);
+    var twAny = !ABOUT && galFx(c, sp, inside && c.on && !drag_ && !(TOP && window.__abOpen), now, dtf);
     idle = active || twAny || inside ? 0 : idle + 1;
     if (inside || active || idle < 40) requestAnimationFrame(step); else run = false;
   }
