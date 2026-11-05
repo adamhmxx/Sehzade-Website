@@ -101,7 +101,7 @@
     els = list.filter(function (e) { return !e.closest("#liquid-ui") && (!e.querySelector("p,h1,h2") || e.matches("a,span")); });
     galCards = tw;
   }
-  /* The gallery (every mode) gets the loading screen's liquid, applied to the pictures themselves: ONE displacement filter on the whole card layer,
+  /* (Low-frequency noise on purpose: a high-frequency displacement field samples pixels in 1px stair steps, which showed as broken lines along the curved edges of the Twister.) The gallery (every mode) gets the loading screen's liquid, applied to the pictures themselves: ONE displacement filter on the whole card layer,
      whose strength is a soft round spot that follows the cursor. Inside the spot the pictures are warped by the same flowing noise as the loading
      screen's word (an opening burst when the cursor arrives on a card, then a steady ripple); outside it nothing moves. The filter exists only
      while the spot is active, and it never touches the cards' own 3D transforms, so the ribbon and the depth order stay exactly as they are. */
@@ -113,7 +113,7 @@
     svg.setAttribute("width", "0"); svg.setAttribute("height", "0"); svg.setAttribute("aria-hidden", "true"); svg.style.cssText = "position:absolute;width:0;height:0;pointer-events:none";
     var f = document.createElementNS(NS, "filter"); f.setAttribute("id", "lq-gal"); f.setAttribute("x", "0"); f.setAttribute("y", "0"); f.setAttribute("width", "100%"); f.setAttribute("height", "100%");
     f.setAttribute("color-interpolation-filters", "sRGB");
-    f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/>' +
+    f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="0.0042 0.0066" numOctaves="1" seed="3" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="no"/>' +
       '<feColorMatrix in="no" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1" result="n1"/>' +
       '<feFlood flood-color="#000" flood-opacity="1" result="black"/>' +
@@ -145,7 +145,7 @@
     var g = galFilter(), br = box.getBoundingClientRect(), R = c.reach * 1.7;
     if (galBox !== box) { box.style.filter = "url(#lq-gal)"; galBox = box; }
     g.map.setAttribute("scale", galS.toFixed(2));
-    g.turb.setAttribute("baseFrequency", (.011 * (1 + .16 * Math.sin(now / 1300))).toFixed(5) + " " + (.018 * (1 + .16 * Math.cos(now / 1700))).toFixed(5));
+    g.turb.setAttribute("baseFrequency", (.0042 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.0066 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
     g.off.setAttribute("dx", (Math.sin(now / 900) * 40).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / 1100) * 40).toFixed(1));
     g.img.setAttribute("x", (mx - br.left - R).toFixed(1)); g.img.setAttribute("y", (my - br.top - R).toFixed(1)); g.img.setAttribute("width", (R * 2).toFixed(1)); g.img.setAttribute("height", (R * 2).toFixed(1));
     return 1;
