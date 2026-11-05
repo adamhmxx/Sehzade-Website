@@ -67,9 +67,16 @@
     var img = cx.getImageData(x0, y0, x1 - x0, y1 - y0), d = img.data, rgb = INK.split(","),
         ew = .12 + soft * .55, lo = .3 - ew * .45, al = Math.min(1, c.brightness * GAIN);
     /* gooey edge: the wider the softness, the wider the smooth ramp, so the rim never looks jagged */
+    /* The glow is only about 3% bright, i.e. 7 steps of an 8-bit channel over the whole disc: with a plain alpha that shows as visible rings (a faint
+       hard-edged circle on the dark page). So the glow is written as opaque grey values (black = no effect under "screen", white = none under
+       "multiply") with a random dither of the rounding, which turns the rings into smooth, grain-free gradation. */
+    var gray = +rgb[0], mult = ABOUT;
     for (var k = 0; k < d.length; k += 4) {
       var t = (d[k + 3] / 255 - lo) / ew; t = t < 0 ? 0 : t > 1 ? 1 : t; t = t * t * (3 - 2 * t);
-      d[k] = +rgb[0]; d[k + 1] = +rgb[1]; d[k + 2] = +rgb[2]; d[k + 3] = Math.round(t * al * 255);
+      var v = t * al, g = mult ? 255 - v * (255 - gray) : v * gray;
+      if (t > 0) g += Math.random() - .5;
+      g = Math.round(g); g = g < 0 ? 0 : g > 255 ? 255 : g;
+      d[k] = d[k + 1] = d[k + 2] = g; d[k + 3] = 255;
     }
     cx.putImageData(img, x0, y0);
   }
