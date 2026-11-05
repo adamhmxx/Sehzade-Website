@@ -29,4 +29,4 @@ Run:  python3 server.py   ->  http://localhost:8000
 
 ## Twister and hover liquid
 - Twister: the cards ride along one spiral. Scrolling, dragging and auto scroll move every card ALONG the spiral (it turns and rises, and cards wrap from the top back to the bottom off screen). Never fewer than 24 slices per card (16 while the entrance rises).
-- Gallery hover (liquid.js, jellyFx): wet-paint wobble. Cards near the cursor are shoved along by the cursor, jolt away on arrival and slosh back on springs (translate, scale, rotate of the whole card, so edges stay smooth). Text keeps the flowing-noise ripple.
+- Gallery hover (liquid.js, jellyFx): wet-paint wobble. Cards near the cursor are shoved along by the cursor, jolt away on arrival and slosh back on springs (translate, scale, rotate of the whole card, so edges stay smooth). Over it sits the picture layer of the loading screen's disappear (melt + dissolve of the picture under the cursor). Both are tuned in the Liquid panel (Shift+L, tab "Hover"); melt and dissolve can be set to 0. Text keeps the flowing-noise ripple.
