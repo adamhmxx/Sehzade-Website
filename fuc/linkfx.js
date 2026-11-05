@@ -62,11 +62,16 @@
   }
   document.addEventListener("mouseover", function (e) {
     var el = e.target.closest && e.target.closest(SEL);
-    if (!el || el === cur || isLogo(el)) return;
+    if (!el || isLogo(el)) return;
+    /* the effect restarts on every real entry, even if the previous element was replaced by a re-render or the pointer left the window */
+    if (el === cur && el.isConnected) return;
     cur = el;
     play(el);
   }, true);
   document.addEventListener("mouseout", function (e) {
-    if (cur && !cur.contains(e.relatedTarget)) cur = null;
+    if (cur && !cur.contains(e.relatedTarget)) { cur = null; }
   }, true);
+  document.addEventListener("pointerleave", function () { cur = null; });
+  /* a click re-renders the mode menu: let the next hover play again */
+  document.addEventListener("click", function () { cur = null; }, true);
 })();

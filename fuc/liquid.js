@@ -12,7 +12,7 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 140, softness: 1, brightness: 0.03, trail: 0.66, blur: 0.6, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, pq: 2, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
+  var DEF = { radius: 140, softness: 1, brightness: 0.03, trail: 0.66, blur: 0.6, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
   if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
@@ -94,33 +94,23 @@
     els = list.filter(function (e) { return !e.closest("#liquid-ui") && (!e.querySelector("p,h1,h2") || e.matches("a,span")); });
     twCards = tw;
   }
-  /* Twister cards are built from many 3D slices, and a filter would flatten or tear the ribbon. So the liquid is made out of geometry instead:
-     the slices under the cursor ride a soft travelling wave (a seamless ripple of the picture itself), with the same strength, reach and
-     springs as the other components. It uses the separate CSS "translate" property, which never disturbs the slice's own 3D transform. */
+  /* Twister cards are built from many 3D slices: a filter flattens or tears the ribbon, and moving slices one by one leaves hairline seams.
+     So the liquid is applied to the whole card as one piece: it is pushed away from the cursor like liquid being displaced, and rocks on a
+     slow wave, with the same strength, reach and springs as the other components. It uses the separate CSS "translate" property, which
+     never disturbs the card's own 3D transform or its slices. */
   function twStep(c, sp, on, now) {
-    var reach = c.reach + 80, any = 0, todo = [];
+    var reach = c.reach + 80, any = 0;
     for (var n = 0; n < twCards.length; n++) {
       var card = twCards[n];
       if (!card.isConnected) continue;
-      var cb = card.getBoundingClientRect();
-      var near = on && Math.hypot(cb.left + cb.width / 2 - mx, cb.top + cb.height / 2 - my) < reach + 480;
-      if (!near && !card.__lqOn) continue;
-      var kids = card.children, rs = [];
-      for (var k = 0; k < kids.length; k++) { var r = kids[k].getBoundingClientRect(); rs.push(r); }
-      todo.push([card, kids, rs, near]);
-    }
-    for (var t = 0; t < todo.length; t++) {
-      var card = todo[t][0], kids = todo[t][1], rs = todo[t][2], still = 1;
-      for (var j = 0; j < kids.length; j++) {
-        var r = rs[j], x = r.left + r.width / 2, y = r.top + r.height / 2, st = kids[j].__lq || (kids[j].__lq = { y: 0, vy: 0, x: 0, vx: 0 });
-        var d = Math.hypot(x - mx, y - my), f = todo[t][3] ? Math.exp(-Math.pow(d / reach, 2) * 1.8) : 0;
-        var amp = f * c.distort * (.8 + sp * .7) * 1.4, ph = x * .03 + y * .018 + now * .0055;
-        spring(st, "y", amp * Math.sin(ph), .14, .72); spring(st, "x", amp * .4 * Math.cos(ph * .8 + 1), .14, .72);
-        if (Math.abs(st.y) > .08 || Math.abs(st.x) > .08) { kids[j].style.translate = st.x.toFixed(2) + "px " + st.y.toFixed(2) + "px"; still = 0; }
-        else if (st.set !== 0) { kids[j].style.translate = ""; st.set = 0; st.y = st.x = st.vy = st.vx = 0; }
-        if (Math.abs(st.y) > .08) st.set = 1;
-      }
-      card.__lqOn = !still; if (!still) any = 1;
+      var cb = card.getBoundingClientRect(), cx = cb.left + cb.width / 2, cy = cb.top + cb.height / 2, d = Math.hypot(cx - mx, cy - my);
+      var f = on ? Math.exp(-Math.pow(Math.max(0, d - Math.min(cb.width, 260) / 2) / reach, 2) * 1.8) : 0;
+      var st = card.__lq || (card.__lq = { x: 0, vx: 0, y: 0, vy: 0, set: 0 });
+      if (f < .002 && !st.set) continue;
+      var amp = f * c.distort * (.8 + sp * .6) * 1.2, ux = d ? (cx - mx) / d : 0, uy = d ? (cy - my) / d : 0, wv = Math.sin(now * .0032 + cx * .006 + cy * .004);
+      spring(st, "x", ux * amp + wv * amp * .35, .09, .84); spring(st, "y", uy * amp + Math.cos(now * .0027 + cy * .005) * amp * .35, .09, .84);
+      if (Math.abs(st.x) > .06 || Math.abs(st.y) > .06) { card.style.translate = st.x.toFixed(2) + "px " + st.y.toFixed(2) + "px"; st.set = 1; any = 1; }
+      else if (st.set) { card.style.translate = ""; st.set = 0; st.x = st.y = st.vx = st.vy = 0; }
     }
     return any;
   }
@@ -261,7 +251,6 @@
       ["lstag", "Stagger", 0, 300, 5, "ms"],
       ["#", "About popup"],
       ["pliq", "Liquid appear", 0, 120, 1, "px"],
-      ["pq", "Paper bend: 0 off, 1 light, 2 full", 0, 2, 1, ""],
       ["#", "Space"],
       ["fstep", "Depth spacing", 40, 220, 5, "%"],
       ["fnear", "Near distance", 200, 1000, 10, "px"],
@@ -313,7 +302,7 @@
       trail: "Length of the blob's tail behind the cursor.", distort: "How strongly text and cards ripple when the cursor is near.", blur: "Soft blur added to components close to the cursor.",
       reach: "How far from the cursor components still react.",
       ldur: "How long the letter slide on links takes.", ldist: "How far letters travel while sliding in.", lblur: "Blur on the letters during the slide.", lstag: "Delay between one letter and the next.",
-      pliq: "Ripple strength on the About card text while it moves.", pq: "Paper-bend effect on the About card while it is dragged. 0 off, 1 light, 2 full (heavier).",
+      pliq: "Ripple strength on the About card text while it moves.",
       fstep: "Distance between items along the depth of Space. Higher spreads them further apart in depth.", fnear: "How close to the screen items get before they pass you.",
       fsc: "Size of every card in Space.", fx: "How far items spread left and right.", fy: "How far items spread up and down.", fbl: "Blur on items that are far away.",
       cfa: "How much the cards turn sideways. 0 faces you, higher turns them toward the left.", cdx: "Horizontal gap between neighbouring cards along the diagonal.",

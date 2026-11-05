@@ -86,7 +86,13 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     var m = parseFloat(getComputedStyle(big).left) || 24;
     big.style.fontSize = "100px";
     var w = big.getBoundingClientRect().width;
-    if (w > 0) big.style.fontSize = (100 * (innerWidth - 2 * m) / w).toFixed(2) + "px";
+    if (w > 0) {
+      var fs = 100 * (innerWidth - 2 * m) / w;
+      /* on wide screens the full-width word would be taller than the space under the middle line and run into it: cap its size so it always stays 24px below the line */
+      var room = innerHeight - (parseFloat(getComputedStyle(big).bottom) || 0) - line.getBoundingClientRect().bottom - 24, maxFs = room / .93;
+      if (maxFs > 40) fs = Math.min(fs, maxFs);
+      big.style.fontSize = fs.toFixed(2) + "px";
+    }
   }
   line.style.height = CFG.line + "px";
   "SEHZADE".split("").forEach(function (c) { var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp); });
@@ -104,7 +110,7 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     var t = now - T0, pulse = reduce ? 0 : Math.max(0, 1 - t / CFG.liquidBurstTime), ek = 0;
     if (exitT0) { ek = Math.max(0, Math.min(1, (now - exitT0) / CFG.exitTime)); ek *= ek; }
     liqAmp = reduce ? 0 : CFG.liquid + CFG.liquidBurst * pulse + 4 * Math.sin(t / 700) + CFG.exitMelt * ek;
-    uiAmp = reduce ? 0 : .9 + CFG.liquidBurst * pulse * .06 + CFG.exitMelt * ek * .45;
+    uiAmp = reduce ? 0 : CFG.liquid * .42 + CFG.liquidBurst * pulse * .3 + CFG.exitMelt * ek * .45;
     if (!gl) { setA(liqD, "scale", liqAmp.toFixed(1)); setA(liqO, "dx", (Math.sin(t / 900) * 90).toFixed(1)); setA(liqO, "dy", (t / 18 % 400).toFixed(1)); }
   }
   function frame(now) {
@@ -181,10 +187,18 @@ html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
     ux.setTransform(1, 0, 0, 1, 0, 0); ux.clearRect(0, 0, uc.width, uc.height); ux.setTransform(sc, 0, 0, sc, 0, 0);
     ux.font = '16px "Anton", Impact, sans-serif'; ux.textBaseline = "alphabetic"; ux.fillStyle = "#fff";
     var um = ux.measureText("H"), ua = um.fontBoundingBoxAscent || 15, ud = um.fontBoundingBoxDescent || 4;
-    [pct, intro.querySelector(".in-welcome")].forEach(function (el) {
-      var r = el.getBoundingClientRect(); ux.fillText(el.textContent.toUpperCase(), r.left, r.top + (r.height - (ua + ud)) / 2 + ua);
+    /* the percentage and "Designer" rise letter by letter exactly like the word (same ease, stagger and fade, a little later); the line fades in the same way */
+    var base = reduce ? 0 : CFG.letterDelay + 350;
+    [pct, intro.querySelector(".in-welcome")].forEach(function (el, wi) {
+      var r = el.getBoundingClientRect(), txt = el.textContent.toUpperCase(), y0 = r.top + (r.height - (ua + ud)) / 2 + ua;
+      for (var q = 0; q < txt.length; q++) {
+        var k = reduce ? 1 : Math.max(0, Math.min(1, (t - base - (wi * 5 + q) * CFG.letterStagger * .8) / (CFG.letterTime * .85))), e = 1 - Math.pow(1 - k, 4);
+        if (e <= 0) continue;
+        ux.globalAlpha = e; ux.fillText(txt[q], r.left + ux.measureText(txt.slice(0, q)).width, y0 + (1 - e) * r.height * 1.4);
+      }
     });
-    var lr = line.getBoundingClientRect(); ux.fillRect(lr.left, lr.top, lr.width * Math.max(0, Math.min(1, p / 100)), CFG.line);
+    var lr = line.getBoundingClientRect(), lk = reduce ? 1 : Math.max(0, Math.min(1, (t - base) / CFG.letterTime));
+    ux.globalAlpha = 1 - Math.pow(1 - lk, 3); ux.fillRect(lr.left, lr.top, lr.width * Math.max(0, Math.min(1, p / 100)), CFG.line); ux.globalAlpha = 1;
   }
   function draw() {
     if (!gl) { cv.style.background = "#ff2d20"; cv.style.opacity = String(1 - seepT); return; }

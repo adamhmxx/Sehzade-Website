@@ -14,7 +14,10 @@
   var hx = [], hy = [], dts = [], slow = false, fpsOn = false, glide = false, sv = { x: 0, y: 0 };
   var PROPS = ["x", "y", "r", "s", "rx", "ry"];
   /* bend quality from the control panel: 0 = off (plain tilting sheet), 1 = light (10 strips), 2 = full (24 strips) */
-  function quality() { var c = window.__liquidCfg, q = c && c.pq != null ? +c.pq : 1; return q < .5 ? 0 : q < 1.5 ? 1 : 2; }
+  /* the paper bend (a copy of the page cut into strips that replaces the live page while it moves) made the card blink, crop and
+     go blank whenever the live page and the copy disagreed, so it is switched off for good: the live page is always the one shown,
+     and the card still tilts, leans and settles with its springs */
+  function quality() { return 0; }
   var SLOWKEY = "about-bend-slow", builtQ = -1;
   try { slow = localStorage.getItem(SLOWKEY) === "1"; } catch (e) {}
   var lastQ;

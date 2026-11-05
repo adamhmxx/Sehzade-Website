@@ -7,7 +7,7 @@
 (function () {
   var DEF = { imin: 2400, iline: 2, ildl: 600, iltr: 1300, ilst: 60, iliq: 8, iliqp: 20, iliqd: 3100, ioutd: 800, ioutl: 200,
     iseept: 3200, iseeps: 18, iseepl: 20, iseepd: 60, iseepf: 130, iseepb: 30, iseepr: 30, iseepg: 4,
-    ircard: 100, irdur: 3600, irgap: 16, irn: 9, irgo: 62, itdelay: 500, itslices: 10, itdur: 3600, itdist: 100, itstart: 1200, itui: 2200 };
+    ircard: 100, irdur: 3600, irgap: 24, irn: 9, irgo: 62, itdelay: 500, itslices: 10, itdur: 3600, itdist: 100, itstart: 1200, itui: 2200 };
   window.__introDef = DEF;
   var CFG = {};
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
@@ -28,7 +28,13 @@
     var m = parseFloat(getComputedStyle(big).left) || 24;
     big.style.fontSize = "100px";
     var w = big.getBoundingClientRect().width;
-    if (w > 0) big.style.fontSize = (100 * (innerWidth - 2 * m) / w).toFixed(2) + "px";
+    if (w > 0) {
+      var fs = 100 * (innerWidth - 2 * m) / w;
+      /* on wide screens the full-width word would be taller than the space under the middle line and run into it: cap its size so it always stays 24px below the line */
+      var room = innerHeight - (parseFloat(getComputedStyle(big).bottom) || 0) - line.getBoundingClientRect().bottom - 24, maxFs = room / .93;
+      if (maxFs > 40) fs = Math.min(fs, maxFs);
+      big.style.fontSize = fs.toFixed(2) + "px";
+    }
   }
   line.style.height = CFG.iline + "px";
   "SEHZADE".split("").forEach(function (c) { var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp); });
@@ -50,7 +56,7 @@
     var t = now - T0, pulse = reduce ? 0 : Math.max(0, 1 - t / CFG.iliqd), ek = 0;
     if (exitT0) { ek = Math.max(0, Math.min(1, (now - exitT0) / CFG.ioutd)); ek *= ek; }
     liqAmp = reduce ? 0 : CFG.iliq + CFG.iliqp * pulse + 4 * Math.sin(t / 700) + CFG.ioutl * ek;
-    uiAmp = reduce ? 0 : .9 + CFG.iliqp * pulse * .06 + CFG.ioutl * ek * .45;
+    uiAmp = reduce ? 0 : CFG.iliq * .42 + CFG.iliqp * pulse * .3 + CFG.ioutl * ek * .45;
     if (!gl) { setA(liqD, "scale", liqAmp.toFixed(1)); setA(liqO, "dx", (Math.sin(t / 900) * 90).toFixed(1)); setA(liqO, "dy", (t / 18 % 400).toFixed(1)); }
   }
   function frame(now) {
@@ -127,10 +133,18 @@
     ux.setTransform(1, 0, 0, 1, 0, 0); ux.clearRect(0, 0, uc.width, uc.height); ux.setTransform(sc, 0, 0, sc, 0, 0);
     ux.font = '16px "Anton", Impact, sans-serif'; ux.textBaseline = "alphabetic"; ux.fillStyle = "#fff";
     var um = ux.measureText("H"), ua = um.fontBoundingBoxAscent || 15, ud = um.fontBoundingBoxDescent || 4;
-    [pct, intro.querySelector(".in-welcome")].forEach(function (el) {
-      var r = el.getBoundingClientRect(); ux.fillText(el.textContent.toUpperCase(), r.left, r.top + (r.height - (ua + ud)) / 2 + ua);
+    /* the percentage and "Designer" rise letter by letter exactly like the word (same ease, stagger and fade, a little later); the line fades in the same way */
+    var base = reduce ? 0 : CFG.ildl + 350;
+    [pct, intro.querySelector(".in-welcome")].forEach(function (el, wi) {
+      var r = el.getBoundingClientRect(), txt = el.textContent.toUpperCase(), y0 = r.top + (r.height - (ua + ud)) / 2 + ua;
+      for (var q = 0; q < txt.length; q++) {
+        var k = reduce ? 1 : Math.max(0, Math.min(1, (t - base - (wi * 5 + q) * CFG.ilst * .8) / (CFG.iltr * .85))), e = 1 - Math.pow(1 - k, 4);
+        if (e <= 0) continue;
+        ux.globalAlpha = e; ux.fillText(txt[q], r.left + ux.measureText(txt.slice(0, q)).width, y0 + (1 - e) * r.height * 1.4);
+      }
     });
-    var lr = line.getBoundingClientRect(); ux.fillRect(lr.left, lr.top, lr.width * Math.max(0, Math.min(1, p / 100)), CFG.iline);
+    var lr = line.getBoundingClientRect(), lk = reduce ? 1 : Math.max(0, Math.min(1, (t - base) / CFG.iltr));
+    ux.globalAlpha = 1 - Math.pow(1 - lk, 3); ux.fillRect(lr.left, lr.top, lr.width * Math.max(0, Math.min(1, p / 100)), CFG.iline); ux.globalAlpha = 1;
   }
   function draw() {
     if (!gl) { cv.style.background = "#ff2d20"; cv.style.opacity = String(1 - seepT); return; }
@@ -195,10 +209,11 @@
     rw.style.gap = gap + "px";
     rw.style.marginTop = (-ch / 2) + "px";
     for (var i = 0; i < n; i++) { var d = document.createElement("div"); d.style.cssText = "width:" + cw + "px;height:" + ch + "px;background-image:url(" + list[i].image.src + ")"; rw.appendChild(d); }
-    row.style.display = "block";
+    row.style.opacity = "0"; row.style.display = "block";
     var total = n * (cw + gap), x0 = W + 40, x1 = -total - 40, D = CFG.irdur, s0 = performance.now();
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), x = x0 + (x1 - x0) * (.5 - .5 * Math.cos(Math.PI * k));
+      var fd = Math.min(1, k / .16); row.style.opacity = (fd * fd * (3 - 2 * fd)).toFixed(3); /* a thin ease-in: the row fades up as it enters instead of cutting in */
       rw.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
       if (k < 1) return requestAnimationFrame(step);
       /* the row has sunk off the left edge completely: a calm pause on the empty black, then the Twister comes up */
