@@ -60,6 +60,8 @@
     document.addEventListener("click", function (e) { var l = e.target.closest && e.target.closest('nav a[href="/"], nav a[href="./"]'); if (l) { e.preventDefault(); e.stopPropagation(); } }, true);
     var lcss = document.createElement("style"); lcss.textContent = 'nav a[href="/"],nav a[href="./"]{cursor:default!important}'; document.head.appendChild(lcss);
   }
+  /* phones and tablets have no hover: a tap must not trigger the letter animation (the logo rule above still applies) */
+  if (matchMedia("(hover: none), (pointer: coarse)").matches) return;
   document.addEventListener("mouseover", function (e) {
     var el = e.target.closest && e.target.closest(SEL);
     if (!el || isLogo(el)) return;

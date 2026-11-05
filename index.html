@@ -31,6 +31,14 @@ html.intro-ui nav{transform:translateY(-10px)!important}
 html.intro-ui [role=tablist]{transform:translateX(-50%) translateY(12px)!important}
 </style>
 <script>if(!/nointro/.test(location.hash)){document.documentElement.classList.add("intro-on","intro-ui")}</script>
+<style id="mobile-fit">
+/* phones: the layout must follow the VISIBLE screen (dvh), not the tall one that hides the bottom behind the browser toolbar; the mode menu then always sits above the toolbar and the home bar */
+@supports (height:100dvh){html,body{height:100dvh!important}div[style*="min-height: 100vh"]{min-height:100dvh!important}}
+@media (pointer:coarse){[role=tablist]{bottom:max(64px,calc(env(safe-area-inset-bottom,0px) + 40px))!important}}
+</style>
+<script>/* phones: the Twister is drawn with fewer slices (a quarter of the layers), which keeps dragging and the entrance smooth on a phone GPU */
+if(matchMedia("(pointer:coarse)").matches)window.__twEff=10;</script>
+
 
 
 	

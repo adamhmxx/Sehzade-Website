@@ -211,7 +211,7 @@
       var tiny = k === "x" || k === "y" ? .4 : .02;
       if (Math.abs(T[k] - S[k]) > tiny || Math.abs(V[k]) > tiny * 1.5) calm = false;
     });
-    if (open_) { var tl = touchy ? 0 : 1; T.rx = clamp(-sv.y * .004, -5, 5) * tl; T.ry = clamp(sv.x * .004, -5, 5) * tl; T.r = clamp(sv.x * .0012, -1.5, 1.5) * tl; T.s = drag ? 1.008 : 1; }
+    if (open_) { var tl = touchy ? 0 : 1; /* the card only sways (rotates in its own plane): no perspective tilt and no scale pulse, so the text never changes size while it is dragged */ T.rx = 0; T.ry = 0; T.r = clamp(sv.x * .0012, -1.5, 1.5) * tl; T.s = 1; }
     var lx = hx.length ? hx[hx.length - 1] : 0, ly = hy.length ? hy[hy.length - 1] : 0; hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
     /* on a device that cannot keep up the bend is switched off, so the card still moves smoothly (tilt only) */
