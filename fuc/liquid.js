@@ -125,8 +125,37 @@
     gal = { turb: f.children[0], off: f.children[1], img: f.children[4], map: f.children[7] };
     return gal;
   }
+  /* Twister: its pictures are bent around a spiral and lie on slanted, curved edges. A raster distortion (any displacement filter) can only move
+     whole pixels, so those edges turned into broken stair-steps. So here the liquid is done with geometry only, which is always perfectly smooth:
+     the cards near the cursor swell towards you on a spring (an arrival burst, then a slow flowing sway), like a liquid surface rising under the cursor. */
+  function twCardFx(c, sp, on, now, dtf) {
+    var any = 0, reach = c.reach + 120;
+    on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
+    for (var n = 0; n < galCards.length; n++) {
+      var card = galCards[n]; if (!card.isConnected) continue;
+      var cb = card.getBoundingClientRect(), cx = cb.left + cb.width / 2, cy = cb.top + cb.height / 2, d = Math.hypot(cx - mx, cy - my);
+      var f = on ? Math.exp(-Math.pow(Math.max(0, d - Math.min(cb.width, 300) / 2) / reach, 2) * 1.6) : 0;
+      var st = card.__lq || (card.__lq = { x: 0, vx: 0, y: 0, vy: 0, z: 0, vz: 0, set: 0, hot: 0, pulse: 0 });
+      if (f < .002 && !st.set) continue;
+      if (f > .25 && !st.hot) { st.hot = 1; st.pulse = 1; } else if (f < .08) st.hot = 0;
+      st.pulse *= Math.exp(-dtf / .75);
+      var amp = f * c.distort * (.55 + sp * .4 + 1.0 * st.pulse);
+      /* well damped (no wobble back and forth), and a cursor that is gone lets everything settle quickly */
+      if (f < .02) { st.x *= .88; st.y *= .88; st.z *= .88; st.vx *= .5; st.vy *= .5; st.vz *= .5; }
+      spring(st, "z", amp * 2.4, .1, .7);
+      spring(st, "x", amp * .45 * Math.sin(now * .0016 + cy * .004), .1, .72); spring(st, "y", amp * .45 * Math.sin(now * .0013 + cx * .005 + 1.3), .1, .72);
+      if (Math.abs(st.z) > .08 || Math.abs(st.x) > .05 || Math.abs(st.y) > .05) { card.style.translate = st.x.toFixed(2) + "px " + st.y.toFixed(2) + "px " + st.z.toFixed(2) + "px"; st.set = 1; any = 1; }
+      else if (st.set) { card.style.translate = ""; st.set = 0; st.x = st.y = st.z = st.vx = st.vy = st.vz = 0; }
+    }
+    return any;
+  }
   function galFx(c, sp, on, now, dtf) {
     var box = galCards.length && galCards[0].isConnected ? galCards[0].parentElement : null;
+    /* Twister (cards made of many slices) uses the geometric liquid; every other mode uses the picture distortion below */
+    if (galCards.length && galCards[0].childElementCount > 1) {
+      if (galBox) { galBox.style.filter = ""; galBox = null; galS = galV = 0; }
+      return twCardFx(c, sp, on, now, dtf);
+    }
     if (galBox && galBox !== box) { galBox.style.filter = ""; galBox = null; galS = galV = 0; }
     if (!box) return 0;
     /* which card is under the cursor: arriving on a new one fires the opening burst */
