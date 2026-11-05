@@ -80,7 +80,7 @@
   var FS = "precision highp float;uniform vec2 res,tAmp,uAmp;uniform sampler2D tex,tex2;uniform float time,front,soft,lag,scale,flow,bias,rim,grain,tOn;" +
     "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}" +
     "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*f*(f*(f*6.-15.)+10.);float a=hash(i),b=hash(i+vec2(1.,0.)),c=hash(i+vec2(0.,1.)),d=hash(i+vec2(1.,1.));return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}" +
-    "float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,-.6,.6,.8);for(int i=0;i<4;i++){v+=a*noise(p);p=r*p*2.03+11.7;a*=.48;}return v;}" +
+    "float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,-.6,.6,.8);for(int i=0;i<" + (matchMedia("(pointer: coarse)").matches ? 3 : 4) + ";i++){v+=a*noise(p);p=r*p*2.03+11.7;a*=.48;}return v;}" +
     "void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=vec2(uv.x*res.x/res.y,uv.y)*scale;float tm=time*flow*.05;" +
     "vec2 q=vec2(fbm(p+vec2(0.,tm)),fbm(p+vec2(5.2,1.3)-vec2(tm,0.)));float n1=fbm(p+1.8*q);" +
     "vec2 q2=vec2(fbm(p*.7+vec2(8.3,2.8)+tm*.6),fbm(p*.7+vec2(1.7,9.2)-tm*.5));float n2=fbm(p*.7+2.2*q2+3.1);" +
@@ -132,6 +132,7 @@
     });
     tx.globalAlpha = 1;
   }
+  var uiFs = [], uiR0 = null, uiLr = null;
   function renderUI(now) {
     var t = now - T0;
     /* percentage, "Loading" and the loading line live in their own layer, so they ripple and dissolve exactly like the word but at their own, smaller scale */
@@ -140,10 +141,10 @@
     /* "LOADING" with three dots that light up one after another, and the percentage on the right; each rises letter by letter like the word (same ease, stagger and fade, a little later); the line fades in the same way */
     var base = reduce ? 0 : CFG.ildl + 350, wel = intro.querySelector(".in-welcome");
     [{ el: wel, txt: "LOADING", dots: 1 }, { el: pct, txt: pct.textContent.toUpperCase() }].forEach(function (it, wi) {
-      var el = it.el, fs = parseFloat(getComputedStyle(el).fontSize) || 16;
+      var el = it.el, fs = uiFs[wi] || (uiFs[wi] = parseFloat(getComputedStyle(el).fontSize) || 16);
       ux.font = fs + 'px "Anton", Impact, sans-serif';
       var um = ux.measureText("H"), ua = um.fontBoundingBoxAscent || fs * .95, ud = um.fontBoundingBoxDescent || fs * .25;
-      var r = el.getBoundingClientRect(), y0 = r.top + (r.height - (ua + ud)) / 2 + ua, txt = it.txt, n = txt.length + (it.dots ? 3 : 0);
+      var r = wi === 0 ? (uiR0 || (uiR0 = el.getBoundingClientRect())) : el.getBoundingClientRect(), y0 = r.top + (r.height - (ua + ud)) / 2 + ua, txt = it.txt, n = txt.length + (it.dots ? 3 : 0);
       for (var q = 0; q < n; q++) {
         var k = reduce ? 1 : Math.max(0, Math.min(1, (t - base - (wi * 5 + q) * CFG.ilst * .8) / (CFG.iltr * .85))), e = 1 - Math.pow(1 - k, 4);
         if (e <= 0) continue;
@@ -153,7 +154,7 @@
         ux.globalAlpha = al; ux.fillText(ch, x, y0 + (1 - e) * r.height * 1.4);
       }
     });
-    var lr = line.getBoundingClientRect(), lk = reduce ? 1 : Math.max(0, Math.min(1, (t - base) / CFG.iltr));
+    var lr = uiLr || (uiLr = line.getBoundingClientRect()), lk = reduce ? 1 : Math.max(0, Math.min(1, (t - base) / CFG.iltr));
     ux.globalAlpha = 1 - Math.pow(1 - lk, 3); ux.fillRect(lr.left, lr.top, lr.width * Math.max(0, Math.min(1, p / 100)), CFG.iline); ux.globalAlpha = 1;
   }
   function draw() {
@@ -176,7 +177,7 @@
     gl.uniform1f(U.bias, CFG.iseepb / 100); gl.uniform1f(U.rim, CFG.iseepr / 100); gl.uniform1f(U.grain, CFG.iseepg / 100);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
-  function sizeCv() { sc = Math.min(1, 1500 / innerWidth) * (TOUCH ? .65 : 1); bigDirty = uiDirty = true; cv.width = tc.width = uc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = uc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
+  function sizeCv() { uiFs = []; uiR0 = uiLr = null; sc = Math.min(1, 1500 / innerWidth) * (TOUCH ? .65 : 1); bigDirty = uiDirty = true; cv.width = tc.width = uc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = uc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
   sizeCv(); window.__size = sizeCv;
   window.__introSize = sizeCv;
 
@@ -228,8 +229,8 @@
   }
   /* the Twister is built from many slices; while it rises it uses fewer (the same ribbon, lighter), then the full count comes back */
   var effBefore;
-  function lighten() { effBefore = window.__twEff; window.__twEff = Math.min(effBefore || 99, CFG.itslices); window.dispatchEvent(new Event("cms-change")); }
-  function restore() { window.__twEff = effBefore; window.dispatchEvent(new Event("cms-change")); }
+  function lighten() { effBefore = window.__twEff; var n = Math.min(effBefore || 99, CFG.itslices); if (n !== window.__twEff) { window.__twEff = n; window.dispatchEvent(new Event("cms-change")); } }
+  function restore() { if (window.__twEff !== effBefore) { window.__twEff = effBefore; window.dispatchEvent(new Event("cms-change")); } }
   function row_start() {
     var list = items(), rw = $(".rw", row);
     if (!list.length || reduce) return reveal();
