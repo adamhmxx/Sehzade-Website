@@ -99,6 +99,8 @@
     /* forget components React has removed, together with their filters */
     states.forEach(function (st, el) { if (!el.isConnected) { if (st.warp) { var f = document.getElementById(st.warp.id); if (f) f.remove(); } states.delete(el); } });
     els = list.filter(function (e) { return !e.closest("#liquid-ui") && (!e.querySelector("p,h1,h2") || e.matches("a,span")); });
+    /* cards that left the list keep no wobble style behind */
+    galCards.forEach(function (c0) { if (tw.indexOf(c0) < 0 && c0.__jl) { c0.style.translate = c0.style.scale = c0.style.rotate = ""; c0.__jl = null; } });
     galCards = tw;
   }
   /* The gallery's hover liquid: the cards near the cursor behave like blobs of wet paint. Dragging the cursor through them shoves them along and they
@@ -112,7 +114,9 @@
     on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
     for (var n = 0; n < galCards.length; n++) {
       var card = galCards[n]; if (!card.isConnected) continue;
-      var cb = card.getBoundingClientRect(); if (cb.width < 20) continue;
+      var cb = card.getBoundingClientRect();
+      /* a card that has become tiny or hidden (another mode) must not keep a leftover wobble style */
+      if (cb.width < 20) { if (card.__jl && card.__jl.set) { card.style.translate = card.style.scale = card.style.rotate = ""; card.__jl = null; } continue; }
       var cx = cb.left + cb.width / 2, cy = cb.top + cb.height / 2, dx = cx - mx, dy = cy - my, d = Math.hypot(dx, dy) || 1;
       var f = on ? Math.exp(-Math.pow(Math.max(0, d - Math.min(cb.width, 320) / 2) / reach, 2) * 1.5) : 0;
       var st = card.__jl || (card.__jl = { x: 0, vx: 0, y: 0, vy: 0, q: 0, vq: 0, r: 0, vr: 0, hot: 0, set: 0 });
@@ -189,7 +193,7 @@
     if (c.gmelt <= .5 && c.gdis <= 1) { if (galBox) { galBox.style.filter = ""; galBox = null; galS = 0; } return 0; }
     var target = (hover || halo) ? c.gmelt * (1 + 2.2 * galPulse + sp * .6) * (hover ? 1 : .35) : 0;
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
-    galS += (target - galS) * (target > galS ? .22 : .16);
+    galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 14 : 9)));
     if (galS < 1 && target === 0 && !(c.gdis > 1 && galPulse > .02)) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
     var g = galFilter(), br = box.getBoundingClientRect(), R = c.reach * 1.7 * c.gsz / 100;
     /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
@@ -233,7 +237,7 @@
     scan(now);
     var sp = Math.min(1, Math.hypot(cvx, cvy) / 40);
     cvx *= .88; cvy *= .88;
-    var dtf = Math.min(.05, (now - (step.last || now)) / 1000); step.last = now;
+    var dtf = Math.min(.12, (now - (step.last || now)) / 1000); step.last = now;
     var active = 0, follow = Math.max(.12, Math.min(.5, .46 - c.trail * .24));
     head.vx = (head.vx + (mx - head.x) * .08) * .8; head.vy = (head.vy + (my - head.y) * .08) * .8; head.x += head.vx; head.y += head.vy;
     chain[0].x = head.x; chain[0].y = head.y;
