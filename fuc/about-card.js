@@ -63,8 +63,12 @@
     T.x = clamp(T.x, -(W - 110) - cx, innerWidth - 110 - cx); T.y = clamp(T.y, -cy, innerHeight - 60 - cy);
   }
   function paint() {
-    sheet.style.transform = "perspective(1500px) translate3d(" + ((innerWidth - W) / 2 + S.x).toFixed(2) + "px," + ((innerHeight - H) / 2 + S.y).toFixed(2) +
-      "px,0) rotateX(" + S.rx.toFixed(2) + "deg) rotateY(" + S.ry.toFixed(2) + "deg) rotate(" + S.r.toFixed(3) + "deg) scale(" + S.s.toFixed(4) + ")";
+    var x = ((innerWidth - W) / 2 + S.x).toFixed(2), y = ((innerHeight - H) / 2 + S.y).toFixed(2);
+    /* at rest the card is a plain 2D layer: links and taps inside the page (an iframe) are hit-tested reliably on every phone, which they are not under 3D transforms */
+    var flat = Math.abs(S.rx) < .01 && Math.abs(S.ry) < .01 && Math.abs(S.r) < .01 && Math.abs(S.s - 1) < .0005;
+    sheet.style.transformStyle = flat ? "flat" : "";
+    sheet.style.transform = flat ? "translate(" + x + "px," + y + "px)" :
+      "perspective(1500px) translate3d(" + x + "px," + y + "px,0) rotateX(" + S.rx.toFixed(2) + "deg) rotateY(" + S.ry.toFixed(2) + "deg) rotate(" + S.r.toFixed(3) + "deg) scale(" + S.s.toFixed(4) + ")";
   }
 
   /* ---------- the bendable copy ---------- */

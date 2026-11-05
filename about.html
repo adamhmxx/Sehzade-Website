@@ -158,6 +158,22 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
       if(ab){ab.style.position="relative";ab.style.top=(o.top/k)+"px";}else setTimeout(function(){window.__abxSet();},300);
     };
   }
+  /* safety net for touch: a quick tap on a link must always open it, even where the browser fails to produce the click inside the moving card (iframe + 3D transforms) */
+  (function(){
+    var tapA=null,tx=0,ty=0,tt=0,clicked=false;
+    addEventListener("pointerdown",function(e){if(e.pointerType==="mouse")return;tapA=e.target.closest&&e.target.closest("a[href]");tx=e.clientX;ty=e.clientY;tt=Date.now();clicked=false;},true);
+    addEventListener("click",function(){clicked=true;},true);
+    addEventListener("pointerup",function(e){
+      if(e.pointerType==="mouse"||!tapA)return; var a=tapA; tapA=null;
+      if(Math.hypot(e.clientX-tx,e.clientY-ty)>10||Date.now()-tt>600)return;
+      var h=a.getAttribute("href")||""; if(!h||h==="/"||h==="./"||h==="."||/^(\.?\/)?about\/?$/.test(h))return;
+      setTimeout(function(){
+        if(clicked)return;
+        if(/^(mailto|tel):/.test(a.href)){try{(window.parent!==window?parent:window).location.href=a.href;}catch(x){location.href=a.href;}}
+        else window.open(a.href,"_blank","noopener");
+      },350);
+    },true);
+  })();
   /* inside the card, dragging on any empty part of the page moves the whole card (the card reports it to the parent) */
   if(embedded){
     var dragging=false;
@@ -188,6 +204,8 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     });
     var boxes=rows.map(function(r){return r.parentElement;}).filter(function(b,i,a){return a.indexOf(b)===i;});
     boxes.forEach(function(b){b.classList.add("ascii-live");});
+    /* phones and tablets have no hover: the portrait stays hidden and nothing reacts to a finger sliding over the page */
+    if(matchMedia("(hover: none), (pointer: coarse)").matches)return;
     /* liquid reveal: a stream that flows behind the pointer. A chain of points follows the cursor like a rope,
        each drawn as a soft radial dab that gets narrower and fainter toward the tail, so the revealed area is
        widest under the cursor and tapers off smoothly, with no hard edge anywhere */
