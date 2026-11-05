@@ -12,7 +12,7 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 140, softness: 1, brightness: 0.03, trail: 0.66, blur: 0, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
+  var DEF = { radius: 140, softness: 1, brightness: 0.03, trail: 0.66, blur: 0, distort: 10, reach: 130, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, asp: 60, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
   if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
@@ -308,6 +308,7 @@
       ["gstag", "Column stagger", 0, 300, 5, "px"],
       ["gpar", "Column parallax", 0, 60, 1, "%"],
       ["#", "Twister"],
+      ["asp", "Auto scroll speed (0 = off)", 0, 300, 5, "px/s"],
       ["twr", "Curve radius (small = tighter)", 20, 70, 1, "%"],
       ["twn", "Curve smoothness (slices)", 8, 40, 1, ""],
       ["twg", "Item spacing (100 = touching)", 80, 160, 1, "%"],
@@ -341,10 +342,10 @@
       cspr: "How far the neighbours of a hovered card move away.", cbl: "Blur on cards far at the back. 0 keeps them sharp.",
       grad: "Size of the globe relative to the screen.", gsz: "Size of every card on the globe.", gbl: "Blur on cards on the far side of the globe.",
       ggap: "Space between cards in the grid.", gstag: "Shifts every second column down to make the grid uneven.", gpar: "How much columns move at different speeds when you scroll.",
-      twr: "Radius of the spiral. Smaller is a tighter, rounder curve.", twn: "How many slices each card is cut into. More is smoother but heavier.",
+      asp: "How fast the gallery keeps moving by itself. It pauses while the cursor is over it or while it is dragged. 0 turns it off.", twr: "Radius of the spiral. Smaller is a tighter, rounder curve.", twn: "How many slices each card is cut into. More is smoother but heavier.",
       twg: "Gap between neighbouring cards. 100 means they touch, higher opens gaps.", twp: "How steeply the ribbon climbs each turn. Lower packs the turns closer together.", twsc: "Size of every card in Twister."
     };
-    var GALLERY = /^(c(fa|dx|dy|dz|scl|step|lift|lz|spr)|tw(r|p|sc|g|n)|f(step|near|bl|sc|x|y)|cbl|gsz|grad|gbl|ggap|gstag|gpar)$/;
+    var GALLERY = /^(asp|c(fa|dx|dy|dz|scl|step|lift|lz|spr)|tw(r|p|sc|g|n)|f(step|near|bl|sc|x|y)|cbl|gsz|grad|gbl|ggap|gstag|gpar)$/;
     var css = document.createElement("style");
     css.textContent =
       '#liquid-ui{position:fixed;right:var(--lm,32px);bottom:88px;z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
