@@ -1,27 +1,16 @@
 /* The About card: a sheet of paper that rises from the bottom centre, can be dragged anywhere, and sinks back on close.
-   While it moves, the live page is swapped for a copy cut into horizontal strips that are hinged to each other, so the sheet
-   really bends: it curls against its motion, a ripple runs down it, and it settles flat again. At rest the live page is shown.
+   The live page is always the one shown; the card sways and settles on springs while it moves.
    Press Shift+G (or add #grid to the address) to show the page grid. */
 (function () {
   if (window.__aboutCard) return;
   window.__aboutCard = 1;
   var root = document.documentElement, reduce = matchMedia("(prefers-reduced-motion: reduce)");
-  /* touch phones: dozens of 3D layers at 3x pixel density overwhelm the GPU, so the card only tilts there (no strip bend) */
   var touchy = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && Math.min(innerWidth, innerHeight) < 820);
-  var copyEl, sheet, card, frame, grip, nameEl, nameTxt, backdrop, bend, shadow, strips = [], sharedSheet = null, dirty = true, bending = false;
+  var sheet, card, frame, nameEl, nameTxt, backdrop, shadow;
   var FK = 1, FW = 0, raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56;
   var S = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }, V = { x: 0, y: 0, r: 0, s: 0, rx: 0, ry: 0 }, T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 };
-  var hx = [], hy = [], dts = [], slow = false, fpsOn = false, glide = false, sv = { x: 0, y: 0 };
+  var hx = [], hy = [], glide = false, sv = { x: 0, y: 0 };
   var PROPS = ["x", "y", "r", "s", "rx", "ry"];
-  /* bend quality from the control panel: 0 = off (plain tilting sheet), 1 = light (10 strips), 2 = full (24 strips) */
-  /* the paper bend (a copy of the page cut into strips that replaces the live page while it moves) made the card blink, crop and
-     go blank whenever the live page and the copy disagreed, so it is switched off for good: the live page is always the one shown,
-     and the card still tilts, leans and settles with its springs */
-  function quality() { return 0; }
-  var SLOWKEY = "about-bend-slow", builtQ = -1;
-  try { slow = localStorage.getItem(SLOWKEY) === "1"; } catch (e) {}
-  var lastQ;
-  function nStrips() { return [0, 10, 16][quality()]; }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function mk(tag, cls, css) { var n = document.createElement(tag); if (cls) n.className = cls; if (css) n.style.cssText = css; return n; }
 
@@ -40,9 +29,6 @@
     '.ab-copy{font:400 16px/1.2 "Anton","Inter Display",sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap}' +
     '.ab-close{padding:4px 0;border:0;background:none;color:#0b0b0b;font:400 16px/1.2 "Anton","Inter Display",sans-serif;text-transform:uppercase;letter-spacing:0;cursor:pointer}' +
     '.ab-name{flex:none;padding:8px 16px 16px;overflow:hidden;white-space:nowrap;font:400 100px/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;user-select:none;-webkit-user-select:none}' +
-    '.ab-bend{position:absolute;left:0;top:0;transform-style:preserve-3d;pointer-events:none;opacity:.01}' +
-    '.ab-strip{position:absolute;left:0;transform-origin:50% 0;transform-style:preserve-3d;will-change:transform}' +
-    '.ab-clip{position:absolute;left:0;top:0;overflow:hidden;backface-visibility:visible}' +
     '@media (prefers-reduced-motion:reduce){#about-backdrop{transition:none!important}}' +
     '#grid-overlay{position:fixed;inset:0;z-index:2147483640;pointer-events:none;display:none;margin:0 32px;grid-template-columns:repeat(12,1fr);gap:16px}' +
     '#grid-overlay i{background:rgba(255,45,32,.12);outline:1px solid rgba(255,45,32,.35)}' +
@@ -71,132 +57,19 @@
       "perspective(1500px) translate3d(" + x + "px," + y + "px,0) rotateX(" + S.rx.toFixed(2) + "deg) rotateY(" + S.ry.toFixed(2) + "deg) rotate(" + S.r.toFixed(3) + "deg) scale(" + S.s.toFixed(4) + ")";
   }
 
-  /* ---------- the bendable copy ---------- */
-  /* the live page's style rules, re-scoped so they can live in a shadow root: html/body become the host/wrapper, media
-     queries are decided by the page's own viewport, and @font-face stays in the main document */
-  function collectCSS(win) {
-    var out = [];
-    (function walk(rules) {
-      [].forEach.call(rules, function (r) {
-        if (r.type === 5 || r.type === 3) return;
-        if (r.type === 4) { if (win.matchMedia(r.conditionText || r.media.mediaText).matches) walk(r.cssRules); return; }
-        out.push(r.cssText);
-      });
-    })([].concat.apply([], [].map.call(win.document.styleSheets, function (s) { try { return [].slice.call(s.cssRules); } catch (e) { return []; } })));
-    return vu(out.join("\n"), win).replace(/(^|[}\s,>])(html|body|:root)(?=[\s,{.:>\[])/g, function (m, a, b) { return a + (b === "body" ? ".sb" : ":host"); });
+  /* the page is re-fitted to the card while it is idle, never in the middle of a motion */
+  var fitTimer = 0, lw = 0, lh = 0, contentVer = 0; /* contentVer bumps only when the page itself is (re)loaded or edited, never because of the fit (a scaled page may switch layout variant, which would re-trigger the fit and flicker) */
+  function scheduleFit(delay) {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(function () { if (raf) return scheduleFit(600); frameFit(); }, delay || 350);
   }
-  /* vh / vw inside the copy would measure the main window, not the page's own viewport, so they become pixels */
-  function vu(str, win) {
-    return str.replace(/(-?\d*\.?\d+)(vh|vw|dvh|svh|lvh)\b/g, function (m, n, u) { return (parseFloat(n) * (u === "vw" ? win.innerWidth : win.innerHeight) / 100).toFixed(2) + "px"; });
-  }
-  /* copy of the page with the nodes that are hidden in this layout already removed (they depend on the page's own viewport) */
-  function template(win) {
-    var live = win.document.getElementById("main"); if (!live) return null;
-    var copy = live.cloneNode(true), a = [live], b = [copy];
-    while (a.length) {
-      var l = a.pop(), c = b.pop();
-      for (var i = l.children.length - 1; i >= 0; i--) {
-        var cs = win.getComputedStyle(l.children[i]), cc = c.children[i];
-        if (cs.display === "none") { c.removeChild(cc); continue; }
-        /* entrance animations run on the live page without touching its inline style: copy their current result */
-        if (cc.style) {
-          if (cs.opacity !== (cc.style.opacity || "1")) cc.style.opacity = cs.opacity;
-          if (cs.transform !== "none" && cs.transform !== (cc.style.transform || "none")) cc.style.transform = cs.transform;
-          if (cs.filter === "none" && cc.style.filter) cc.style.filter = "";
-        }
-        a.push(l.children[i]); b.push(cc);
-      }
-    }
-    [].forEach.call(win.document.querySelectorAll(".abx"), function (n) { copy.appendChild(n.cloneNode(true)); });
-    [].forEach.call(copy.querySelectorAll("script,nav"), function (n) { n.remove(); });
-    [].forEach.call(copy.querySelectorAll('[style*="vh"],[style*="vw"]'), function (n) { n.setAttribute("style", vu(n.getAttribute("style"), win)); });
-    [].forEach.call(copy.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
-    copy.removeAttribute("id");
-    return copy;
-  }
-  function makePage(tpl, k, avail, off) {
-    var page = mk("div", "ab-page", "pointer-events:none;top:" + (-off) + "px;bottom:auto;height:" + H + "px");
-    var host = mk("div", "", "position:absolute;left:0;top:0;width:" + FW + "px;height:" + H / FK + "px;overflow:hidden;transform:scale(" + FK + ");transform-origin:0 0");
-    var sr = host.attachShadow({ mode: "open" }); sr.adoptedStyleSheets = [sharedSheet];
-    var wrap = mk("div", "sb", "width:100%;height:100%;overflow:hidden;background:#ff2d20;position:relative");
-    wrap.appendChild(tpl.cloneNode(true)); sr.appendChild(wrap);
-    page.append(host);
-    return page;
-  }
-  /* a cheap fingerprint of what the live page shows; when it changes (content appears, text is edited) the copy is rebuilt */
-  var builtSig = "", contentVer = 0; /* contentVer: bumps only when the page itself is (re)loaded or edited, never because of the fit (a scaled page may switch layout variant, which would re-trigger the fit and flicker) */
-  function sig(win) {
-    var d = win.document, m = d.getElementById("main"); if (!m) return "";
-    return m.getElementsByTagName("*").length + ":" + (m.innerText || "").length + ":" + d.querySelectorAll('[style*="opacity: 0;"],[style*="opacity:0"]').length + ":" + d.querySelectorAll(".ab-type").length;
-  }
-  var watchTimer = 0;
-  function watchFrame() {
-    var win; try { win = frame.contentWindow; if (!win.document.body) return; } catch (e) { return; }
-    new MutationObserver(function (list) {
-      if (list.every(function (m) { return m.target.nodeType === 1 && m.target.classList && m.target.classList.contains("ascii-live"); })) return;
-      clearTimeout(watchTimer);
-      watchTimer = setTimeout(function () { var w; try { w = frame.contentWindow; } catch (e) { return; } if (sig(w) !== builtSig) { dirty = true; scheduleBuild(300); } }, 600);
-    }).observe(win.document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["style", "class"] });
-  }
-  function buildStrips() {
-    builtQ = quality();
-    try { builtSig = sig(frame.contentWindow); } catch (e) {}
-    frameFit(); dirty = false;
-    if (touchy || !builtQ) return; strips = []; bend.textContent = "";
-    var win; try { win = frame.contentWindow; } catch (e) { return; }
-    if (!win || !win.document || !win.document.getElementById("main")) { dirty = true; return; }
-    var tpl = template(win); if (!tpl) { dirty = true; return; }
-    try { sharedSheet = new CSSStyleSheet(); sharedSheet.replaceSync(collectCSS(win)); } catch (e) { return; }
-    var k = FK, avail = H - GRIP - nameEl.offsetHeight, h = Math.max(20, Math.round(H / nStrips())), n = Math.ceil(H / h), parent = bend; /* whole-pixel strips: composited layers snap to the pixel grid */
-    bend.style.width = W + "px"; bend.style.height = H + "px";
-    for (var i = 0; i < n; i++) {
-      var sh = i === n - 1 ? H - i * h : h, s = mk("div", "ab-strip", "top:" + (i ? h : 0) + "px;width:" + W + "px;height:" + sh + "px");
-      var clip = mk("div", "ab-clip", "width:" + W + "px;height:" + (i === n - 1 ? sh : sh + 2) + "px;background:#ff2d20");
-      clip.appendChild(makePage(tpl, k, avail, i * h));
-      s.appendChild(clip); parent.appendChild(s); parent = s;
-      strips.push({ s: s, a: 0, g: 0 });
-    }
-  }
-  /* the copy is rebuilt while the card is idle, never in the middle of a motion */
-  var buildTimer = 0, lw = 0, lh = 0;
-  function scheduleBuild(delay) {
-    clearTimeout(buildTimer);
-    buildTimer = setTimeout(function () { if (raf || bending) return scheduleBuild(600); if (dirty) buildStrips(); }, delay || 350);
-  }
-  function strip() {
-    if (dirty) { scheduleBuild(200); return false; }
-    return strips.length > 0;
-  }
-  function syncScroll() {
-    var st = 0; try { st = frame.contentWindow.scrollY || 0; } catch (e) {}
-    [].forEach.call(bend.querySelectorAll(".sb"), function (w) { w.firstChild.style.transform = st ? "translateY(" + -st + "px)" : ""; });
-  }
-  /* the portrait's wobble loop inside the page is paused whenever the card is hidden or being shown as strips */
-  var paused = null, lastBend = 0;
+  /* the portrait's wobble loop inside the page is paused whenever the card is hidden or moving */
+  var paused = null;
   function pauseFrame(v) { if (v === paused) return; paused = v; try { frame.contentWindow.__abPaused = v; } catch (e) {} }
-  function setBending(on) {
-    if (on === bending) return;
-    if (on) { if (!strip()) return; syncScroll(); }
-    bending = on; pauseFrame(on || !open_);
-    bend.style.opacity = on ? "1" : ""; card.style.opacity = on ? ".01" : ""; /* never 0: a layer at 0 may lose its raster and come back blank (a blink) */
-    if (!on) for (var i = 0; i < strips.length; i++) { strips[i].a = strips[i].g = 0; strips[i].s.style.transform = ""; }
-  }
-  /* every strip replays the motion of the one above it a little later, so the bend travels down the sheet like a wave */
-  function bendFrame(now, amp) {
-    var n = hx.length;
-    for (var i = 0; i < strips.length; i++) {
-      var j = n - 1 - Math.min(n - 1, Math.round(i * .9)), vy = hy[j], vx = hx[j],
-          a = clamp(-vy * .00105, -2.1, 2.1) * amp, g = clamp(vx * .00085, -1.7, 1.7) * amp;
-      var st = strips[i]; st.a += (a - st.a) * .35; st.g += (g - st.g) * .35;
-      st.s.style.transform = "rotateX(" + st.a.toFixed(2) + "deg) rotateZ(" + st.g.toFixed(2) + "deg)";
-    }
-  }
-  function ampNow() { var c = window.__liquidCfg; return (c && c.pliq != null ? +c.pliq : 60) / 60; }
-
   /* ---------- motion ---------- */
   function step(now) {
     var raw = (now - last) / 1000 || .016, dt = Math.min(.033, raw); last = now; var calm = true;
-    /* velocity as the tilt and bend see it: smoothed in time, so jittery pointer events never make the sheet shake */
+    /* velocity as the sway sees it: smoothed in time, so jittery pointer events never make the sheet shake */
     var fs = 1 - Math.exp(-dt * 9); sv.x += (V.x - sv.x) * fs; sv.y += (V.y - sv.y) * fs;
     if (drag && now - drag.t > 40) { var dk = Math.exp(-dt * 18); V.x *= dk; V.y *= dk; }
     if (glide) {
@@ -220,18 +93,11 @@
     if (open_) { var tl = touchy ? 0 : 1; /* the card only sways (rotates in its own plane): no perspective tilt and no scale pulse, so the text never changes size while it is dragged */ T.rx = 0; T.ry = 0; T.r = clamp(sv.x * .0012, -1.5, 1.5) * tl; T.s = 1; }
     var lx = hx.length ? hx[hx.length - 1] : 0, ly = hy.length ? hy[hy.length - 1] : 0; hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
-    /* on a device that cannot keep up the bend is switched off, so the card still moves smoothly (tilt only) */
-    if ((!calm || drag) && !slow) { dts.push(raw); if (dts.length >= 30) { var med = dts.slice().sort(function (a, b) { return a - b; })[15]; if (med > .021 && !window.__aboutNoAuto) { slow = true; try { localStorage.setItem(SLOWKEY, "1"); } catch (e) {} } dts = []; } }
-    var amp = slow || touchy || !strips.length || quality() !== builtQ ? 0 : ampNow(), moving = !calm || drag || energy > 8;
-    /* the bend is only switched off after the motion has really stopped (a short hold); switching live page <-> strip copy on every small change of speed made the card blink */
-    var want = (drag || glide || energy > 8) && amp > 0 && !reduce.matches, /* only real interaction bends the sheet, not the entrance spring */ hold = bending && now - lastBend < 380;
-    if (want) lastBend = now;
-    if (want && !bending) setBending(true);
-    if (bending) { if (want || hold) bendFrame(now, want ? amp : 0); else setBending(false); }
-    pauseFrame(moving || hold || !open_);
-    window.__abBusy = moving || hold; /* the card text takes no liquid effect while the card itself is moving */
+    var moving = !calm || drag || energy > 8;
+    pauseFrame(moving || !open_);
+    window.__abBusy = moving; /* the card text takes no liquid effect while the card itself is moving */
     paint();
-    if (moving || hold) raf = requestAnimationFrame(step);
+    if (moving) raf = requestAnimationFrame(step);
     else {
       raf = 0; window.__abBusy = false;
       if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); }
@@ -288,12 +154,12 @@
     var fw = W / k, sig_ = k.toFixed(3) + ":" + fw.toFixed(1);
     frame.style.cssText = k < 1 || base < 1 ? "flex:none;width:" + fw + "px;height:" + H / k + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
     pushPage(k);
-    if (sig_ !== frameFit.key) { frameFit.key = sig_; dirty = true; scheduleBuild(400); }
+    if (sig_ !== frameFit.key) { frameFit.key = sig_; scheduleFit(400); }
     FK = k; FW = fw;
   }
   function layout() {
     if (!sheet) return; dims();
-    if (W !== lw || H !== lh) { lw = W; lh = H; dirty = true; scheduleBuild(); }
+    if (W !== lw || H !== lh) { lw = W; lh = H; scheduleFit(); }
     sheet.style.width = W + "px"; sheet.style.height = H + "px";
     fitName();
     frameFit();
@@ -311,13 +177,12 @@
     nameEl = mk("div", "ab-name", "position:absolute;left:0;bottom:0;width:100%;visibility:hidden;pointer-events:none"); nameEl.setAttribute("aria-hidden", "true");
     nameTxt = mk("span", "", "display:inline-block"); nameTxt.textContent = cardName(); nameEl.appendChild(nameTxt);
     card.append(frame);
-    bend = mk("div", "ab-bend"); bend.setAttribute("aria-hidden", "true");
-    sheet.append(shadow, bend, card, nameEl); document.body.append(backdrop, sheet);
+    sheet.append(shadow, card, nameEl); document.body.append(backdrop, sheet);
     layout(); S = hiddenPose(); paint();
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
-    frame.addEventListener("load", function () { contentVer++; pushPage(); setTimeout(pushPage, 600); setTimeout(function () { contentVer++; layout(); }, 1800); paused = null; pauseFrame(!open_); dirty = true; watchFrame(); scheduleBuild(1600); });
+    frame.addEventListener("load", function () { contentVer++; pushPage(); setTimeout(pushPage, 600); setTimeout(function () { contentVer++; layout(); }, 1800); paused = null; pauseFrame(!open_); scheduleFit(1600); });
     addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
-    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { contentVer++; nameTxt.textContent = cardName(); layout(); dirty = true; scheduleBuild(500); } });
+    addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { contentVer++; nameTxt.textContent = cardName(); layout(); scheduleFit(500); } });
   }
 
   /* dragging: from the title strip, or from anywhere on the page inside the card (it reports its own coordinates) */
@@ -343,7 +208,6 @@
   }
   function open() {
     build(); layout();
-    var q = quality(); if (q !== lastQ) { if (lastQ !== undefined) { slow = false; try { localStorage.removeItem(SLOWKEY); } catch (e) {} } /* first opening: the copy built while idle is already right; rebuilding it now would land on the first drag */ var fresh = lastQ === undefined && strips.length && builtQ === q && !dirty; lastQ = q; if (!fresh) { dirty = true; scheduleBuild(200); } }
     if (open_) return; open_ = true; window.__abOpen = true;
     sheet.style.visibility = "visible";
     glide = false; var h = hiddenPose(); S.x = h.x; S.y = h.y; S.r = h.r; S.s = h.s; S.rx = h.rx; S.ry = 0;
@@ -375,19 +239,6 @@
     if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey) return;
     if (/^(\.?\/)?about(\.html)?\/?$/.test(a.getAttribute("href"))) { e.preventDefault(); e.stopImmediatePropagation(); open(); }
   }, true);
-  /* Shift+F: a small frame-rate readout, to see how the card runs on this device */
-  var fpsEl = null, fpsN = 0, fpsT = 0;
-  function fpsTick(now) {
-    if (!fpsOn) return; fpsN++;
-    if (now - fpsT > 500) { fpsEl.textContent = Math.round(fpsN * 1000 / (now - fpsT)) + " fps \u00b7 bend " + (slow ? "auto-off (slow device)" : touchy ? "off (touch)" : quality() ? ["", "light", "full"][quality()] : "off"); fpsN = 0; fpsT = now; }
-    requestAnimationFrame(fpsTick);
-  }
-  addEventListener("keydown", function (e) {
-    if (!(e.shiftKey && (e.key === "F" || e.key === "f")) || /INPUT|TEXTAREA/.test((e.target || {}).tagName || "")) return;
-    fpsOn = !fpsOn;
-    if (!fpsEl) { fpsEl = mk("div", "", "position:fixed;left:12px;bottom:12px;z-index:2147483647;padding:6px 10px;border-radius:8px;background:rgba(0,0,0,.75);color:#fff;font:12px/1.2 monospace;pointer-events:none"); document.body.appendChild(fpsEl); }
-    fpsEl.style.display = fpsOn ? "" : "none"; if (fpsOn) { fpsN = 0; fpsT = performance.now(); requestAnimationFrame(fpsTick); }
-  });
   var go = mk("div"); go.id = "grid-overlay"; for (var i = 0; i < 12; i++) go.appendChild(document.createElement("i"));
   function ready() { document.body.appendChild(go); if (/grid/.test(location.hash)) root.classList.add("show-grid"); /* warm up the card when the browser is idle, so it never competes with the first paint */ (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(build, { timeout: touchy ? 12000 : 4000 }); }
   if (document.readyState === "complete") ready(); else addEventListener("load", ready);

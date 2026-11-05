@@ -85,16 +85,14 @@
   var states = new Map(), els = [], galCards = [], lastScan = 0;
   var SEL = ABOUT ? "h1,p,a[href],.abx-top span,.abx-name span" : "nav a,nav span,[role=tab]";
   function scan(now) {
-    if (now - lastScan < 600) return;
+    if (now - lastScan < 800) return;
     lastScan = now;
     var list = [].slice.call(document.querySelectorAll(SEL)), tw = [];
     if (!ABOUT) {
-      [].forEach.call(document.querySelectorAll("div"), function (d) {
-        var st = d.style;
-        /* gallery cards. A Twister card is built from many 3D slices: a filter on it (or on one slice) flattens or tears the ribbon, so those cards take no distortion or blur, only the cursor blob */
-        if (st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex) tw.push(d);
-        else if (st.zIndex === "7000") [].forEach.call(d.children, function (c) { list.push(c); });           /* project caption */
-      });
+      /* the browser's own selector engine finds the gallery cards and the project caption (a loop over every div of the page, run twice a second, was far heavier).
+         A Twister card is built from many 3D slices: a filter on it (or on one slice) flattens or tears the ribbon, so cards only wobble and never get a per-card filter */
+      tw = [].slice.call(document.querySelectorAll('div[style*="position: absolute"][style*="top: 50%"][style*="left: 50%"][style*="z-index"]'));
+      [].forEach.call(document.querySelectorAll('div[style*="z-index: 7000"]'), function (d) { [].forEach.call(d.children, function (c) { list.push(c); }); });   /* project caption */
     }
     /* forget components React has removed, together with their filters */
     states.forEach(function (st, el) { if (!el.isConnected) { if (st.warp) { var f = document.getElementById(st.warp.id); if (f) f.remove(); } states.delete(el); } });
@@ -106,15 +104,19 @@
   /* The gallery's hover liquid: the cards near the cursor behave like blobs of wet paint. Dragging the cursor through them shoves them along and they
      slosh back and forth on a soft, springy rhythm; arriving on a card gives it a squashy jolt away from the cursor, and a card that is stretched one way
      is squeezed the other (it keeps its volume). It is pure motion of the card as a whole, so every edge stays perfectly smooth in every mode. */
+  var galR = [], galBR = null;
   function jellyFx(c, sp, on, now, dtf) {
     var k = Math.max(0, c.jel / 100), kp = c.jpush / 100, kj = c.jjolt / 100, ksq = c.jsq / 100, ktw = c.jtw / 100, any = 0, reach = (c.reach + 160) * c.jrng / 100;
     var damp = .8 + (c.jbnc / 100) * .16;
     /* the same feel at 30, 60 or 144 frames per second */
     var ts = Math.min(2.5, Math.max(.4, dtf * 60)), d9 = Math.pow(damp, ts), d88 = Math.pow(damp - .02, ts);
     on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
-    for (var n = 0; n < galCards.length; n++) {
-      var card = galCards[n]; if (!card.isConnected) continue;
-      var cb = card.getBoundingClientRect();
+    /* all measuring first, all style writing after: reading a rect right after writing a style forces the browser to lay the page out again for every card */
+    var rects = [], n, card, cb;
+    for (n = 0; n < galCards.length; n++) rects.push(galCards[n].isConnected ? galCards[n].getBoundingClientRect() : null);
+    galR = rects; galBR = galCards.length && galCards[0].parentElement ? galCards[0].parentElement.getBoundingClientRect() : null;   /* shared with the picture layer, which runs right after */
+    for (n = 0; n < galCards.length; n++) {
+      card = galCards[n]; cb = rects[n]; if (!cb) continue;
       /* a card that has become tiny or hidden (another mode) must not keep a leftover wobble style */
       if (cb.width < 20) { if (card.__jl && card.__jl.set) { card.style.translate = card.style.scale = card.style.rotate = ""; card.__jl = null; } continue; }
       var cx = cb.left + cb.width / 2, cy = cb.top + cb.height / 2, dx = cx - mx, dy = cy - my, d = Math.hypot(dx, dy) || 1;
@@ -184,7 +186,7 @@
     var hover = null, halo = false;
     on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
     if (on) for (var i = 0; i < galCards.length; i++) {
-      var r = galCards[i].getBoundingClientRect(); if (r.width < 40) continue;
+      var r = galR[i] || galCards[i].getBoundingClientRect(); if (r.width < 40) continue;
       if (mx > r.left && mx < r.right && my > r.top && my < r.bottom) hover = galCards[i];
       else if (mx > r.left - 90 && mx < r.right + 90 && my > r.top - 90 && my < r.bottom + 90) halo = true;
     }
@@ -195,7 +197,7 @@
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
     galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 14 : 9)));
     if (galS < 1 && target === 0 && !(c.gdis > 1 && galPulse > .02)) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
-    var g = galFilter(), br = box.getBoundingClientRect(), R = c.reach * 1.7 * c.gsz / 100;
+    var g = galFilter(), br = galBR || box.getBoundingClientRect(), R = c.reach * 1.7 * c.gsz / 100;
     /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
     if (box.style.filter !== "url(#lq-gal)") box.style.filter = "url(#lq-gal)"; galBox = box;
     g.map.setAttribute("scale", galS.toFixed(2));

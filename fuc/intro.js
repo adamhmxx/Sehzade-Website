@@ -38,7 +38,8 @@
   }
   line.style.height = CFG.iline + "px";
   "SEHZADE".split("").forEach(function (c) { var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp); });
-  fit(); addEventListener("resize", function () { fit(); bigDirty = uiDirty = true; if (window.__introSize) window.__introSize(); });
+  function onResize() { fit(); bigDirty = uiDirty = true; if (window.__introSize) window.__introSize(); }
+  fit(); addEventListener("resize", onResize);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 
   /* ---- progress: real signals, but never faster than the minimum show time ---- */
@@ -179,6 +180,15 @@
   sizeCv(); window.__size = sizeCv;
   window.__introSize = sizeCv;
 
+  /* the loader is finished for good: give the GPU its memory back (the shader context, the textures and the full-screen canvases) and drop the loader's markup and listeners */
+  function teardown() {
+    removeEventListener("resize", onResize); window.__introSize = null;
+    try { if (gl) { var lc = gl.getExtension("WEBGL_lose_context"); if (lc) lc.loseContext(); } } catch (e) {}
+    cv.width = cv.height = tc.width = tc.height = uc.width = uc.height = 1;
+    intro.style.display = "none";
+    setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, 50);
+  }
+
   /* ---- red -> black: the text melts and the red is soaked up; the portfolio row starts while the last of the red is still draining ---- */
   /* decode the row's pictures while the red is still being absorbed, so the row slides in without a hitch */
   function warmRow() { items().slice(0, CFG.irn).forEach(function (it) { var im = new Image(); im.src = it.image.src; if (im.decode) im.decode().catch(function () {}); (window.__introImgs = window.__introImgs || []).push(im); }); }
@@ -196,7 +206,7 @@
       seepNow = now - s0; draw(); liquid(now);
       if (!rowGo && k > Math.max(CFG.irgo, TOUCH ? 92 : 0) / 100) { rowGo = true; row_start(); }
       if (k < 1) return requestAnimationFrame(step);
-      wipeActive = false; cv.style.display = "none"; intro.style.display = "none"; if (!rowGo) { rowGo = true; row_start(); }
+      wipeActive = false; teardown(); if (!rowGo) { rowGo = true; row_start(); }
     })(performance.now());
   }
 
