@@ -1,6 +1,6 @@
 /* Loading sequence: red screen with a big liquid "SEHZADE" bottom left, a progress line through the middle. When everything is ready the
    text melts and the red is soaked up by the black underneath, like ink sinking into paper (three layers of red at different depths, one
-   WebGL shader; the word, the percentage, "Designer" and the line are drawn in the same shader, so they ripple and dissolve with the same
+   WebGL shader; the word, the percentage, "Loading" and the line are drawn in the same shader, so they ripple and dissolve with the same
    flowing noise). The portfolio row slides in while the last of the red is still draining, then the Twister ribbon builds itself: every
    card rises from below, one after another, and the navbar and mode menu appear. Add #nointro to the address to skip it.
    All numbers live in DEF below and in the Liquid panel (Shift+L, tab "Intro"). */
@@ -133,18 +133,23 @@
   }
   function renderUI(now) {
     var t = now - T0;
-    /* percentage, "Designer" and the loading line live in their own layer, so they ripple and dissolve exactly like the word but at their own, smaller scale */
+    /* percentage, "Loading" and the loading line live in their own layer, so they ripple and dissolve exactly like the word but at their own, smaller scale */
     ux.setTransform(1, 0, 0, 1, 0, 0); ux.clearRect(0, 0, uc.width, uc.height); ux.setTransform(sc, 0, 0, sc, 0, 0);
-    ux.font = '16px "Anton", Impact, sans-serif'; ux.textBaseline = "alphabetic"; ux.fillStyle = "#fff";
-    var um = ux.measureText("H"), ua = um.fontBoundingBoxAscent || 15, ud = um.fontBoundingBoxDescent || 4;
-    /* the percentage and "Designer" rise letter by letter exactly like the word (same ease, stagger and fade, a little later); the line fades in the same way */
-    var base = reduce ? 0 : CFG.ildl + 350;
-    [pct, intro.querySelector(".in-welcome")].forEach(function (el, wi) {
-      var r = el.getBoundingClientRect(), txt = el.textContent.toUpperCase(), y0 = r.top + (r.height - (ua + ud)) / 2 + ua;
-      for (var q = 0; q < txt.length; q++) {
+    ux.textBaseline = "alphabetic"; ux.fillStyle = "#fff";
+    /* "LOADING" with three dots that light up one after another, and the percentage on the right; each rises letter by letter like the word (same ease, stagger and fade, a little later); the line fades in the same way */
+    var base = reduce ? 0 : CFG.ildl + 350, wel = intro.querySelector(".in-welcome");
+    [{ el: wel, txt: "LOADING", dots: 1 }, { el: pct, txt: pct.textContent.toUpperCase() }].forEach(function (it, wi) {
+      var el = it.el, fs = parseFloat(getComputedStyle(el).fontSize) || 16;
+      ux.font = fs + 'px "Anton", Impact, sans-serif';
+      var um = ux.measureText("H"), ua = um.fontBoundingBoxAscent || fs * .95, ud = um.fontBoundingBoxDescent || fs * .25;
+      var r = el.getBoundingClientRect(), y0 = r.top + (r.height - (ua + ud)) / 2 + ua, txt = it.txt, n = txt.length + (it.dots ? 3 : 0);
+      for (var q = 0; q < n; q++) {
         var k = reduce ? 1 : Math.max(0, Math.min(1, (t - base - (wi * 5 + q) * CFG.ilst * .8) / (CFG.iltr * .85))), e = 1 - Math.pow(1 - k, 4);
         if (e <= 0) continue;
-        ux.globalAlpha = e; ux.fillText(txt[q], r.left + ux.measureText(txt.slice(0, q)).width, y0 + (1 - e) * r.height * 1.4);
+        var ch, x, al = e;
+        if (q < txt.length) { ch = txt[q]; x = r.left + ux.measureText(txt.slice(0, q)).width; }
+        else { var di = q - txt.length; ch = "."; x = r.left + ux.measureText(txt).width + di * (ux.measureText(".").width + fs * .04); al = e * (reduce ? 1 : .2 + .8 * (.5 + .5 * Math.sin(t / 240 - di * 1.15))); }
+        ux.globalAlpha = al; ux.fillText(ch, x, y0 + (1 - e) * r.height * 1.4);
       }
     });
     var lr = line.getBoundingClientRect(), lk = reduce ? 1 : Math.max(0, Math.min(1, (t - base) / CFG.iltr));
@@ -156,7 +161,7 @@
     var f0 = Math.min(-soft, lC - sC, lag - soft * 1.6) - .02, f1 = 1 + Math.max(soft, lag + soft * 1.6, lC + sC) + .02;
     /* the word is uploaded to the GPU only while it is still rising (or after a resize), the small texts only when they change: a still
        frame costs the phone nothing but the shader itself */
-    var now_ = performance.now(), tt = now_ - T0, key = pct.textContent + "|" + Math.round(p * 3);
+    var now_ = performance.now(), tt = now_ - T0, key = pct.textContent + "|" + Math.round(p * 3) + "|" + Math.floor(tt / 90);
     if (bigDirty || (!reduce && tt < CFG.ildl + 7 * CFG.ilst + CFG.iltr + 150)) {
       renderBig(now_); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tc); bigDirty = false;
     }

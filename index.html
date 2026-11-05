@@ -17,11 +17,12 @@ html.intro-on #intro{display:block}
 #intro .in-line{position:absolute;left:0;right:0;top:50%;height:2px}
 #intro .in-line i{position:absolute;left:0;top:0;bottom:0;width:100%;background:#0b0b0b;transform-origin:0 50%;transform:scaleX(0)}
 #intro .in-pct,#intro .in-welcome{position:absolute;top:50%;margin-top:-34px;font:400 16px/1 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;font-variant-numeric:tabular-nums}
-#intro .in-pct{left:32px}
-#intro .in-welcome{right:32px}
+#intro .in-pct{right:32px}
+#intro .in-welcome{left:32px;font-size:20px;margin-top:-38px}
+#intro .in-dots{font-style:normal}#intro .in-dots b{font-weight:400;animation:indot 1.2s infinite}#intro .in-dots b:nth-child(2){animation-delay:.2s}#intro .in-dots b:nth-child(3){animation-delay:.4s}@keyframes indot{0%,60%,100%{opacity:.2}30%{opacity:1}}
 #intro .in-big{padding-bottom:.07em;position:absolute;left:24px;bottom:3vw;font:400 20vw/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;filter:url(#in-liquid);will-change:filter}
 #intro .in-big span{display:inline-block;transform:translateY(105%);opacity:0}
-@media (max-width:809.98px){#intro .in-pct{left:16px}#intro .in-welcome{right:16px}#intro .in-big{left:12px;font-size:23vw;bottom:5vw}}
+@media (max-width:809.98px){#intro .in-pct{right:16px;font-size:14px}#intro .in-welcome{left:16px;font-size:16px;margin-top:-34px}#intro .in-big{left:12px;font-size:23vw;bottom:5vw}}
 #intro-row{position:fixed;left:0;top:0;width:100%;height:100%;z-index:2147483640;pointer-events:none;overflow:hidden;display:none}
 #intro-row .rw{position:absolute;left:0;top:50%;display:flex;gap:16px;will-change:transform}
 #intro-row .rw div{flex:none;border-radius:2px;background-size:cover;background-position:center;background-color:#111}
@@ -124,7 +125,7 @@ if(matchMedia("(pointer:coarse)").matches)window.__twEff=20;</script>
 <canvas class="in-bg" id="seep"></canvas><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <filter id="in-liquid" x="-25%" y="-60%" width="150%" height="240%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>
 </defs></svg>
-<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Designer</span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>
+<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Loading<i class="in-dots"><b>.</b><b>.</b><b>.</b></i></span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>
 </div>
 <div id="intro-row" aria-hidden="true"><div class="rw"></div></div>
 
