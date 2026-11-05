@@ -26,3 +26,7 @@ Run:  python3 server.py   ->  http://localhost:8000
 ## Phones
 - fuc/modefx.js   below 810px wide, switching mode dips through the page background (no morph, so no card crosses another); taps during a switch are queued.
 - The Twister uses 10 slices per card on touch devices and its items are 30% smaller (see index.html and the gallery chunk). Link hover is off on touch.
+
+## Twister and hover liquid
+- Twister: the cards ride along one spiral. Scrolling, dragging and auto scroll move every card ALONG the spiral (it turns and rises, and cards wrap from the top back to the bottom off screen). Never fewer than 24 slices per card (16 while the entrance rises).
+- Gallery hover (liquid.js, jellyFx): wet-paint wobble. Cards near the cursor are shoved along by the cursor, jolt away on arrival and slosh back on springs (translate, scale, rotate of the whole card, so edges stay smooth). Text keeps the flowing-noise ripple.
