@@ -35,20 +35,20 @@
     return Object.assign({}, LD, c || {});
   }
 
-  /* The hover is the loading screen's "appear" in small: the letters rise from below one after another (same ease, left to right, fading in)
-     while the whole word carries a burst of liquid ripple that calms down. The ripple is an SVG displacement whose noise flows on its own clock. */
+  /* The hover text interaction: the letters fly in from both edges toward the middle with a motion blur (the liquid ripple on the word comes from liquid.js) */
   function play(el) {
     var s = letters(el);
     if (!s.length || !s[0].animate) return;
-    var c = cfg(), n = s.length, step = Math.min(55, (c.lstag * 2) / Math.max(1, n - 1));
-    s.forEach(function (x, i) {
-      var h = x.offsetHeight || 16, rise = Math.max(c.ldist, h * .7);
-      x.animate([
-        { transform: "translateY(" + rise + "px)", opacity: 0 },
-        { transform: "translateY(0)", opacity: 1 }
-      ], { duration: c.ldur, delay: i * step, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" });
+    var c = cfg(), mid = (s.length - 1) / 2;
+    s.forEach(function (n, i) {
+      var d = i - mid, dir = d < 0 ? -1 : d > 0 ? 1 : 0, far = Math.abs(d) / (mid || 1);
+      var off = dir * c.ldist * (.57 + far);
+      n.animate([
+        { transform: "translateX(" + off + "px)", filter: "blur(" + c.lblur + "px)", opacity: 0, offset: 0 },
+        { transform: "translateX(" + off * .45 + "px)", filter: "blur(" + c.lblur * .5 + "px)", opacity: .55, offset: .45 },
+        { transform: "translateX(0)", filter: "blur(0)", opacity: 1, offset: 1 }
+      ], { duration: c.ldur, delay: Math.pow(1 - far, 1.2) * c.lstag, easing: "cubic-bezier(.33,.1,.2,1)", fill: "backwards" });
     });
-    /* the liquid ripple on the word is owned by liquid.js (one filter per element, with an arrival burst); a second filter here would overwrite it */
   }
   window.__linkfxPlay = play;
 
