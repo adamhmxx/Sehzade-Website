@@ -475,7 +475,7 @@
 
     var ui = document.createElement("div"); ui.id = "liquid-ui";
     /* hidden by default. Shift+L (or adding #liquid to the address) shows it again; the settings are kept either way */
-    var UIKEY = KEY + "-ui2"; /* new key: the panel starts hidden again for everyone */
+    var UIKEY = KEY + "-ui3"; /* new key: the panel starts hidden again for everyone */
     function showUI(v) { ui.style.display = v ? "" : "none"; try { localStorage.setItem(UIKEY, v ? "1" : "0"); } catch (e) {} if (!v) ui.classList.remove("open"); }
     var shown = false;
     try { shown = localStorage.getItem(UIKEY) === "1"; } catch (e) {}
