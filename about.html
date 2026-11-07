@@ -110,7 +110,6 @@ html,body{background:#ff2d20}
 .in-panel nav{visibility:hidden}
 .in-panel,.in-panel body{cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}.in-panel a,.in-panel button{cursor:pointer}
 .ascii-live{visibility:hidden!important}
-#ascii-reveal{position:absolute;pointer-events:none;z-index:2}
 .ab-type{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:400!important;text-transform:uppercase;font-size:16px!important;letter-spacing:0!important;line-height:1.15!important;color:#0b0b0b!important}
 .ab-label{width:auto!important;min-width:82px}
 a.ab-type{min-height:0!important}
@@ -199,7 +198,7 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     function stop(e){if(dragging){dragging=false;send("end",e);}}
     addEventListener("pointerup",stop);addEventListener("pointercancel",stop);
   }
-  /* ASCII portrait: hidden at rest, revealed at full opacity by a soft spotlight under the pointer */
+  /* ASCII portrait: hidden (no hover reveal) */
   function start(){
     var rows=[].filter.call(document.querySelectorAll("div"),function(d){
       if(d.childElementCount)return false;
@@ -217,83 +216,7 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     });
     var boxes=rows.map(function(r){return r.parentElement;}).filter(function(b,i,a){return a.indexOf(b)===i;});
     boxes.forEach(function(b){b.classList.add("ascii-live");});
-    /* phones and tablets have no hover: the portrait stays hidden and nothing reacts to a finger sliding over the page */
-    if(matchMedia("(hover: none), (pointer: coarse)").matches)return;
-    /* liquid reveal: a stream that flows behind the pointer. A chain of points follows the cursor like a rope,
-       each drawn as a soft radial dab that gets narrower and fainter toward the tail, so the revealed area is
-       widest under the cursor and tapers off smoothly, with no hard edge anywhere */
-    var N=26, chain=[], r=0, tx=0, ty=0, base=0, run=false, snap=true, hover=false;
-    for(var ci=0;ci<N;ci++)chain.push({x:0,y:0});
-    var head={x:0,y:0,vx:0,vy:0};
-    /* The portrait is drawn on ONE canvas. The lines of text are painted once (and again only if the box changes), the soft liquid spot is painted
-       into a small mask canvas, and each frame only combines the two. (Before, a PNG of the mask was made and pushed into the CSS mask of 185 text
-       lines every frame, which is what made this hover choppy.) */
-    var oc=document.createElement("canvas"); oc.id="ascii-reveal"; var ox=oc.getContext("2d");
-    var tcv=document.createElement("canvas"), tx_=tcv.getContext("2d"), mcv=document.createElement("canvas"), mx_=mcv.getContext("2d");
-    var MS=.4, lastW=0, lastH=0, lastKey="", host=boxes[0].parentElement, dpr=Math.min(2,window.devicePixelRatio||1);
-    host.appendChild(oc);
-    function dab(x,y,rad,alpha){
-      if(rad<.3||alpha<.01)return;
-      var g=mx_.createRadialGradient(x,y,0,x,y,rad);
-      g.addColorStop(0,"rgba(0,0,0,"+alpha+")");
-      g.addColorStop(.45,"rgba(0,0,0,"+(alpha*.8)+")");
-      g.addColorStop(.75,"rgba(0,0,0,"+(alpha*.35)+")");
-      g.addColorStop(1,"rgba(0,0,0,0)");
-      mx_.fillStyle=g; mx_.beginPath(); mx_.arc(x,y,rad,0,Math.PI*2); mx_.fill();
-    }
-    /* paint the lines of text once, at exactly the place of the hidden lines */
-    function paintText(o){
-      var W=Math.max(1,Math.round(o.width)), H=Math.max(1,Math.round(o.height));
-      var key=W+"x"+H+"@"+dpr; if(key===lastKey)return; lastKey=key;
-      oc.width=tcv.width=Math.round(W*dpr); oc.height=tcv.height=Math.round(H*dpr);
-      mcv.width=Math.max(2,Math.round(W*MS)); mcv.height=Math.max(2,Math.round(H*MS));
-      oc.style.width=W+"px"; oc.style.height=H+"px";
-      tx_.setTransform(dpr,0,0,dpr,0,0); tx_.clearRect(0,0,W,H); tx_.textBaseline="middle";
-      rows.forEach(function(rw){
-        var r=rw.getBoundingClientRect(), cs=getComputedStyle(rw), t=rw.textContent; if(!/\S/.test(t))return;
-        tx_.font=cs.fontStyle+" "+cs.fontWeight+" "+cs.fontSize+" "+cs.fontFamily; tx_.fillStyle=cs.color;
-        tx_.fillText(t,r.left-o.left,r.top-o.top+r.height/2);
-      });
-    }
-    var shown=false;
-    function tick(t){
-      head.vx=(head.vx+(tx-head.x)*.2)*.68; head.vy=(head.vy+(ty-head.y)*.2)*.68; head.x+=head.vx; head.y+=head.vy;
-      chain[0].x=head.x; chain[0].y=head.y;
-      var moving=Math.abs(head.vx)+Math.abs(head.vy);
-      for(var i=1;i<N;i++){var p=chain[i],q=chain[i-1],dx=q.x-p.x,dy=q.y-p.y;p.x+=dx*.32;p.y+=dy*.32;moving+=Math.abs(dx)+Math.abs(dy)>.5?.1:0;}
-      r+=(base-r)*.06;
-      var o=host.getBoundingClientRect(), b0=boxes[0].getBoundingClientRect();
-      if(r<1){ if(shown){ox.clearRect(0,0,oc.width,oc.height);shown=false;} }
-      else{
-        paintText(b0);
-        /* the canvas sits in the same layer as the lines it replaces (so it keeps their place in the stacking order); place it by the box it is positioned against */
-        var opar=oc.offsetParent, orc=opar&&opar!==document.body&&opar!==document.documentElement?opar.getBoundingClientRect():{left:-(window.scrollX||0),top:-(window.scrollY||0)};
-        oc.style.left=(b0.left-orc.left-(opar&&opar.clientLeft||0))+"px"; oc.style.top=(b0.top-orc.top-(opar&&opar.clientTop||0))+"px";
-        mx_.clearRect(0,0,mcv.width,mcv.height);
-        var wob=1+.05*Math.sin(t/420);
-        /* tail first, head last, so the head sits on top */
-        for(var j=N-1;j>=0;j--){
-          var f=j/(N-1), taper=Math.pow(1-f,1.35);
-          dab((chain[j].x-b0.left)*MS,(chain[j].y-b0.top)*MS,r*MS*(.18+.82*taper)*(j?1:wob),Math.pow(1-f,1.6));
-        }
-        ox.globalCompositeOperation="source-over"; ox.clearRect(0,0,oc.width,oc.height); ox.drawImage(tcv,0,0);
-        ox.globalCompositeOperation="destination-in"; ox.drawImage(mcv,0,0,oc.width,oc.height); ox.globalCompositeOperation="source-over"; shown=true;
-      }
-      if(hover||moving>.3||Math.abs(base-r)>.3)requestAnimationFrame(tick);else run=false;
-    }
-    /* reveal while the pointer is anywhere over the figure's area (plus a margin), so there are no dead spots between glyphs */
-    function overArt(x,y){
-      var b=boxes[0].getBoundingClientRect(), m=70;
-      return x>b.left-m&&x<b.right+m&&y>b.top-m&&y<b.bottom+m;
-    }
-    function kick(){if(!run){run=true;requestAnimationFrame(tick);}}
-    addEventListener("pointermove",function(e){
-      hover=overArt(e.clientX,e.clientY);
-      tx=e.clientX; ty=e.clientY; base=hover?Math.max(70,Math.min(130,boxes[0].getBoundingClientRect().width*.15)):0;
-      if(snap&&hover){head.x=tx;head.y=ty;head.vx=head.vy=0;chain.forEach(function(p){p.x=tx;p.y=ty;});snap=false;} if(!hover)snap=r<1;
-      kick();
-    },{passive:true});
-    document.addEventListener("pointerleave",function(){hover=false;base=0;kick();});
+    /* the ASCII portrait has no hover reveal any more: it stays hidden */
   }
   addEventListener("load",function(){setTimeout(start,800);});
 })();

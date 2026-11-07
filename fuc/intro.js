@@ -24,18 +24,14 @@
   var big = $(".in-big", intro), pct = $(".in-pct", intro), bar = $(".in-line i", intro), line = $(".in-line", intro),
       liqO = $("#in-liq-o"), liqD = $("#in-liq-d"), cv = $("#seep");
 
-  /* the word always spans the full screen width: measure it at a known size, then scale the font to fill the space between the side margins */
+  /* the word has a fixed size per breakpoint (it does not stretch with the screen): phone / tablet / desktop; it only shrinks if it would not fit the width */
+  var WORD = { phone: 96, tablet: 220, desktop: 320 };
   function fit() {
-    var m = parseFloat(getComputedStyle(big).left) || 24;
+    var m = parseFloat(getComputedStyle(big).left) || 24, fs = innerWidth >= 1440 ? WORD.desktop : innerWidth >= 810 ? WORD.tablet : WORD.phone;
     big.style.fontSize = "100px";
     var w = big.getBoundingClientRect().width;
-    if (w > 0) {
-      var fs = 100 * (innerWidth - 2 * m) / w;
-      /* on wide screens the full-width word would be taller than the space under the middle line and run into it: cap its size so it always stays 24px below the line */
-      var room = innerHeight - (parseFloat(getComputedStyle(big).bottom) || 0) - line.getBoundingClientRect().bottom - 24, maxFs = room / .93;
-      if (maxFs > 40) fs = Math.min(fs, maxFs);
-      big.style.fontSize = fs.toFixed(2) + "px";
-    }
+    if (w > 0) fs = Math.min(fs, 100 * (innerWidth - 2 * m) / w);
+    big.style.fontSize = fs.toFixed(2) + "px";
   }
   line.style.height = CFG.iline + "px";
   "SEHZADE".split("").forEach(function (c) { var sp = document.createElement("span"); sp.textContent = c; big.appendChild(sp); });
