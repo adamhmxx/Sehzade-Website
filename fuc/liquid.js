@@ -32,6 +32,9 @@
   function dragging() { try { return !!(TOP ? window : parent).__abDragging; } catch (e) { return false; } }
   /* while the card is open nothing behind it reacts: only the card's own pieces (name, copyright, Close) do */
   function behindCard(el) { return TOP && window.__abOpen && !(el.closest && el.closest(".ab-card")); }
+  /* the About page is shown inside the card scaled by the card (window.__abK): every size here is divided by it, so the blob, its reach and the ripple look
+     exactly as large and as strong on the card as on the main page */
+  function KS() { return ABOUT ? (window.__abK || 1) : 1; }
   function C() { if (TOP) return own; try { return parent.__liquidCfg || own; } catch (e) { return own; } }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(own)); } catch (e) {} }
 
@@ -51,7 +54,7 @@
     var W = cv.width, H = cv.height, s = 1 / SCALE;
     cx.clearRect(0, 0, W, H);
     if (!c.on || (TOP && window.__abOpen) || (!inside && Math.abs(head.vx) + Math.abs(head.vy) < .05 && idle > 40)) return;
-    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, rad = c.radius * s, soft = c.softness, h = (1 - soft) * .6;
+    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, rad = c.radius * s / KS(), soft = c.softness, h = (1 - soft) * .6;
     for (var j = N - 1; j >= 0; j--) {
       var f = j / (N - 1), p = chain[j], r = rad * (.32 + .68 * Math.pow(1 - f, 1.1)), a = Math.pow(1 - f, 1.4);
       var x = p.x * s, y = p.y * s, g = cx.createRadialGradient(x, y, 0, x, y, r);
@@ -230,7 +233,7 @@
       '<feGaussianBlur in="w" stdDeviation="0.45"/>';
     defs.appendChild(f);
     /* small text gets a fraction of the strength a large card gets, so every component distorts to the same degree visually */
-    return { id: id, ph: fid * 1.7, fq: fq, turb: f.children[0], off: f.children[1], map: f.children[2], k: ABOUT || (el.__fxt && el.__fxt !== el) || (el.closest && el.closest(".ab-card")) ? 1 : Math.max(.25, Math.min(1, Math.min(b.width, b.height) / 300)) };
+    return { id: id, ph: fid * 1.7, fq: fq, turb: f.children[0], off: f.children[1], map: f.children[2], k: 1 };
   }
   function spring(st, key, target, k, damp) { st["v" + key] = (st["v" + key] + (target - st[key]) * k) * damp; st[key] += st["v" + key]; }
 
@@ -246,7 +249,7 @@
     for (var i = 1; i < N; i++) { chain[i].x += (chain[i - 1].x - chain[i].x) * follow; chain[i].y += (chain[i - 1].y - chain[i].y) * follow; }
     drawBlob(c);
 
-    var reach = c.reach, near = [], drag_ = dragging();
+    var ks = KS(), reach = c.reach / ks, near = [], drag_ = dragging();
     for (var n = 0; n < els.length; n++) {
       var el = els[n], b = el.getBoundingClientRect(), st = states.get(el);
       if (b.bottom < -reach || b.top > innerHeight + reach || b.right < -reach || b.left > innerWidth + reach || b.width === 0) { if (st && st.set) near.push({ el: el, b: b, vs: 1, f: 0, dx: 0, dy: 0 }); continue; }
@@ -265,8 +268,8 @@
          ripple while the cursor stays near; the noise flows by itself with time (it does not follow the cursor) */
       if (f > .2 && !st.hot) { st.hot = 1; st.pulse = 1; } else if (f < .06) st.hot = 0;
       st.pulse = (st.pulse || 0) * Math.exp(-dtf / .75);
-      spring(st, "b", f * c.blur * (.55 + sp * .9) / vs, .09, .82);
-      spring(st, "d", f * c.distort * (.6 + sp * .5 + 1.1 * st.pulse) / vs, .08, .84);
+      spring(st, "b", f * c.blur * (.55 + sp * .9) / vs / ks, .09, .82);
+      spring(st, "d", f * c.distort * (.6 + sp * .5 + 1.1 * st.pulse) / vs / ks, .08, .84);
       var warp = st.d > .15;
       if (warp || st.b > .03) {
         active++; st.set = 1;

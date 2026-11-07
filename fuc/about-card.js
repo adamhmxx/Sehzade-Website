@@ -100,7 +100,7 @@
     if (moving) raf = requestAnimationFrame(step);
     else {
       raf = 0; window.__abBusy = false;
-      if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); }
+      if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); window.__abOpen = false; }
       else { S.x = T.x; S.y = T.y; S.r = 0; S.s = 1; S.rx = 0; S.ry = 0; paint(); pauseFrame(false); }
     }
   }
@@ -217,10 +217,10 @@
     paint(); root.classList.add("about-open"); run();
   }
   function close() {
-    if (!open_) return; open_ = false; window.__abOpen = false; drag = null; glide = false; card.classList.remove("dragging", "grip-drag");
+    if (!open_) return; open_ = false; drag = null; /* window.__abOpen stays true until the card has left the screen: the gallery behind starts moving again only then, so the two never compete for the GPU while the card flies out (that made the close stutter on phones) */ glide = false; card.classList.remove("dragging", "grip-drag");
     root.classList.remove("about-open");
     T = hiddenPose(); V.r = 0;
-    if (reduce.matches) { S = hiddenPose(); paint(); sheet.style.visibility = "hidden"; return; }
+    if (reduce.matches) { S = hiddenPose(); paint(); sheet.style.visibility = "hidden"; window.__abOpen = false; return; }
     run();
   }
   /* a button released outside the window, or a lost window focus, must never leave the card stuck to the pointer */

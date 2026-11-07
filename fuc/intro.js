@@ -194,7 +194,7 @@
   function warmRow() { items().slice(0, CFG.irn).forEach(function (it) { var im = new Image(); im.src = it.image.src; if (im.decode) im.decode().catch(function () {}); (window.__introImgs = window.__introImgs || []).push(im); }); }
   function wipe() {
     root.classList.remove("intro-hold");
-    clearInterval(poll); warmRow(); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
+    clearInterval(poll); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
     if (!gl) cv.style.background = "#ff2d20";
     if (!gl) [].forEach.call(big.children, function (sp, i) {
       sp.animate(TOUCH ? [{ transform: "translateY(0)", opacity: 1 }, { transform: "translateY(60%)", opacity: 0 }] : [{ transform: "translateY(0)", opacity: 1, filter: "blur(0px)" }, { transform: "translateY(60%)", opacity: 0, filter: "blur(6px)" }],
@@ -229,26 +229,11 @@
   }
   /* the Twister is built from many slices; while it rises it uses fewer (the same ribbon, lighter), then the full count comes back */
   var effBefore;
-  function lighten() { if (window.__lite) return; effBefore = window.__twEff; var n = Math.min(effBefore || 99, CFG.itslices); if (n !== window.__twEff) { window.__twEff = n; window.dispatchEvent(new Event("cms-change")); } }
-  function restore() { if (window.__lite) return; if (window.__twEff !== effBefore) { window.__twEff = effBefore; window.dispatchEvent(new Event("cms-change")); } }
-  function row_start() {
-    var list = items(), rw = $(".rw", row);
-    if (!list.length || reduce) return reveal();
-    var cw = Math.max(120, twisterCardWidth() * CFG.ircard / 100), ch = cw * .75, n = Math.min(list.length, CFG.irn), gap = CFG.irgap;
-    rw.style.gap = gap + "px";
-    rw.style.marginTop = (-ch / 2) + "px";
-    for (var i = 0; i < n; i++) { var d = document.createElement("div"); d.style.cssText = "width:" + cw + "px;height:" + ch + "px;background-image:url(" + list[i].image.src + ")"; rw.appendChild(d); }
-    row.style.opacity = "0"; row.style.display = "block";
-    var total = n * (cw + gap), x0 = W + 40, x1 = -total - 40, D = CFG.irdur, s0 = performance.now();
-    (function step(now) {
-      var k = Math.min(1, (now - s0) / D), x = x0 + (x1 - x0) * (.5 - .5 * Math.cos(Math.PI * k));
-      var fd = Math.min(1, k / .16); row.style.opacity = (fd * fd * (3 - 2 * fd)).toFixed(3); /* a thin ease-in: the row fades up as it enters instead of cutting in */
-      rw.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
-      if (k < 1) return requestAnimationFrame(step);
-      /* the row has sunk off the left edge completely: a calm pause on the empty black, then the Twister comes up */
-      row.style.display = "none"; lighten(); setTimeout(reveal, CFG.itdelay);
-    })(performance.now());
-  }
+  function lighten() { return; effBefore = window.__twEff; var n = Math.min(effBefore || 99, CFG.itslices); if (n !== window.__twEff) { window.__twEff = n; window.dispatchEvent(new Event("cms-change")); } }
+  function restore() { return; if (window.__twEff !== effBefore) { window.__twEff = effBefore; window.dispatchEvent(new Event("cms-change")); } }
+  /* no portfolio row any more: as soon as the red has drained, the Twister rises from below */
+  function row_start() { reveal(); }
+
 
   /* ---- the Twister rises from below as ONE piece while the ribbon turns upward; then the page is live and scrolls forever ---- */
   function reveal() {
