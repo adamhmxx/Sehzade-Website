@@ -139,20 +139,21 @@
   }
   var needKey = "", needVal = 0, needBusy = false;
   function frameFit() {
-    var base = Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, key = W.toFixed(1) + ":" + H.toFixed(1) + ":" + contentVer;
+    /* desktop: the page is always laid out at one fixed width (DW) and the whole page is scaled to the card, so on any screen size the text, line breaks and alignment are the same (a real-width iframe switched Framer breakpoints and re-flowed) */
+    var desk = !touchy && innerWidth >= 810, DW = desk ? 564 : 390, base = desk ? W / DW : Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, key = W.toFixed(1) + ":" + H.toFixed(1) + ":" + contentVer;
     var k = base;
     if (key === needKey) { if (needVal > avail / base + 1) k = Math.max(.55, avail / needVal); }
     else if (!needBusy) {
       /* measure the content at the plain phone geometry first (two frames, so the page has really been resized), then fit */
       needBusy = true;
-      frame.style.cssText = base < 1 ? "flex:none;width:390px;height:" + H / base + "px;transform:scale(" + base + ");transform-origin:0 0" : "";
+      frame.style.cssText = base !== 1 ? "flex:none;width:" + DW + "px;height:" + H / base + "px;transform:scale(" + base + ");transform-origin:0 0" : "";
       requestAnimationFrame(function () { requestAnimationFrame(function () {
         needBusy = false; var v = needH(); if (!v) { setTimeout(layout, 800); return; }
         needVal = v; needKey = key; layout();
       }); });
     }
     var fw = W / k, sig_ = k.toFixed(3) + ":" + fw.toFixed(1);
-    frame.style.cssText = k < 1 || base < 1 ? "flex:none;width:" + fw + "px;height:" + H / k + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
+    frame.style.cssText = k !== 1 || base !== 1 ? "flex:none;width:" + fw + "px;height:" + H / k + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
     pushPage(k);
     if (sig_ !== frameFit.key) { frameFit.key = sig_; scheduleFit(400); }
     FK = k; FW = fw;
