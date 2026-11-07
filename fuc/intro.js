@@ -52,7 +52,7 @@
     if (performance.now() - T0 > 9000) stage(100); /* never hang */
   }, 120);
 
-  var exitT0 = 0, wiping = false, wipeActive = false, liqAmp = 0;
+  var exitT0 = 0, wiping = false, wipeActive = false, wipeK = 0, liqAmp = 0;
   function liquid(now) {
     var t = now - T0, pulse = reduce ? 0 : Math.max(0, 1 - t / CFG.iliqd), ek = 0;
     if (exitT0) { ek = Math.max(0, Math.min(1, (now - exitT0) / CFG.ioutd)); ek *= ek; }
@@ -206,7 +206,7 @@
     var D = reduce ? 400 : CFG.iseept, s0 = performance.now(), rowGo = false;
     (function step(now) {
       var k = Math.min(1, (now - s0) / D);
-      seepT = .5 - .5 * Math.cos(Math.PI * k); /* sine in-out: slow start, steady soak, soft tail */
+      wipeK = k; seepT = .5 - .5 * Math.cos(Math.PI * k); /* sine in-out: slow start, steady soak, soft tail */
       seepNow = now - s0; draw(); liquid(now);
       if (!rowGo && k > Math.max(CFG.irgo, TOUCH ? 92 : 0) / 100) { rowGo = true; row_start(); }
       if (k < 1) return requestAnimationFrame(step);
@@ -240,15 +240,10 @@
 
   /* ---- the Twister rises from below as ONE piece while the ribbon turns upward; then the page is live and scrolls forever ---- */
   function reveal() {
-    if (wipeActive) return setTimeout(reveal, 50); /* never cut the red short */
+    if (wipeActive && wipeK < .86) return setTimeout(reveal, 20); /* the red is already gone well before the drain formally ends: the Twister starts about 450 ms early, so the empty black lasts 20% less */
     if (effBefore === undefined && window.__twEff === undefined) lighten();
     var gk = window.__galK && window.__galK.current, tl = $('[role="tablist"]'), cont = tl && tl.closest('div[style*="overflow"]');
     var START = CFG.itstart, D = CFG.itdur, s0 = performance.now(), an = null;
-    /* phones: exactly one turn of the ribbon, and quicker */
-    if (TOUCH && !reduce) {
-      var fw = twisterCardWidth(), gc = window.__gc || function (k, d) { return d; };
-      START = 2 * Math.PI * Math.max(innerWidth * gc("twr", 40) / 100, fw * 1.7); D = Math.min(D, 2000);
-    }
     if (gk) { gk.ox = gk.tx = START; }
     /* a blank page first; then the pictures appear one after another along the ribbon, from its lower end upward, each growing out of
        nothing and settling up into place, while the ribbon turns into position (window.__twRev counts how many cards are out, read by the gallery) */

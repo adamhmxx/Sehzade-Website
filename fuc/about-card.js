@@ -241,7 +241,12 @@
     if (/^(\.?\/)?about(\.html)?\/?$/.test(a.getAttribute("href"))) { e.preventDefault(); e.stopImmediatePropagation(); open(); }
   }, true);
   var go = mk("div"); go.id = "grid-overlay"; for (var i = 0; i < 12; i++) go.appendChild(document.createElement("i"));
-  function ready() { document.body.appendChild(go); if (/grid/.test(location.hash)) root.classList.add("show-grid"); /* warm up the card when the browser is idle, so it never competes with the first paint */ var warm = function () { (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(build, { timeout: 6000 }); };
+  function ready() { document.body.appendChild(go); if (/grid/.test(location.hash)) root.classList.add("show-grid"); /* warm up the card when the browser is idle, so it never competes with the first paint */ var quietT = 0, warmed = false, warm = function () {
+      /* booting the About page is one long task: it waits for a moment when the visitor is not touching, scrolling or dragging, so it never lands in the middle of an interaction */
+      if (warmed) return; clearTimeout(quietT);
+      quietT = setTimeout(function () { (window.requestIdleCallback || function (f) { setTimeout(f, 50); })(function () { if (!warmed) { warmed = true; build(); } }, { timeout: 1000 }); }, 2500);
+    };
+    ["pointerdown", "pointermove", "touchmove", "wheel", "keydown"].forEach(function (t) { addEventListener(t, function () { if (!warmed && quietT) warm(); }, { passive: true }); });
     /* the About page is a second full page (its own copy of the site runtime): it is loaded only after the entrance has finished, never during it */
     if (root.classList.contains("intro-on") || root.classList.contains("intro-ui")) addEventListener("intro-done", function () { setTimeout(warm, 1500); }, { once: true }); else warm(); }
   if (document.readyState === "complete") ready(); else addEventListener("load", ready);
