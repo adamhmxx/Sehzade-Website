@@ -12,11 +12,12 @@
   var CFG = {};
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
   Object.keys(DEF).forEach(function (k) { CFG[k] = cfg(k); });
+  if (matchMedia("(pointer: coarse)").matches) { CFG.irn = Math.min(CFG.irn, 6); CFG.itslices = Math.min(CFG.itslices, 6); } /* lighter entrance on phones */
   var root = document.documentElement;
   if (!root.classList.contains("intro-on")) return;
   var intro = document.getElementById("intro"), row = document.getElementById("intro-row");
   if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
-  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
+  var TOUCH = matchMedia("(pointer: coarse)").matches, reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
   function $(s, r) { return (r || document).querySelector(s); }
   function twist(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; } /* gentle start, long soft landing */
   function setA(el, k, v) { if (el) el.setAttribute(k, v); }
@@ -58,7 +59,7 @@
     if (exitT0) { ek = Math.max(0, Math.min(1, (now - exitT0) / CFG.ioutd)); ek *= ek; }
     liqAmp = reduce ? 0 : CFG.iliq + CFG.iliqp * pulse + 4 * Math.sin(t / 700) + CFG.ioutl * ek;
     uiAmp = reduce ? 0 : CFG.iliq * .42 + CFG.iliqp * pulse * .3 + CFG.ioutl * ek * .45;
-    if (!gl) { setA(liqD, "scale", liqAmp.toFixed(1)); setA(liqO, "dx", (Math.sin(t / 900) * 90).toFixed(1)); setA(liqO, "dy", (t / 18 % 400).toFixed(1)); }
+    if (!gl && !TOUCH) { setA(liqD, "scale", liqAmp.toFixed(1)); setA(liqO, "dx", (Math.sin(t / 900) * 90).toFixed(1)); setA(liqO, "dy", (t / 18 % 400).toFixed(1)); }
   }
   function frame(now) {
     var dt = Math.min(.05, (now - last) / 1000); last = now;
@@ -96,7 +97,7 @@
     "r.rgb+=(hash(gl_FragCoord.xy+fract(time)*97.)-.5)*grain*r.a;gl_FragColor=r;}";
   var gl = null, prog = null, U = {}, seepT = 0, seepNow = 0, tc = document.createElement("canvas"), tx = tc.getContext("2d"), uc = document.createElement("canvas"), ux = uc.getContext("2d"), tex = null, tex2 = null, sc = 1, uiAmp = 0;
   try {
-    gl = cv.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true });
+    gl = TOUCH ? null : cv.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true });
     if (gl) {
       var mk = function (t, src) { var sh = gl.createShader(t); gl.shaderSource(sh, src); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; };
       prog = gl.createProgram(); gl.attachShader(prog, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
@@ -116,6 +117,7 @@
   /* the word is drawn into the same shader as the red, so its liquid ripple and its melting use the very same flowing noise */
   if (gl) { [pct, intro.querySelector(".in-welcome"), line].forEach(function (el) { el.style.visibility = "hidden"; }); big.style.visibility = "hidden"; big.style.filter = "none"; [].forEach.call(big.children, function (sp) { sp.style.transform = "none"; }); }
   else [].forEach.call(big.children, function (sp, i) {
+    if (TOUCH) big.style.filter = "none"; /* phones: no animated SVG noise filter, no per-pixel shader: plain GPU-composited transforms only */
     sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
       { duration: reduce ? 1 : CFG.iltr, delay: (reduce ? 0 : CFG.ildl) + i * CFG.ilst, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
   });
@@ -197,7 +199,7 @@
     clearInterval(poll); warmRow(); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
     if (!gl) cv.style.background = "#ff2d20";
     if (!gl) [].forEach.call(big.children, function (sp, i) {
-      sp.animate([{ transform: "translateY(0)", opacity: 1, filter: "blur(0px)" }, { transform: "translateY(60%)", opacity: 0, filter: "blur(6px)" }],
+      sp.animate(TOUCH ? [{ transform: "translateY(0)", opacity: 1 }, { transform: "translateY(60%)", opacity: 0 }] : [{ transform: "translateY(0)", opacity: 1, filter: "blur(0px)" }, { transform: "translateY(60%)", opacity: 0, filter: "blur(6px)" }],
         { duration: reduce ? 1 : CFG.ioutd, delay: reduce ? 0 : i * 50, easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards" });
     });
     var D = reduce ? 400 : CFG.iseept, s0 = performance.now(), rowGo = false;
