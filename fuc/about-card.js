@@ -155,6 +155,14 @@
     var fw = W / k, sig_ = k.toFixed(3) + ":" + fw.toFixed(1);
     frame.style.cssText = k !== 1 || base !== 1 ? "flex:none;width:" + fw + "px;height:" + H / k + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
     pushPage(k);
+    /* the page is measured at the phone width, but shown at the card's own width, where wrapped rows can break differently: check once at the
+       final width and shrink a little more if the content would run under the name */
+    if (key === needKey && frameFit.chk !== key) {
+      frameFit.chk = key;
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        var v2 = needH(); if (v2 && v2 > avail / k + 1 && v2 > needVal) { needVal = v2; layout(); }
+      }); });
+    }
     if (sig_ !== frameFit.key) { frameFit.key = sig_; scheduleFit(400); }
     FK = k; FW = fw;
   }

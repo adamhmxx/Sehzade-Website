@@ -116,6 +116,8 @@ html,body{background:#ff2d20}
 .ab-label{width:auto!important;min-width:82px}
 a.ab-type{min-height:0!important}
 div.ab-type{flex-wrap:wrap;white-space:normal!important;row-gap:4px}
+/* touch: wrapped rows of links (Discover) sit far enough apart for a 40px tap area on each row */
+@media (pointer:coarse){div.ab-type{row-gap:28px!important}}
 body *:not([style*="monospace"]):not([style*="monospace"] *){font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:400!important;text-transform:uppercase!important;letter-spacing:0!important}
 h1,p,a[href]:not(nav a){font-size:16px!important;line-height:1.2!important}
 h1{font-size:40px!important;line-height:1.1!important}
@@ -160,7 +162,7 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     document.body.appendChild(abxClose);
     var abxLast=null;
     window.__abxSet=function(o){
-      if(o)abxLast=o;o=abxLast;if(!o)return;var k=o.k||1;window.__abK=k;root.style.setProperty("--tap",(44/k).toFixed(1)+"px");if(window.__tapFit)setTimeout(window.__tapFit,60);
+      if(o)abxLast=o;o=abxLast;if(!o)return;var k=o.k||1;window.__abK=k;root.style.setProperty("--tap",(44/k).toFixed(1)+"px");if(window.__tapFit){setTimeout(window.__tapFit,60);setTimeout(window.__tapFit,500);setTimeout(window.__tapFit,1500);}
       var sm=k<1?14:16;root.style.setProperty("--abx-small",(sm/k)+"px");
       abxTop.style.height=(o.top/k)+"px";abxTop.style.padding="0 "+(16/k)+"px";abxTop.style.fontSize=(sm/k)+"px";abxCopy.textContent=o.copy;
       abxClose.style.height=(o.top/k)+"px";abxClose.style.padding="0 "+(16/k)+"px";abxClose.style.fontSize=(sm/k)+"px";
