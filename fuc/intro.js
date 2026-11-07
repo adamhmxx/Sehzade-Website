@@ -74,12 +74,12 @@
      red, smoky ember) sit at different depths; each is eaten by its own slowly drifting noise field, so patches go at different times
      and the deeper layers linger below the surface. Drawn with a small WebGL shader. */
   /* phones: the same liquid, cheaper per pixel (the text ripple uses one layer of noise instead of three, and the gallery behind the loader is not painted until the red drains) */
-  var WN = TOUCH ? "noise" : "fbm";
+  var WN = "noise"; /* the softer phone look, now on every device */
   var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
   var FS = "precision highp float;uniform vec2 res,tAmp,uAmp;uniform sampler2D tex,tex2;uniform float time,front,soft,lag,scale,flow,bias,rim,grain,tOn;" +
     "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}" +
     "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*f*(f*(f*6.-15.)+10.);float a=hash(i),b=hash(i+vec2(1.,0.)),c=hash(i+vec2(0.,1.)),d=hash(i+vec2(1.,1.));return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}" +
-    "float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,-.6,.6,.8);for(int i=0;i<" + (matchMedia("(pointer: coarse)").matches ? 3 : 4) + ";i++){v+=a*noise(p);p=r*p*2.03+11.7;a*=.48;}return v;}" +
+    "float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,-.6,.6,.8);for(int i=0;i<3;i++){v+=a*noise(p);p=r*p*2.03+11.7;a*=.48;}return v;}" +
     "void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=vec2(uv.x*res.x/res.y,uv.y)*scale;float tm=time*flow*.05;" +
     "vec2 q=vec2(fbm(p+vec2(0.,tm)),fbm(p+vec2(5.2,1.3)-vec2(tm,0.)));float n1=fbm(p+1.8*q);" +
     "vec2 q2=vec2(fbm(p*.7+vec2(8.3,2.8)+tm*.6),fbm(p*.7+vec2(1.7,9.2)-tm*.5));float n2=fbm(p*.7+2.2*q2+3.1);" +
@@ -177,7 +177,7 @@
     gl.uniform1f(U.bias, CFG.iseepb / 100); gl.uniform1f(U.rim, CFG.iseepr / 100); gl.uniform1f(U.grain, CFG.iseepg / 100);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
-  function sizeCv() { uiFs = []; uiR0 = uiLr = null; sc = Math.min(1, 1500 / innerWidth) * (TOUCH ? .65 : 1); bigDirty = uiDirty = true; cv.width = tc.width = uc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = uc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
+  function sizeCv() { uiFs = []; uiR0 = uiLr = null; sc = Math.min(1, 1500 / innerWidth) * .65; bigDirty = uiDirty = true; cv.width = tc.width = uc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = uc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
   sizeCv(); window.__size = sizeCv;
   window.__introSize = sizeCv;
 
@@ -229,8 +229,8 @@
   }
   /* the Twister is built from many slices; while it rises it uses fewer (the same ribbon, lighter), then the full count comes back */
   var effBefore;
-  function lighten() { effBefore = window.__twEff; var n = Math.min(effBefore || 99, CFG.itslices); if (n !== window.__twEff) { window.__twEff = n; window.dispatchEvent(new Event("cms-change")); } }
-  function restore() { if (window.__twEff !== effBefore) { window.__twEff = effBefore; window.dispatchEvent(new Event("cms-change")); } }
+  function lighten() { if (window.__lite) return; effBefore = window.__twEff; var n = Math.min(effBefore || 99, CFG.itslices); if (n !== window.__twEff) { window.__twEff = n; window.dispatchEvent(new Event("cms-change")); } }
+  function restore() { if (window.__lite) return; if (window.__twEff !== effBefore) { window.__twEff = effBefore; window.dispatchEvent(new Event("cms-change")); } }
   function row_start() {
     var list = items(), rw = $(".rw", row);
     if (!list.length || reduce) return reveal();
@@ -256,6 +256,11 @@
     if (effBefore === undefined && window.__twEff === undefined) lighten();
     var gk = window.__galK && window.__galK.current, tl = $('[role="tablist"]'), cont = tl && tl.closest('div[style*="overflow"]');
     var START = CFG.itstart, D = CFG.itdur, s0 = performance.now(), an = null;
+    /* phones: exactly one turn of the ribbon, and quicker */
+    if (TOUCH && !reduce) {
+      var fw = twisterCardWidth(), gc = window.__gc || function (k, d) { return d; };
+      START = 2 * Math.PI * Math.max(innerWidth * gc("twr", 40) / 100, fw * 1.7); D = Math.min(D, 2000);
+    }
     if (gk) { gk.ox = gk.tx = START; }
     /* the whole ribbon starts below the screen (no fading, it simply travels up into place), eased so it leaves gently and lands softly */
     /* the ribbon rises by itself: every card is lifted from below the screen into place through the gallery's own layout (window.__twRise, in px).
