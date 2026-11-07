@@ -182,7 +182,6 @@
   /* the loader is finished for good: give the GPU its memory back (the shader context, the textures and the full-screen canvases) and drop the loader's markup and listeners */
   function teardown() {
     removeEventListener("resize", onResize); window.__introSize = null;
-    try { if (gl) { var lc = gl.getExtension("WEBGL_lose_context"); if (lc) lc.loseContext(); } } catch (e) {}
     cv.width = cv.height = tc.width = tc.height = uc.width = uc.height = 1;
     intro.style.display = "none";
     setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, 50);
@@ -205,7 +204,7 @@
       seepNow = now - s0; draw(); liquid(now);
       if (!rowGo && k > Math.max(CFG.irgo, TOUCH ? 92 : 0) / 100) { rowGo = true; row_start(); }
       if (k < 1) return requestAnimationFrame(step);
-      wipeActive = false; teardown(); if (!rowGo) { rowGo = true; row_start(); }
+      wipeActive = false; cv.style.display = "none"; intro.style.display = "none"; /* the heavy GPU release (losing the WebGL context blocks the main thread) waits until the Twister has landed and the page is idle */ window.addEventListener("intro-done", function () { setTimeout(teardown, 1200); }, { once: true }); if (!rowGo) { rowGo = true; row_start(); }
     })(performance.now());
   }
 
