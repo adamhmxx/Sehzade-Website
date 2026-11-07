@@ -39,6 +39,8 @@ html.intro-ui [role=tablist]{transform:translateX(-50%) translateY(12px)!importa
 /* landscape phones: the gallery asked for at least 520px of height, which pushed the mode menu below the visible screen */
 @media (max-height:560px){div[style*="min-height: 520px"]{min-height:0!important}}
 @media (pointer:coarse){[role=tablist]{bottom:max(64px,calc(env(safe-area-inset-bottom,0px) + 40px))!important}}
+/* touch: every link, tab and button gets a tap area at least 44px tall (40px+ even inside the scaled About card), without moving or resizing anything visible */
+@media (pointer:coarse){:where(a[href],[role=tab],button){position:relative}a[href]::before,[role=tab]::before,button::before{content:"";position:absolute;left:50%;top:50%;width:100%;height:max(100%,var(--tap,44px));transform:translate(-50%,-50%)}}
 </style>
 <script>/* phones: the Twister is drawn with fewer slices (a quarter of the layers), which keeps dragging and the entrance smooth on a phone GPU */
 if(matchMedia("(pointer:coarse)").matches)window.__twEff=16;</script>
@@ -143,6 +145,11 @@ if(matchMedia("(pointer:coarse)").matches)window.__twEff=16;</script>
 	<link rel="preload" href="fuc/assets/anton-latin.woff2" as="font" type="font/woff2" crossorigin><style>@font-face{font-family:"Anton";font-style:normal;font-weight:400;font-display:swap;src:url(fuc/assets/anton-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}</style>
 <script src="fuc/perf-probe.js" defer></script>
 <script src="fuc/hover-info.js" defer></script>
+<script>/* every portfolio picture is decoded once, in quiet moments after the entrance, and kept decoded: a mode switch builds new picture
+   elements for the cards, and an undecoded picture is blank for a few frames, which on phones swallowed the start of the morph */
+(function(){var keep=[];function go(){var a=(window.__cmsItems&&window.__cmsItems())||window.__cmsDefaults||[],q=[];a.forEach(function(it){var u=it&&it.image&&it.image.src;if(u)q.push(window.__sms?window.__sms(u):u)});q=q.filter(function(u,i){return q.indexOf(u)===i});
+(function next(){var u=q.shift();if(!u)return;var im=new Image();im.decoding="async";im.src=u;keep.push(im);(im.decode?im.decode():Promise.resolve()).catch(function(){}).then(function(){(window.requestIdleCallback||setTimeout)(next,{timeout:400})})})();window.__galDecoded=keep;}
+if(document.documentElement.classList.contains("intro-ui"))addEventListener("intro-done",function(){setTimeout(go,300)},{once:true});else addEventListener("load",function(){setTimeout(go,800)});})();</script>
 <script src="fuc/intro.js" defer></script>
 <script src="fuc/linkfx.js" defer></script>
 <script src="fuc/cms.js" defer></script>

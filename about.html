@@ -110,6 +110,8 @@ html,body{background:#ff2d20}
 .in-panel nav{visibility:hidden}
 .in-panel,.in-panel body{cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}.in-panel a,.in-panel button{cursor:pointer}
 .ascii-live{visibility:hidden!important}
+/* touch (same rule as the main page; --tap is set from the card scale): every link, tab and button gets a tap area at least 44px tall (40px+ even inside the scaled About card), without moving or resizing anything visible */
+@media (pointer:coarse){:where(a[href],[role=tab],button){position:relative}a[href]::before,[role=tab]::before,button::before{content:"";position:absolute;left:50%;top:50%;width:100%;top:calc(50% - var(--tu,calc(var(--tap,44px) / 2)));height:calc(var(--tu,calc(var(--tap,44px) / 2)) + var(--td,calc(var(--tap,44px) / 2)));transform:translateX(-50%)}}
 .ab-type{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:400!important;text-transform:uppercase;font-size:16px!important;letter-spacing:0!important;line-height:1.15!important;color:#0b0b0b!important}
 .ab-label{width:auto!important;min-width:82px}
 a.ab-type{min-height:0!important}
@@ -158,7 +160,7 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     document.body.appendChild(abxClose);
     var abxLast=null;
     window.__abxSet=function(o){
-      if(o)abxLast=o;o=abxLast;if(!o)return;var k=o.k||1;window.__abK=k;
+      if(o)abxLast=o;o=abxLast;if(!o)return;var k=o.k||1;window.__abK=k;root.style.setProperty("--tap",(44/k).toFixed(1)+"px");if(window.__tapFit)setTimeout(window.__tapFit,60);
       var sm=k<1?14:16;root.style.setProperty("--abx-small",(sm/k)+"px");
       abxTop.style.height=(o.top/k)+"px";abxTop.style.padding="0 "+(16/k)+"px";abxTop.style.fontSize=(sm/k)+"px";abxCopy.textContent=o.copy;
       abxClose.style.height=(o.top/k)+"px";abxClose.style.padding="0 "+(16/k)+"px";abxClose.style.fontSize=(sm/k)+"px";
@@ -198,6 +200,18 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     function stop(e){if(dragging){dragging=false;send("end",e);}}
     addEventListener("pointerup",stop);addEventListener("pointercancel",stop);
   }
+  /* touch: a link's tap area reaches 44px (on screen) up and down, but where links sit in wrapped rows closer than that, each row gets
+     half the space to its neighbour, so no link ever covers another one */
+  window.__tapFit=function(){
+    if(!matchMedia("(pointer: coarse)").matches)return;
+    var half=(parseFloat(getComputedStyle(root).getPropertyValue("--tap"))||44)/2;
+    var L=[].filter.call(document.querySelectorAll("a[href]"),function(a){var r=a.getBoundingClientRect();return r.width>0&&r.height>0;}).map(function(a){return {a:a,r:a.getBoundingClientRect()};});
+    L.forEach(function(o){var cy=o.r.top+o.r.height/2,up=Math.max(half,o.r.height/2),dn=up;
+      L.forEach(function(q){if(q===o||q.r.right<=o.r.left||q.r.left>=o.r.right)return;var qy=q.r.top+q.r.height/2,d=qy-cy;if(Math.abs(d)<2)return;
+        if(d<0)up=Math.min(up,Math.max(o.r.height/2,-d/2));else dn=Math.min(dn,Math.max(o.r.height/2,d/2));});
+      o.a.style.setProperty("--tu",up.toFixed(1)+"px");o.a.style.setProperty("--td",dn.toFixed(1)+"px");});
+  };
+  addEventListener("resize",function(){setTimeout(window.__tapFit,120);});
   /* ASCII portrait: removed from view entirely, as soon as it is rendered (it used to show at full strength for a moment before the page script ran) */
   (function hideAscii(){var n=0;(function f(){
     var rows=[].filter.call(document.querySelectorAll("div"),function(d){if(d.childElementCount)return false;var c=getComputedStyle(d);return c.whiteSpace==="pre"&&c.fontFamily.indexOf("monospace")>-1;});
