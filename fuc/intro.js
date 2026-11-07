@@ -247,19 +247,17 @@
       START = 2 * Math.PI * Math.max(innerWidth * gc("twr", 40) / 100, fw * 1.7); D = Math.min(D, 2000);
     }
     if (gk) { gk.ox = gk.tx = START; }
-    /* the whole ribbon starts below the screen (no fading, it simply travels up into place), eased so it leaves gently and lands softly */
-    /* the ribbon rises by itself: every card is lifted from below the screen into place through the gallery's own layout (window.__twRise, in px).
-       The gallery frame stays still, so its clipped edge and edge fades never slide across the picture */
-    var riseH = reduce ? 0 : innerHeight * CFG.itdist / 100; window.__twRise = riseH;
+    /* a blank page first; then the pictures appear one after another along the ribbon, from its lower end upward, each growing out of
+       nothing and settling up into place, while the ribbon turns into position (window.__twRev counts how many cards are out, read by the gallery) */
+    window.__twRevK = []; window.__twRev = reduce ? 1e4 : -1;
     root.classList.remove("intro-on", "intro-hold");
     (function step(now) {
-      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
-      window.__twRise = riseH * (1 - er);
+      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), C = window.__twCount || 30;
+      window.__twRev = reduce ? 1e4 : -1 + (C + 8) * (1 - Math.pow(1 - k, 1.6));
       if (gk) { gk.ox = v; gk.tx = v; }
       if (k < 1) return requestAnimationFrame(step);
       if (gk) { gk.ox = 0; gk.tx = 0; }
-      window.__twRise = 0; if (gk) { gk.ox = 0; gk.tx = 0; }
-      setTimeout(restore, 150); /* full slice count again, once the ribbon has landed */
+      window.__twRev = null; window.__twRevK = null;
     })(performance.now());
     setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : CFG.itui);
   }
