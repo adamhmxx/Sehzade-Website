@@ -252,11 +252,11 @@
     if (gk) { gk.ox = gk.tx = START; }
     /* a blank page first; then the pictures appear one after another along the ribbon, from its lower end upward, each growing out of
        nothing and settling up into place, while the ribbon turns into position (window.__twRev counts how many cards are out, read by the gallery) */
-    window.__twRevK = []; window.__twRev = reduce ? 1e4 : -1;
+    window.__twRevK = []; window.__twRev = reduce ? 1e4 : 0;
     root.classList.remove("intro-on", "intro-hold");
     (function step(now) {
-      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), C = window.__twCount || 30;
-      window.__twRev = reduce ? 1e4 : -1 + (C + 8) * (1 - Math.pow(1 - k, 1.6));
+      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k));
+      window.__twRev = reduce ? 1e4 : k; /* 0..1: the cards come in from the bottom of the screen to the top over the whole entrance */
       if (gk) { gk.ox = v; gk.tx = v; }
       if (k < 1) return requestAnimationFrame(step);
       if (gk) { gk.ox = 0; gk.tx = 0; }

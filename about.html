@@ -202,7 +202,7 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
   (function hideAscii(){var n=0;(function f(){
     var rows=[].filter.call(document.querySelectorAll("div"),function(d){if(d.childElementCount)return false;var c=getComputedStyle(d);return c.whiteSpace==="pre"&&c.fontFamily.indexOf("monospace")>-1;});
     if(rows.length>=20){rows.forEach(function(r){var b=r.parentElement;if(b&&b.style.display!=="none"){b.style.display="none";b.classList.add("ascii-live");}});}
-    if(n++<120)setTimeout(f,rows.length>=20?500:50);
+    if(rows.length>=20)f.found=(f.found||0)+1; if(n++<160&&(f.found||0)<6)setTimeout(f,rows.length>=20?800:50);
   })();})();
   /* ASCII portrait: hidden (no hover reveal) */
   function start(){
