@@ -94,6 +94,8 @@
     hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
     var moving = !calm || drag || energy > 8;
+    /* closing: once the card has dropped fully below the screen the rest of the spring is invisible, so it ends there and the gallery resumes at once */
+    if (!open_ && moving && (innerHeight - H) / 2 + S.y > innerHeight + 24) { S = hiddenPose(); V.x = V.y = V.r = V.s = V.rx = V.ry = 0; hx = []; hy = []; moving = false; }
     pauseFrame(moving || !open_);
     window.__abBusy = moving; /* the card text takes no liquid effect while the card itself is moving */
     paint();

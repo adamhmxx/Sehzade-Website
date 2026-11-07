@@ -212,7 +212,7 @@
   function reveal() {
     /* the turn is the same angle on every screen: itstart is measured on the 1440px desktop ribbon (radius 714px); a phone ribbon is much
        tighter, so the same distance in px turned it more than twice as far */
-    var gk = window.__galK && window.__galK.current, START = CFG.itstart * (window.__twRnow || 714) / 714, D = CFG.itdur, s0 = performance.now();
+    var gk = window.__galK && window.__galK.current, START = reduce ? 0 : CFG.itstart * (window.__twRnow || 714) / 714, D = CFG.itdur, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     /* a blank page first; then the pictures appear one after another along the ribbon, from its lower end upward, each growing out of
        nothing and settling up into place, while the ribbon turns into position (window.__twRev, 0..1, is read by the gallery) */
