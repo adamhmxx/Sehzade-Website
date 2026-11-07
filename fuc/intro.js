@@ -16,7 +16,7 @@
   var root = document.documentElement;
   if (!root.classList.contains("intro-on")) return;
   var intro = document.getElementById("intro"), row = document.getElementById("intro-row");
-  if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
+  if (!intro) { root.classList.remove("intro-on", "intro-ui", "intro-hold"); return; }
   var TOUCH = matchMedia("(pointer: coarse)").matches, reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
   function $(s, r) { return (r || document).querySelector(s); }
   function twist(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; } /* gentle start, long soft landing */
@@ -73,6 +73,8 @@
   /* red -> black: the red is soaked up by the black underneath, like ink sinking into paper. Three layers of red (bright surface, deep
      red, smoky ember) sit at different depths; each is eaten by its own slowly drifting noise field, so patches go at different times
      and the deeper layers linger below the surface. Drawn with a small WebGL shader. */
+  /* phones: the same liquid, cheaper per pixel (the text ripple uses one layer of noise instead of three, and the gallery behind the loader is not painted until the red drains) */
+  var WN = TOUCH ? "noise" : "fbm";
   var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
   var FS = "precision highp float;uniform vec2 res,tAmp,uAmp;uniform sampler2D tex,tex2;uniform float time,front,soft,lag,scale,flow,bias,rim,grain,tOn;" +
     "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}" +
@@ -89,11 +91,11 @@
     "r=vec4(vec3(.55,.09,.06)*aB+r.rgb*(1.-aB),aB+r.a*(1.-aB));" +
     "r=vec4(vec3(1.,.176,.125)*aA+r.rgb*(1.-aA),aA+r.a*(1.-aA));" +
     "float edge=aA*(1.-aA)*4.;r.rgb=mix(r.rgb,vec3(1.,.42,.22)*r.a,edge*rim);" +
-    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(fbm(p2+vec2(0.,t2)),fbm(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;float ta=texture2D(tex,uv+w*tAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ta);float ua=texture2D(tex2,uv+w*uAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ua);}" +
+    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(" + WN + "(p2+vec2(0.,t2))," + WN + "(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;float ta=texture2D(tex,uv+w*tAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ta);float ua=texture2D(tex2,uv+w*uAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ua);}" +
     "r.rgb+=(hash(gl_FragCoord.xy+fract(time)*97.)-.5)*grain*r.a;gl_FragColor=r;}";
   var gl = null, prog = null, U = {}, seepT = 0, seepNow = 0, tc = document.createElement("canvas"), tx = tc.getContext("2d"), uc = document.createElement("canvas"), ux = uc.getContext("2d"), tex = null, tex2 = null, sc = 1, uiAmp = 0;
   try {
-    gl = TOUCH ? null : cv.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true });
+    gl = cv.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true });
     if (gl) {
       var mk = function (t, src) { var sh = gl.createShader(t); gl.shaderSource(sh, src); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; };
       prog = gl.createProgram(); gl.attachShader(prog, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
@@ -113,7 +115,7 @@
   /* the word is drawn into the same shader as the red, so its liquid ripple and its melting use the very same flowing noise */
   if (gl) { [pct, intro.querySelector(".in-welcome"), line].forEach(function (el) { el.style.visibility = "hidden"; }); big.style.visibility = "hidden"; big.style.filter = "none"; [].forEach.call(big.children, function (sp) { sp.style.transform = "none"; }); }
   else [].forEach.call(big.children, function (sp, i) {
-    if (TOUCH) big.style.filter = "none"; /* phones: no animated SVG noise filter, no per-pixel shader: plain GPU-composited transforms only */
+    if (TOUCH) big.style.filter = "none"; /* fallback without WebGL on phones: no animated SVG noise filter */
     sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
       { duration: reduce ? 1 : CFG.iltr, delay: (reduce ? 0 : CFG.ildl) + i * CFG.ilst, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
   });
@@ -191,6 +193,7 @@
   /* decode the row's pictures while the red is still being absorbed, so the row slides in without a hitch */
   function warmRow() { items().slice(0, CFG.irn).forEach(function (it) { var im = new Image(); im.src = it.image.src; if (im.decode) im.decode().catch(function () {}); (window.__introImgs = window.__introImgs || []).push(im); }); }
   function wipe() {
+    root.classList.remove("intro-hold");
     clearInterval(poll); warmRow(); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
     if (!gl) cv.style.background = "#ff2d20";
     if (!gl) [].forEach.call(big.children, function (sp, i) {
@@ -258,7 +261,7 @@
     /* the ribbon rises by itself: every card is lifted from below the screen into place through the gallery's own layout (window.__twRise, in px).
        The gallery frame stays still, so its clipped edge and edge fades never slide across the picture */
     var riseH = reduce ? 0 : innerHeight * CFG.itdist / 100; window.__twRise = riseH;
-    root.classList.remove("intro-on");
+    root.classList.remove("intro-on", "intro-hold");
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
       window.__twRise = riseH * (1 - er);
