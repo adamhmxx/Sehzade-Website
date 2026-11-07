@@ -11,7 +11,6 @@
 <style id="intro-css">
 html.intro-on #main,html.intro-on #main *{visibility:hidden!important;pointer-events:none}/* a truly blank page behind the loader: a faint copy of the Twister used to show through on some browsers (opacity does not reach 3D layers there) */
 html.intro-on body{background:#0b0b0b}
-html.intro-hold #main{visibility:hidden}/* phones: the gallery behind the loader is not painted until the red starts draining, so the GPU is free for the liquid */
 #intro{position:fixed;inset:0;z-index:2147483646;pointer-events:none;display:none;color:#0b0b0b}
 html.intro-on #intro{display:block}
 #intro canvas.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -27,16 +26,13 @@ html.intro-on #intro{display:block}
 #intro .in-big{padding-bottom:.07em;position:absolute;left:24px;bottom:3vw;font:400 20vw/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;filter:url(#in-liquid);will-change:filter}
 #intro .in-big span{display:inline-block;transform:translateY(105%);opacity:0}
 @media (max-width:809.98px){#intro .in-pct{right:16px;font-size:14px}#intro .in-welcome{left:16px;font-size:16px;margin-top:-34px}#intro .in-big{left:12px;font-size:23vw;bottom:5vw}}
-#intro-row{position:fixed;left:0;top:0;width:100%;height:100%;z-index:2147483640;pointer-events:none;overflow:hidden;display:none}
-#intro-row .rw{position:absolute;left:0;top:50%;display:flex;gap:16px;will-change:transform}
-#intro-row .rw div{flex:none;border-radius:2px;background-size:cover;background-position:center;background-color:#111}
 html.intro-ui nav,html.intro-ui [role=tablist]{opacity:0!important;pointer-events:none}
 html nav,html [role=tablist]{transition:opacity .9s ease,transform .9s cubic-bezier(.22,1,.36,1)}
 html.intro-ui nav{transform:translateY(-10px)!important}
 html.intro-ui [role=tablist]{transform:translateX(-50%) translateY(12px)!important}
 </style>
 <script>/* phone sizes for the gallery modes (Space smaller so items stop overlapping, Globe larger) */window.__gcPh={fsc:52,fx:40,grad:38};</script>
-<script>if(!/nointro/.test(location.hash)){document.documentElement.classList.add("intro-on","intro-ui");if(matchMedia("(pointer: coarse)").matches)document.documentElement.classList.add("intro-hold")}</script>
+<script>if(!/nointro/.test(location.hash)){document.documentElement.classList.add("intro-on","intro-ui")}</script>
 <style id="mobile-fit">
 /* phones: the layout must follow the VISIBLE screen (dvh), not the tall one that hides the bottom behind the browser toolbar; the mode menu then always sits above the toolbar and the home bar */
 @supports (height:100dvh){html,body{height:100dvh!important}div[style*="min-height: 100vh"]{min-height:100dvh!important}}
@@ -132,7 +128,6 @@ if(matchMedia("(pointer:coarse)").matches)window.__twEff=16;</script>
 </defs></svg>
 <div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Loading<i class="in-dots"><b>.</b><b>.</b><b>.</b></i></span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>
 </div>
-<div id="intro-row" aria-hidden="true"><div class="rw"></div></div>
 
 	<!-- Start of bodyStart -->
     

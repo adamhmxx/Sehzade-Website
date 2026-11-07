@@ -12,7 +12,7 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gsz: 100, gnz: 80, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
+  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
   if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
@@ -100,6 +100,12 @@
     /* forget components React has removed, together with their filters */
     states.forEach(function (st, el) { if (!el.isConnected) { if (st.warp) { var f = document.getElementById(st.warp.id); if (f) f.remove(); } states.delete(el); } });
     els = list.filter(function (e) { return !e.closest("#liquid-ui") && (!e.querySelector("p,h1,h2") || e.matches("a,span")); });
+    /* one ripple per component: a piece inside another listed piece (the letters inside a navbar link) would stack a second and third filter
+       on the same text and ripple much harder than a mode tab or the About text */
+    var inList = new Set(els);
+    els = els.filter(function (e) { for (var n = e.parentElement; n; n = n.parentElement) if (inList.has(n)) return false; return true; });
+    /* pieces that just left the list drop their ripple */
+    states.forEach(function (st, el) { if (st.set && els.indexOf(el) < 0) { (el.__fxt || el).style.filter = ""; st.set = 0; st.b = st.d = st.vb = st.vd = 0; } });
     /* cards that left the list keep no wobble style behind */
     galCards.forEach(function (c0) { if (tw.indexOf(c0) < 0 && c0.__jl) { c0.style.translate = c0.style.scale = c0.style.rotate = ""; c0.__jl = null; } });
     galCards = tw;
@@ -158,7 +164,6 @@
     /* the loading screen's "disappear", on the picture under the cursor: (1) a melt, the pixels are pushed around by flowing noise, (2) a dissolve, the
        picture is eaten away in patches of a second, slower noise, so it breaks up and sinks into the dark background. Both are strongest right when the
        cursor arrives and calm down to a gentle ripple. */
-    var ID = "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1";
     f.innerHTML =
       '<feTurbulence type="fractalNoise" baseFrequency="0.0075 0.012" numOctaves="2" seed="3" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="no"/>' +
@@ -200,7 +205,7 @@
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
     galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 14 : 9)));
     if (galS < 1 && target === 0 && !(c.gdis > 1 && galPulse > .02)) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
-    var g = galFilter(), br = galBR || box.getBoundingClientRect(), R = c.reach * 1.7 * c.gsz / 100;
+    var g = galFilter(), br = galBR || box.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100;
     /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
     if (box.style.filter !== "url(#lq-gal)") box.style.filter = "url(#lq-gal)"; galBox = box;
     g.map.setAttribute("scale", galS.toFixed(2));
@@ -343,15 +348,7 @@
       ["iseepb", "Red seeps: direction (100 = from bottom)", 0, 100, 1, "%"],
       ["iseepr", "Red seeps: hot edge glow", 0, 100, 1, "%"],
       ["iseepg", "Red seeps: grain", 0, 10, 1, "%"],
-      ["ircard", "Portfolio row: card size vs Twister card", 40, 160, 1, "%"],
-      ["irgap", "Portfolio row: gap", 0, 80, 1, "px"],
-      ["irn", "Portfolio row: cards", 3, 14, 1, ""],
-      ["irdur", "Portfolio row: travel time", 1200, 8000, 100, "ms"],
-      ["irgo", "Portfolio row starts at", 20, 100, 1, "% of seep"],
-      ["itdelay", "Pause before the Twister (row gone)", 0, 6000, 100, "ms"],
-      ["itdur", "Twister: rise time", 1200, 8000, 100, "ms"],
-      ["itslices", "Twister: slices while rising (fewer is smoother)", 4, 40, 1, ""],
-      ["itdist", "Twister: start distance below screen", 20, 200, 5, "vh"],
+      ["itdur", "Twister: entrance time", 1200, 8000, 100, "ms"],
       ["itstart", "Twister: ribbon turn while rising", 0, 3000, 50, "px"],
       ["itui", "Navbar & menu appear after", 0, 6000, 100, "ms"],
       ["#", "Link hover"],
@@ -397,7 +394,7 @@
       ["jrng", "Reach", 40, 250, 5, "%", ""],
       ["gmelt", "Picture melt (0 = off)", 0, 60, 1, "px", ""],
       ["gdis", "Picture dissolve (0 = off)", 0, 100, 1, "%", ""],
-      ["gsz", "Melt / dissolve spot size", 40, 250, 5, "%", ""],
+      ["gmsz", "Melt / dissolve spot size", 40, 250, 5, "%", ""],
       ["gnz", "Melt / dissolve noise size", 30, 300, 5, "%", ""],
       ["#", "Twister"],
       ["asp", "Auto scroll speed (0 = off)", 0, 300, 5, "px/s"],
@@ -416,10 +413,8 @@
       iseepl: "How far the deeper layers of red (dark red, then smoky ember) trail behind the surface. 0 is a single flat layer.", iseepd: "Size of the patches the red breaks into. Low is a few big areas, high is many fine ones.",
       iseepf: "How fast the patches drift while they dissolve. 0 keeps them still.", iseepb: "0 soaks in at random places, 100 soaks in from the bottom of the screen upward.",
       iseepr: "Warm glow along the edge of the red as it is absorbed.", iseepg: "Fine film grain that keeps the gradients from banding.",
-      ircard: "Size of each portfolio card in the row compared with the front card of the Twister. 100 makes them exactly as large.", irgap: "Space between the portfolio cards.", irn: "How many portfolio cards pass by.",
-      irdur: "Time the portfolio row takes to cross the screen.", irgo: "When the portfolio row starts, as a share of the red being absorbed. Lower starts it earlier.",
-      itdelay: "How long the screen stays empty and black after the portfolio row has sunk off the left, before the Twister comes up.", itdur: "How long the whole ribbon takes to rise from below into place.",
-      itslices: "While the ribbon rises it is drawn with fewer slices so the motion stays smooth; the full count returns when it has landed.", itdist: "How far below the screen the ribbon starts, in screen heights. 100 starts fully out of sight.", itstart: "How far the ribbon turns while it rises. 0 keeps it still, higher turns it more.",
+      itdur: "How long the Twister takes to build itself, from the first picture to the last.",
+      itstart: "How far the ribbon turns while it builds itself. 0 keeps it still, higher turns it more.",
       itui: "When the navbar and the mode menu fade in after the Twister starts rising.",
       radius: "Size of the liquid blob that follows the cursor.", softness: "How soft the blob's edge is. Lower is sharper.", brightness: "How bright the blob glows over the background.",
       trail: "Length of the blob's tail behind the cursor.", distort: "How strongly text and cards ripple when the cursor is near.", blur: "Soft blur added to components close to the cursor.",
@@ -439,7 +434,7 @@
       jsq: "How much a card stretches one way and squeezes the other while it wobbles.", jtw: "How much a card twists a little as it jolts and wobbles.", jrng: "How far from the cursor the cards still react.",
       gmelt: "The loading screen's melt on the picture under the cursor: how hard flowing noise pushes its pixels around. Higher looks more liquid but gets rougher on slanted edges. 0 turns the melt off.",
       gdis: "The loading screen's dissolve: how much of the picture under the cursor is eaten away in patches when the cursor arrives. 0 turns the dissolve off.",
-      gsz: "Size of the area around the cursor where the melt and the dissolve happen.", gnz: "Size of the waves and patches of the melt and the dissolve. Low is a few big waves, high is many small ones.",
+      gmsz: "Size of the area around the cursor where the melt and the dissolve happen.", gnz: "Size of the waves and patches of the melt and the dissolve. Low is a few big waves, high is many small ones.",
       asp: "How fast the gallery keeps moving by itself. It pauses while the cursor is over it or while it is dragged. 0 turns it off.", twr: "Radius of the spiral. Smaller is a tighter, rounder curve.", twn: "How many slices each card is cut into. More is smoother but heavier.",
       twg: "Gap between neighbouring cards. 100 means they touch, higher opens gaps.", twp: "How steeply the ribbon climbs each turn. Lower packs the turns closer together.", twsc: "Size of every card in Twister."
     };

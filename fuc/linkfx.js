@@ -3,7 +3,7 @@
 (function () {
   if (window.__linkfx) return;
   window.__linkfx = 1;
-  var SPLIT = "#none-split"; /* plain-text controls (the card's Close button), split into letters on first hover */
+  var SPLIT = "#none-split"; /* plain-text controls, split into letters on first hover (none at the moment: every link and tab already has letter spans) */
   var SEL = 'a[href], [role="tab"], button.abx-close, ' + SPLIT;
   var css = document.createElement("style");
   css.textContent =
@@ -70,6 +70,11 @@
     if (el === cur && el.isConnected) return;
     cur = el;
     play(el);
+    /* the mode menu re-renders its letters right when the pointer arrives, which would throw the animation away: replay it once on the new letters */
+    if (window.MutationObserver) {
+      var n = 0, mo = new MutationObserver(function () { if (cur !== el || ++n > 2) return mo.disconnect(); if (letters(el).some(function (x) { return !x.getAnimations().length; })) play(el); });
+      mo.observe(el, { childList: true, subtree: true }); setTimeout(function () { mo.disconnect(); }, 900);
+    }
   }, true);
   document.addEventListener("mouseout", function (e) {
     if (cur && !cur.contains(e.relatedTarget)) { cur = null; }

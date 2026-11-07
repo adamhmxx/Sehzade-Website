@@ -91,7 +91,7 @@
     /* the last fraction of a degree of the settling spring is invisible but keeps the card under a 3D transform, where taps on the page inside miss: snap flat as soon as it is close */
     if (open_ && !drag && !glide && Math.abs(S.rx) < .4 && Math.abs(S.ry) < .4 && Math.abs(S.r) < .25 && Math.abs(S.s - 1) < .006 && Math.abs(T.rx) < .01) { S.rx = S.ry = S.r = 0; S.s = 1; V.rx = V.ry = V.r = V.s = 0; }
     if (open_) { var tl = touchy ? 0 : 1; /* the card only sways (rotates in its own plane): no perspective tilt and no scale pulse, so the text never changes size while it is dragged */ T.rx = 0; T.ry = 0; T.r = clamp(sv.x * .0012, -1.5, 1.5) * tl; T.s = 1; }
-    var lx = hx.length ? hx[hx.length - 1] : 0, ly = hy.length ? hy[hy.length - 1] : 0; hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
+    hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
     var moving = !calm || drag || energy > 8;
     pauseFrame(moving || !open_);

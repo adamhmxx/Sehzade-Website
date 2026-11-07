@@ -21,12 +21,14 @@ Run:  python3 server.py   ->  http://localhost:8000
 
 ## Loading entrance, stand-alone (loading/)
 - loading/index.html   the loading entrance on its own, from the red screen until the background is plain black, with its control panel (Hide/Show with C, Replay with R). Every setting has a slider and a description; values are kept in localStorage, "Copy values" gives the numbers as JSON. Open it through `python3 server.py` -> http://localhost:8000/loading/
-- The same sequence runs in the site from fuc/intro.js (red seeps into black, then the portfolio row, then the whole Twister rises as one piece). Its numbers live in `DEF` at the top of intro.js and in the Liquid panel (Shift+L, tab "Intro"). Keep the two in step: loading/index.html is the sandbox, fuc/intro.js is what ships.
+- The same sequence runs in the site from fuc/intro.js (red seeps into black; as it drains the Twister builds itself, its pictures appearing from the bottom of the screen to the top while the ribbon turns into place). Its numbers live in `DEF` at the top of intro.js and in the Liquid panel (Shift+L, tab "Intro"). Keep the two in step: loading/index.html is the sandbox, fuc/intro.js is what ships.
 
 ## Phones
-- fuc/modefx.js   below 810px wide, switching mode dips through the page background (no morph, so no card crosses another); taps during a switch are queued.
+- Mode switches morph the cards exactly like on desktop. Phones load 720px copies of the pictures (fuc/images/sm/), Space is a little smaller and Globe larger (window.__gcPh in index.html).
 - The Twister uses 10 slices per card on touch devices and its items are 30% smaller (see index.html and the gallery chunk). Link hover is off on touch.
+- fuc/hover-info.js   Twister: name, short description and year of the picture under the mouse, top left.
+- fuc/perf-probe.js   add #perf to the address for a live frame-rate readout.
 
 ## Twister and hover liquid
-- Twister: the cards ride along one spiral. Scrolling, dragging and auto scroll move every card ALONG the spiral (it turns and rises, and cards wrap from the top back to the bottom off screen). Never fewer than 24 slices per card (16 while the entrance rises).
+- Twister: the cards ride along one spiral. Scrolling, dragging and auto scroll move every card ALONG the spiral (it turns and rises, and cards wrap from the top back to the bottom off screen). Never fewer than 24 slices per card on desktop.
 - Gallery hover (liquid.js, jellyFx): wet-paint wobble. Cards near the cursor are shoved along by the cursor, jolt away on arrival and slosh back on springs (translate, scale, rotate of the whole card, so edges stay smooth). Over it sits the picture layer of the loading screen's disappear (melt + dissolve of the picture under the cursor). Both are tuned in the Liquid panel (Shift+L, tab "Hover"); melt and dissolve can be set to 0. Text keeps the flowing-noise ripple.

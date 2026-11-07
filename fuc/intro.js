@@ -1,26 +1,25 @@
 /* Loading sequence: red screen with a big liquid "SEHZADE" bottom left, a progress line through the middle. When everything is ready the
    text melts and the red is soaked up by the black underneath, like ink sinking into paper (three layers of red at different depths, one
    WebGL shader; the word, the percentage, "Loading" and the line are drawn in the same shader, so they ripple and dissolve with the same
-   flowing noise). The portfolio row slides in while the last of the red is still draining, then the Twister ribbon builds itself: every
-   card rises from below, one after another, and the navbar and mode menu appear. Add #nointro to the address to skip it.
+   flowing noise). As the last of the red drains, the Twister builds itself on the empty black: its pictures appear one after another from
+   the bottom of the screen to the top while the ribbon turns into place, then the navbar and mode menu appear. Add #nointro to skip it.
    All numbers live in DEF below and in the Liquid panel (Shift+L, tab "Intro"). */
 (function () {
   var DEF = { imin: 2400, iline: 2, ildl: 600, iltr: 1300, ilst: 60, iliq: 8, iliqp: 20, iliqd: 3100, ioutd: 800, ioutl: 200,
     iseept: 3200, iseeps: 18, iseepl: 20, iseepd: 60, iseepf: 130, iseepb: 30, iseepr: 30, iseepg: 4,
-    ircard: 100, irdur: 3600, irgap: 24, irn: 9, irgo: 62, itdelay: 500, itslices: 16, itdur: 3600, itdist: 100, itstart: 2400, itui: 2200 };
+    itdur: 3600, itstart: 2400, itui: 2200 };
   window.__introDef = DEF;
   var CFG = {};
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
   Object.keys(DEF).forEach(function (k) { CFG[k] = cfg(k); });
-  if (matchMedia("(pointer: coarse)").matches) { CFG.irn = Math.min(CFG.irn, 6); CFG.itslices = Math.min(CFG.itslices, 6); } /* lighter entrance on phones */
   var root = document.documentElement;
   if (!root.classList.contains("intro-on")) return;
-  var intro = document.getElementById("intro"), row = document.getElementById("intro-row");
-  if (!intro) { root.classList.remove("intro-on", "intro-ui", "intro-hold"); return; }
+  var intro = document.getElementById("intro");
+  if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
   /* from the very first frame every Twister card is switched off by the gallery itself (not only the page hidden by CSS), so nothing of the
      ribbon can show before its entrance and the hidden cards cost the GPU nothing; reveal() then brings them in one by one */
   window.__twRev = -1; window.__twRevK = [];
-  var TOUCH = matchMedia("(pointer: coarse)").matches, reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
+  var TOUCH = matchMedia("(pointer: coarse)").matches, reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now();
   function $(s, r) { return (r || document).querySelector(s); }
   function twist(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; } /* gentle start, long soft landing */
   function setA(el, k, v) { if (el) el.setAttribute(k, v); }
@@ -52,7 +51,7 @@
     if (performance.now() - T0 > 9000) stage(100); /* never hang */
   }, 120);
 
-  var exitT0 = 0, wiping = false, wipeActive = false, wipeK = 0, liqAmp = 0;
+  var exitT0 = 0, wiping = false, wipeActive = false, liqAmp = 0;
   function liquid(now) {
     var t = now - T0, pulse = reduce ? 0 : Math.max(0, 1 - t / CFG.iliqd), ek = 0;
     if (exitT0) { ek = Math.max(0, Math.min(1, (now - exitT0) / CFG.ioutd)); ek *= ek; }
@@ -76,8 +75,6 @@
   /* red -> black: the red is soaked up by the black underneath, like ink sinking into paper. Three layers of red (bright surface, deep
      red, smoky ember) sit at different depths; each is eaten by its own slowly drifting noise field, so patches go at different times
      and the deeper layers linger below the surface. Drawn with a small WebGL shader. */
-  /* phones: the same liquid, cheaper per pixel (the text ripple uses one layer of noise instead of three, and the gallery behind the loader is not painted until the red drains) */
-  var WN = "noise"; /* the softer phone look, now on every device */
   var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
   var FS = "precision highp float;uniform vec2 res,tAmp,uAmp;uniform sampler2D tex,tex2;uniform float time,front,soft,lag,scale,flow,bias,rim,grain,tOn;" +
     "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}" +
@@ -94,9 +91,9 @@
     "r=vec4(vec3(.55,.09,.06)*aB+r.rgb*(1.-aB),aB+r.a*(1.-aB));" +
     "r=vec4(vec3(1.,.176,.125)*aA+r.rgb*(1.-aA),aA+r.a*(1.-aA));" +
     "float edge=aA*(1.-aA)*4.;r.rgb=mix(r.rgb,vec3(1.,.42,.22)*r.a,edge*rim);" +
-    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(" + WN + "(p2+vec2(0.,t2))," + WN + "(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;float ta=texture2D(tex,uv+w*tAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ta);float ua=texture2D(tex2,uv+w*uAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ua);}" +
+    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(noise(p2+vec2(0.,t2)),noise(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;float ta=texture2D(tex,uv+w*tAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ta);float ua=texture2D(tex2,uv+w*uAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ua);}" +
     "r.rgb+=(hash(gl_FragCoord.xy+fract(time)*97.)-.5)*grain*r.a;gl_FragColor=r;}";
-  var gl = null, prog = null, U = {}, seepT = 0, seepNow = 0, tc = document.createElement("canvas"), tx = tc.getContext("2d"), uc = document.createElement("canvas"), ux = uc.getContext("2d"), tex = null, tex2 = null, sc = 1, uiAmp = 0;
+  var gl = null, prog = null, U = {}, seepT = 0, tc = document.createElement("canvas"), tx = tc.getContext("2d"), uc = document.createElement("canvas"), ux = uc.getContext("2d"), tex = null, tex2 = null, sc = 1, uiAmp = 0;
   try {
     gl = cv.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true });
     if (gl) {
@@ -122,7 +119,7 @@
     sp.animate([{ transform: "translateY(105%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
       { duration: reduce ? 1 : CFG.iltr, delay: (reduce ? 0 : CFG.ildl) + i * CFG.ilst, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
   });
-  var bigDirty = true, uiDirty = true, lastUIKey = "", TOUCH = matchMedia("(pointer: coarse)").matches;
+  var bigDirty = true, uiDirty = true, lastUIKey = "";
   function renderBig(now) {
     tx.setTransform(1, 0, 0, 1, 0, 0); tx.clearRect(0, 0, tc.width, tc.height); tx.setTransform(sc, 0, 0, sc, 0, 0);
     var fs = parseFloat(big.style.fontSize) || 100; tx.font = fs + 'px "Anton", Impact, sans-serif'; tx.textBaseline = "alphabetic"; tx.fillStyle = "#fff";
@@ -181,8 +178,7 @@
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function sizeCv() { uiFs = []; uiR0 = uiLr = null; sc = Math.min(1, 1500 / innerWidth) * .65; bigDirty = uiDirty = true; cv.width = tc.width = uc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = uc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
-  sizeCv(); window.__size = sizeCv;
-  window.__introSize = sizeCv;
+  sizeCv(); window.__introSize = sizeCv;
 
   /* the loader is finished for good: give the GPU its memory back (the shader context, the textures and the full-screen canvases) and drop the loader's markup and listeners */
   function teardown() {
@@ -192,69 +188,39 @@
     setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, 50);
   }
 
-  /* ---- red -> black: the text melts and the red is soaked up; the portfolio row starts while the last of the red is still draining ---- */
-  /* decode the row's pictures while the red is still being absorbed, so the row slides in without a hitch */
-  function warmRow() { items().slice(0, CFG.irn).forEach(function (it) { var im = new Image(); im.src = it.image.src; if (im.decode) im.decode().catch(function () {}); (window.__introImgs = window.__introImgs || []).push(im); }); }
+  /* ---- red -> black: the text melts and the red is soaked up; the Twister starts while the last of the red is still draining ---- */
   function wipe() {
-    root.classList.remove("intro-hold");
     clearInterval(poll); wiping = true; wipeActive = true; intro.classList.add("out"); exitT0 = performance.now();
     if (!gl) cv.style.background = "#ff2d20";
     if (!gl) [].forEach.call(big.children, function (sp, i) {
       sp.animate(TOUCH ? [{ transform: "translateY(0)", opacity: 1 }, { transform: "translateY(60%)", opacity: 0 }] : [{ transform: "translateY(0)", opacity: 1, filter: "blur(0px)" }, { transform: "translateY(60%)", opacity: 0, filter: "blur(6px)" }],
         { duration: reduce ? 1 : CFG.ioutd, delay: reduce ? 0 : i * 50, easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards" });
     });
-    var D = reduce ? 400 : CFG.iseept, s0 = performance.now(), rowGo = false;
+    var D = reduce ? 400 : CFG.iseept, s0 = performance.now(), go = false;
     (function step(now) {
       var k = Math.min(1, (now - s0) / D);
-      wipeK = k; seepT = .5 - .5 * Math.cos(Math.PI * k); /* sine in-out: slow start, steady soak, soft tail */
-      seepNow = now - s0; draw(); liquid(now);
-      if (!rowGo && k > Math.max(CFG.irgo, TOUCH ? 92 : 0) / 100) { rowGo = true; row_start(); }
+      seepT = .5 - .5 * Math.cos(Math.PI * k); /* sine in-out: slow start, steady soak, soft tail */
+      draw(); liquid(now);
+      /* the red is already gone well before the drain formally ends: the Twister starts at 86%, so the empty black is short */
+      if (!go && k >= .86) { go = true; reveal(); }
       if (k < 1) return requestAnimationFrame(step);
-      wipeActive = false; cv.style.display = "none"; intro.style.display = "none"; /* the heavy GPU release (losing the WebGL context blocks the main thread) waits until the Twister has landed and the page is idle */ window.addEventListener("intro-done", function () { setTimeout(teardown, 1200); }, { once: true }); if (!rowGo) { rowGo = true; row_start(); }
+      wipeActive = false; cv.style.display = "none"; intro.style.display = "none"; /* the heavy GPU release (losing the WebGL context blocks the main thread) waits until the Twister has landed and the page is idle */ window.addEventListener("intro-done", function () { setTimeout(teardown, 1200); }, { once: true }); if (!go) { go = true; reveal(); }
     })(performance.now());
   }
 
-  /* ---- portfolio row: from the right, across, and sinks off the left ---- */
-  function items() {
-    var a = (window.__cmsItems && window.__cmsItems()) || window.__cmsDefaults || [];
-    return [].filter.call(a, function (it) { return it && it.image && it.image.src; });
-  }
-  /* the portfolio row cards are exactly as large as the front card of the Twister that follows: measured from the live ribbon (hidden behind the intro) */
-  function twisterCardWidth() {
-    var best = 0;
-    [].forEach.call(document.querySelectorAll("#main div"), function (d) {
-      var st = d.style; if (!(st.position === "absolute" && st.top === "50%" && st.left === "50%" && st.zIndex && d.childElementCount > 1)) return;
-      var b = d.getBoundingClientRect(); if (b.left + b.width / 2 < 0 || b.left + b.width / 2 > W) return;
-      var f = d.children[0].getBoundingClientRect(), l = d.children[d.children.length - 1].getBoundingClientRect();
-      best = Math.max(best, Math.abs(l.right - f.left));
-    });
-    return best > 60 ? Math.min(best, W * .95) : W * .3;
-  }
-  /* the Twister is built from many slices; while it rises it uses fewer (the same ribbon, lighter), then the full count comes back */
-  var effBefore;
-  function lighten() { return; effBefore = window.__twEff; var n = Math.min(effBefore || 99, CFG.itslices); if (n !== window.__twEff) { window.__twEff = n; window.dispatchEvent(new Event("cms-change")); } }
-  function restore() { return; if (window.__twEff !== effBefore) { window.__twEff = effBefore; window.dispatchEvent(new Event("cms-change")); } }
-  /* no portfolio row any more: as soon as the red has drained, the Twister rises from below */
-  function row_start() { reveal(); }
-
-
-  /* ---- the Twister rises from below as ONE piece while the ribbon turns upward; then the page is live and scrolls forever ---- */
+  /* ---- the Twister builds itself while the ribbon turns into place; then the page is live and scrolls forever ---- */
   function reveal() {
-    if (wipeActive && wipeK < .86) return setTimeout(reveal, 20); /* the red is already gone well before the drain formally ends: the Twister starts about 450 ms early, so the empty black lasts 20% less */
-    if (effBefore === undefined && window.__twEff === undefined) lighten();
-    var gk = window.__galK && window.__galK.current, tl = $('[role="tablist"]'), cont = tl && tl.closest('div[style*="overflow"]');
-    var START = CFG.itstart, D = CFG.itdur, s0 = performance.now(), an = null;
+    var gk = window.__galK && window.__galK.current, START = CFG.itstart, D = CFG.itdur, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     /* a blank page first; then the pictures appear one after another along the ribbon, from its lower end upward, each growing out of
-       nothing and settling up into place, while the ribbon turns into position (window.__twRev counts how many cards are out, read by the gallery) */
+       nothing and settling up into place, while the ribbon turns into position (window.__twRev, 0..1, is read by the gallery) */
     window.__twRevK = []; window.__twRev = reduce ? 1e4 : 0;
-    root.classList.remove("intro-on", "intro-hold");
+    root.classList.remove("intro-on");
     (function step(now) {
       var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k));
       window.__twRev = reduce ? 1e4 : k; /* 0..1: the cards come in from the bottom of the screen to the top over the whole entrance */
       if (gk) { gk.ox = v; gk.tx = v; }
       if (k < 1) return requestAnimationFrame(step);
-      if (gk) { gk.ox = 0; gk.tx = 0; }
       window.__twRev = null; window.__twRevK = null;
     })(performance.now());
     setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : CFG.itui);
