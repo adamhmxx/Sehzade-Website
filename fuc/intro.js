@@ -17,6 +17,9 @@
   if (!root.classList.contains("intro-on")) return;
   var intro = document.getElementById("intro"), row = document.getElementById("intro-row");
   if (!intro) { root.classList.remove("intro-on", "intro-ui", "intro-hold"); return; }
+  /* from the very first frame every Twister card is switched off by the gallery itself (not only the page hidden by CSS), so nothing of the
+     ribbon can show before its entrance and the hidden cards cost the GPU nothing; reveal() then brings them in one by one */
+  window.__twRev = -1; window.__twRevK = [];
   var TOUCH = matchMedia("(pointer: coarse)").matches, reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, T0 = performance.now(), W = innerWidth, H = innerHeight;
   function $(s, r) { return (r || document).querySelector(s); }
   function twist(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; } /* gentle start, long soft landing */
