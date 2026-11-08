@@ -214,16 +214,18 @@
        tighter, so the same distance in px turned it more than twice as far */
     var gk = window.__galK && window.__galK.current, START = reduce ? 0 : CFG.itstart * (window.__twRnow || 714) / 714, D = CFG.itdur, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
-    /* a blank page first; then the pictures appear one after another along the ribbon, from its lower end upward, each growing out of
-       nothing and settling up into place, while the ribbon turns into position (window.__twRev, 0..1, is read by the gallery) */
-    window.__twRevK = []; window.__twRev = reduce ? 1e4 : 0;
+    /* a blank page first; then the whole ribbon is pulled up from below the screen as ONE piece while it turns into place: every card moves
+       together (window.__twRise, in px, is added to the ribbon's height by the gallery; cards below the screen are not drawn at all) */
+    /* far enough down that even the top end of the ribbon starts below the screen (the ribbon is taller than the screen, much taller on phones) */
+    var riseH = reduce ? 0 : (window.__twSpan || innerHeight) + innerHeight * .5 + 40;
+    window.__twRise = riseH; window.__twRev = null; window.__twRevK = null;
     root.classList.remove("intro-on");
     (function step(now) {
-      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k));
-      window.__twRev = reduce ? 1e4 : k; /* 0..1: the cards come in from the bottom of the screen to the top over the whole entrance */
+      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
+      window.__twRise = riseH * (1 - er);
       if (gk) { gk.ox = v; gk.tx = v; }
       if (k < 1) return requestAnimationFrame(step);
-      window.__twRev = null; window.__twRevK = null;
+      window.__twRise = 0;
     })(performance.now());
     setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : CFG.itui);
   }
