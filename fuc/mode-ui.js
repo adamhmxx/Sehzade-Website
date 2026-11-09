@@ -28,8 +28,9 @@
       '.ls-row{display:block;margin:0 auto;width:max-content;max-width:100%;color:#4d4d4d;white-space:nowrap;cursor:pointer;pointer-events:auto;transition:color .22s ease}' +
       '.ls-row.act{color:#fff}' +
       /* touch devices: one endless scrolling column, the name on the centre line is the active one, its picture sits behind the names */
-      '#ls-scroll{position:fixed;left:0;right:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;pointer-events:auto;text-align:center;font-family:"Anton","Inter Display",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;mix-blend-mode:difference}' +
-      '#ls-scroll .ls-row{position:absolute;left:0;right:0;top:0;margin:0;width:auto;max-width:none;will-change:transform;-webkit-tap-highlight-color:transparent}' +
+      '#ls-scroll{position:fixed;left:0;right:0;overflow:hidden;-webkit-user-select:none;user-select:none;pointer-events:none;text-align:center;font-family:"Anton","Inter Display",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;mix-blend-mode:difference}' +
+      '#ls-scroll .ls-row{position:absolute;left:0;right:0;top:0;margin:0;width:auto;max-width:none;will-change:transform;pointer-events:none}' +
+      '#ls-hit{position:fixed;left:0;right:0;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}' +
       '#ls-mpv{position:fixed;left:0;top:0;border-radius:2px;overflow:hidden;background:#111;pointer-events:none}' +
       '#ls-mpv i{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .3s ease}' +
       '#sc-hint{position:fixed;z-index:4;pointer-events:none;color:#fff;mix-blend-mode:difference;font:400 16px/1 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;opacity:0;transition:opacity .5s ease}' +
@@ -86,23 +87,23 @@
      No native scrolling and no snap points: the names are laid out by our own position `pos` (in px) with a wrap-around, so the column has no
      ends and nothing is ever re-centred. A drag moves it 1:1, letting go glides to the nearest name with a spring, a tap centres a name
      (a second tap opens it). Only about two copies of the list exist in the page. */
-  var scroller, inner, mpv, la, lb, lcur, mRows = [], mN = 0, RH = 0, H = 0, S = 0, mK = -1, mSig = "", pos = 0, vel = 0, target = null, mRaf = 0, mLast = 0;
+  var scroller, inner, hit, mpv, la, lb, lcur, mRows = [], mN = 0, RH = 0, H = 0, CY = 0, S = 0, mK = -1, mSig = "", pos = 0, vel = 0, target = null, mRaf = 0, mLast = 0;
   var drag = null;
   function wrap(v, t) { return ((v % t) + t) % t; }
   function buildTouch() {
     listEl.style.display = "none"; pv.style.display = "none";
     mpv = document.createElement("div"); mpv.id = "ls-mpv"; la = document.createElement("i"); lb = document.createElement("i"); mpv.append(la, lb); lcur = la;
     scroller = document.createElement("div"); scroller.id = "ls-scroll"; inner = document.createElement("div"); inner.style.cssText = "position:relative;width:100%;height:100%"; scroller.appendChild(inner);
-    box.append(mpv, scroller);
+    hit = document.createElement("div"); hit.id = "ls-hit"; box.append(mpv, scroller, hit);
     /* the page behind must not react to touches on the list */
-    ["touchstart", "wheel"].forEach(function (n) { scroller.addEventListener(n, function (e) { e.stopPropagation(); }, { passive: true }); });
-    scroller.addEventListener("pointerdown", function (e) {
+    ["touchstart", "wheel"].forEach(function (n) { hit.addEventListener(n, function (e) { e.stopPropagation(); }, { passive: true }); });
+    hit.addEventListener("pointerdown", function (e) {
       e.stopPropagation(); if (drag) return;
-      try { scroller.setPointerCapture(e.pointerId); } catch (x) {}
+      try { hit.setPointerCapture(e.pointerId); } catch (x) {}
       drag = { id: e.pointerId, y0: e.clientY, y: e.clientY, t: e.timeStamp, t0: e.timeStamp, moved: 0, s: [[e.timeStamp, e.clientY]], tx: e.clientX };
       target = null; vel = 0;
     });
-    scroller.addEventListener("pointermove", function (e) {
+    hit.addEventListener("pointermove", function (e) {
       if (!drag || e.pointerId !== drag.id) return; e.stopPropagation();
       var dy = e.clientY - drag.y; drag.y = e.clientY; drag.moved += Math.abs(dy);
       pos -= dy; drag.s.push([e.timeStamp, e.clientY]); while (drag.s.length > 2 && e.timeStamp - drag.s[0][0] > 90) drag.s.shift();
@@ -110,22 +111,19 @@
     });
     var end = function (e) {
       if (!drag || e.pointerId !== drag.id) return; e.stopPropagation();
-      var d = drag; drag = null; try { scroller.releasePointerCapture(d.id); } catch (x) {}
+      var d = drag; drag = null; try { hit.releasePointerCapture(d.id); } catch (x) {}
       if (e.type === "pointerup" && d.moved < 8 && e.timeStamp - d.t0 < 450) { tapAt(d.tx, d.y0); return; }
       var a = d.s[0], z = d.s[d.s.length - 1], dt = Math.max(16, z[0] - a[0]), v = -(z[1] - a[1]) / dt;   /* px per ms, positive = column moves up */
       if (e.timeStamp - z[0] > 120) v = 0;
       vel = Math.max(-4, Math.min(4, v));
       target = Math.round((pos + vel * 240) / RH) * RH; kick();
     };
-    scroller.addEventListener("pointerup", end); scroller.addEventListener("pointercancel", end);
+    hit.addEventListener("pointerup", end); hit.addEventListener("pointercancel", end);
   }
   function tapAt(x, y) {
-    var el = document.elementFromPoint(x, y), row = el && el.closest && el.closest(".ls-row"); if (!row) { target = Math.round(pos / RH) * RH; kick(); return; }
-    var slot = +row.dataset.k;
-    if (slot === mK) { openLink(+row.dataset.i); return; }
-    /* centre it: the row's current offset from the centre line */
-    var off = wrap(slot * RH - pos + S * RH / 2, S * RH) - S * RH / 2;
-    target = Math.round((pos + off) / RH) * RH; vel = 0; kick();
+    var off = y - CY, kk = Math.round((pos + off) / RH);       /* the name under the finger */
+    if (Math.abs(off) < RH / 2 && kk === Math.round(pos / RH)) { openLink(wrap(kk, mN)); return; }
+    target = kk * RH; vel = 0; kick();                          /* centre it; a second tap opens it */
   }
   function kick() { if (!mRaf) { mLast = performance.now(); mRaf = requestAnimationFrame(mTick); } }
   function mTick(now) {
@@ -143,11 +141,10 @@
   /* put every row where `pos` says; the one on the centre line is the active name */
   function mPlace() {
     if (!mN) return;
-    var T = S * RH, c = H / 2 - RH / 2, k = Math.round(pos / RH), slot = wrap(k, S);
+    var T = S * RH, c = CY - RH / 2, k = Math.round(pos / RH), slot = wrap(k, S);
     for (var s = 0; s < S; s++) {
       var y = wrap(s * RH - pos + T / 2, T) - T / 2;
       mRows[s].style.transform = "translate3d(0," + (c + y).toFixed(1) + "px,0)";
-      mRows[s].style.visibility = Math.abs(y) <= c + 1 ? "" : "hidden";
     }
     if (slot !== mK) {
       if (mK >= 0 && mRows[mK]) mRows[mK].classList.remove("act");
@@ -163,28 +160,26 @@
     items = data(); mN = items.length;
     var tl = document.querySelector('[role="tablist"]'), nav = document.querySelector("nav"), vw = innerWidth, vh = innerHeight;
     var top = Math.round((nav ? nav.getBoundingClientRect().bottom : 56) + 8), bottom = Math.round((tl ? tl.getBoundingClientRect().top : vh - 72) - 8);
-    var AH = Math.max(160, bottom - top); H = AH;
-    var sig = [mN, vw, H, items.map(function (x) { return x.name + "|" + (x.image && x.image.src || ""); }).join(",")].join("/");
+    /* the active name sits in the middle of the free space between the navbar and the mode menu; the names themselves run over the whole
+       screen, behind the navbar and the menu (both have the difference blend, so they stay readable) */
+    H = vh; CY = Math.round((top + Math.max(top + 120, bottom)) / 2);
+    var sig = [mN, vw, vh, CY, items.map(function (x) { return x.name + "|" + (x.image && x.image.src || ""); }).join(",")].join("/");
     if (sig === mSig) return; mSig = sig;
     if (!mN) { inner.textContent = ""; mRows = []; mpv.style.display = "none"; return; }
     mpv.style.display = "";
-    var fs = Math.round(Math.min(78, Math.max(46, vw * .19))); RH = Math.round(fs * 1.04);
-    var copies = Math.max(2, Math.ceil((H + 2 * 36) / (mN * 36)) + 1); S = mN * copies;   /* enough rows even if long names shrink the type */
+    var fs = 40; RH = Math.round(fs * 1.04);                    /* one fixed size on every phone */
+    var copies = Math.max(2, Math.ceil((vh + 2 * RH) / (mN * RH)) + 1); S = mN * copies;
     inner.textContent = ""; mRows = []; mK = -1; pos = 0; vel = 0; target = null;
-    scroller.style.fontSize = fs + "px";
+    hit.style.top = top + "px"; hit.style.height = Math.max(120, bottom - top) + "px";
+    scroller.style.top = "0px"; scroller.style.height = vh + "px"; scroller.style.fontSize = fs + "px";
     var frag = document.createDocumentFragment();
     for (var s = 0; s < S; s++) {
       var r = document.createElement("div"); r.className = "ls-row"; r.dataset.i = s % mN; r.dataset.k = s; r.textContent = items[s % mN].name;
       r.style.height = RH + "px"; r.style.lineHeight = RH + "px"; frag.appendChild(r); mRows.push(r);
     }
     inner.appendChild(frag);
-    var widest = 0; for (var j = 0; j < mN; j++) widest = Math.max(widest, mRows[j].scrollWidth);
-    if (widest > vw * .92) { fs = Math.floor(fs * vw * .92 / widest); RH = Math.round(fs * 1.04); scroller.style.fontSize = fs + "px"; mRows.forEach(function (r) { r.style.height = RH + "px"; r.style.lineHeight = RH + "px"; }); }
-    /* the box holds a whole, odd number of rows and is centred in the free space, so no name is ever cut at the top or the bottom */
-    var nr = Math.max(3, Math.floor(AH / RH)); if (nr % 2 === 0) nr--; H = nr * RH; top += Math.round((AH - H) / 2);
-    scroller.style.top = top + "px"; scroller.style.height = H + "px";
-    var w = Math.round(Math.min(vw * .74, 340)), h = Math.round(w * .75);
-    mpv.style.width = w + "px"; mpv.style.height = h + "px"; mpv.style.transform = "translate3d(" + Math.round((vw - w) / 2) + "px," + Math.round(top + (H - h) / 2) + "px,0)";
+    var w = Math.round(vw * .65), h = Math.round(w * .75);       /* the picture is 65% of the screen width */
+    mpv.style.width = w + "px"; mpv.style.height = h + "px"; mpv.style.transform = "translate3d(" + Math.round((vw - w) / 2) + "px," + Math.round(CY - h / 2) + "px,0)";
     items.forEach(function (it) { if (it.image && it.image.src) { var im = new Image(); im.src = sm(it.image.src); } });
     mPlace();
   }
