@@ -16,8 +16,12 @@
   function css() {
     var s = document.createElement("style");
     s.textContent =
-      '#ls-root{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility 0s .45s}' +
-      '#ls-root.on{opacity:1;visibility:visible;transition:opacity .45s ease}' +
+      /* leaving List: the names fade out quickly, before the other mode's cards fade in. Entering List: the gallery's cards fade out first
+         (.ls-hide), the names only appear once they are gone, so the two are never on screen together */
+      '#ls-root{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .16s ease,visibility 0s .16s}' +
+      '#ls-root.on{opacity:1;visibility:visible;transition:opacity .4s ease .38s}' +
+      '.ls-layer{transition:opacity .35s ease .12s}' +
+      '.ls-layer.ls-hide{opacity:0!important;pointer-events:none!important;transition:opacity .3s ease}' +
       '#ls-pv{position:fixed;left:0;top:0;background-size:cover;background-position:center;background-color:#111;opacity:0;transform:scale(.94);transition:opacity .28s ease,transform .38s cubic-bezier(.22,1,.36,1);will-change:transform,opacity;pointer-events:none;border-radius:2px}' +
       '#ls-pv.on{opacity:1;transform:scale(1)}' +
       '#ls-list{position:fixed;left:0;right:0;text-align:center;font-family:"Anton","Inter Display",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;touch-action:none;-webkit-user-select:none;user-select:none;mix-blend-mode:difference}' +
@@ -52,6 +56,25 @@
     listEl.addEventListener("click", function (e) { if (e.pointerType === "touch" || e.detail === 0) return; var row = e.target.closest && e.target.closest(".ls-row"); if (row) openLink(+row.dataset.i); });
   }
 
+  /* the gallery's card layer: the highest ancestor of a card that holds neither the mode menu nor the navbar */
+  var layer = null;
+  function cardLayer() {
+    var main = document.getElementById("main"), tl = document.querySelector('[role="tablist"]'), nav = document.querySelector("nav");
+    if (!main || !tl) return layer;
+    var card = [].filter.call(main.querySelectorAll("div"), function (d) { var s = d.style; return s.position === "absolute" && s.top === "50%" && s.left === "50%" && s.zIndex; })[0];
+    if (!card) return layer && layer.isConnected ? layer : null;
+    var n = card;
+    while (n.parentElement && n.parentElement !== main && !n.parentElement.contains(tl) && !(nav && n.parentElement.contains(nav))) n = n.parentElement;
+    return (layer = n);
+  }
+  function cardsHidden(on) {
+    var l = cardLayer(); if (l) { l.classList.add("ls-layer"); l.classList.toggle("ls-hide", on); }
+    if (!on) [].forEach.call(document.querySelectorAll(".ls-hide"), function (x) { x.classList.remove("ls-hide"); });
+  }
+  /* the project under the pointer in List, for the info text (hover-info.js) */
+  window.__lsActive = function () { return act >= 0 ? items[act] || null : null; };
+  function told() { try { window.dispatchEvent(new Event("ls-active")); } catch (e) {} }
+
   function openLink(i) { var it = items[i]; if (it && it.link) { try { window.open(it.link, "_blank", "noopener"); } catch (e) {} } }
 
   /* one big line per project, together exactly as tall as the free space between the navbar and the mode menu */
@@ -76,9 +99,9 @@
     var first = act < 0; act = i; rows[i].classList.add("act");
     var it = items[i]; pv.style.backgroundImage = it.image && it.image.src ? "url(" + sm(it.image.src) + ")" : "";
     if (first) { px = mx; py = my; }
-    pv.classList.add("on"); follow();
+    pv.classList.add("on"); follow(); told();
   }
-  function deactivate() { if (act >= 0 && rows[act]) rows[act].classList.remove("act"); act = -1; pv.classList.remove("on"); }
+  function deactivate() { var was = act; if (act >= 0 && rows[act]) rows[act].classList.remove("act"); act = -1; pv.classList.remove("on"); if (was >= 0) told(); }
 
   /* the picture follows the pointer with a little lag */
   function follow() { if (!raf) raf = requestAnimationFrame(tick); }
@@ -107,7 +130,8 @@
     build();
     var i = idx(), ok = live() && !window.__abOpen;
     box.classList.toggle("on", i === LIST && ok);
-    if (i !== LIST) { clearTimeout(hideT); deactivate(); }
+    cardsHidden(i === LIST && live());
+    if (i !== LIST) { clearTimeout(hideT); deactivate(); told(); }
     else { layout(); }
     placeHint(); hint.classList.toggle("on", ok && i >= 0 && i < LIST);
   }

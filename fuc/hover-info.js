@@ -1,5 +1,5 @@
 /* Project info on hover: the name, a short description and the year of the item under the cursor. Twister: top left. Grid: right below the
-   card, lined up with it. Mouse only; hidden while scrolling or dragging (and for one second after), while the cursor is on the mode menu,
+   card lifted to the centre of the screen, lined up with it. List: description and year, top left like Twister. Mouse only; hidden while scrolling or dragging (and for one second after), while the cursor is on the mode menu,
    while the About card is open and during the intro. */
 (function () {
   if (!matchMedia("(pointer: fine)").matches) return;
@@ -56,7 +56,7 @@
     return best;
   }
   function show(it, box) {
-    var key = it ? it.name + "|" + it.year + "|" + (box ? Math.round(box.left) + "," + Math.round(box.top) : "") : "";
+    var key = it ? it.name + "|" + it.description + "|" + it.year + "|" + (box ? Math.round(box.left) + "," + Math.round(box.top) : "") : "";
     if (!it) { if (!hideT) hideT = setTimeout(function () { el.classList.remove("on"); shownKey = ""; hideT = 0; }, 160); return; }
     clearTimeout(hideT); hideT = 0;
     if (key !== shownKey) {
@@ -69,13 +69,23 @@
     else { el.style.left = el.style.top = el.style.maxWidth = el.style.width = ""; }
     el.classList.add("on");
   }
+  /* Grid: the card that is lifted to the centre of the screen while a card is hovered (the gallery draws it above everything else) */
+  function focusCard() {
+    var best = null, bz = 0, list = cards();
+    for (var i = 0; i < list.length; i++) { var z = parseFloat(list[i].style.zIndex) || 0; if (z >= 8000 && z > bz) { bz = z; best = list[i]; } }
+    return best;
+  }
   function run() {
     pend = false; lastRun = performance.now();
-    if (down || window.__abOpen || document.documentElement.classList.contains("intro-on") || document.documentElement.classList.contains("intro-ui") || (mode() !== "twister" && mode() !== "grid") || window.__hoverLock() || onMenu()) return show(null);
-    var c = pick(); if (!c) return show(null);
+    var m = mode(), root = document.documentElement;
+    if (window.__abOpen || root.classList.contains("intro-on") || root.classList.contains("intro-ui") || (m !== "twister" && m !== "grid" && m !== "list") || onMenu()) return show(null);
+    /* List: the description and the year of the name under the pointer, in the Twister corner (the name itself is the big line) */
+    if (m === "list") { var li = window.__lsActive && window.__lsActive(); return show(li && (li.description || li.year) ? { name: "", description: li.description, year: li.year } : null, null); }
+    if (down || window.__hoverLock()) return show(null);
+    var c = m === "grid" ? focusCard() : pick(); if (!c) return show(null);
     var f = fname(srcOf(c)), found = null, a = items();
     for (var i = 0; i < a.length; i++) if (a[i] && a[i].image && fname(a[i].image.src) === f) { found = a[i]; break; }
-    var box = null; if (found && mode() === "grid") { var im = c.querySelector("img"), r = (im || c).getBoundingClientRect(); box = { left: r.left, top: r.top, bottom: r.bottom, width: r.width }; }
+    var box = null; if (found && mode() === "grid") { var im = c.querySelector("img"), r = (im || c).getBoundingClientRect(); box = { left: r.left, top: r.top, bottom: r.bottom + 14, width: r.width }; }
     show(found, box);
   }
   function sched() { if (pend) return; pend = true; setTimeout(function () { requestAnimationFrame(run); }, Math.max(0, 60 - (performance.now() - lastRun))); }
@@ -86,6 +96,9 @@
     addEventListener("pointerup", function () { down = false; quietAt = performance.now() + 1000; sched(); clearTimeout(recheck); recheck = setTimeout(sched, 1050); }, { passive: true });
     addEventListener("wheel", function () { quietAt = performance.now() + 1000; show(null); clearTimeout(recheck); recheck = setTimeout(sched, 1050); }, { passive: true });
     document.addEventListener("pointerleave", function () { mx = my = -1; sched(); });
+    window.addEventListener("ls-active", sched);
+    /* Grid: the centre card is lifted a moment after the pointer stops, and drops when it leaves, with no pointer event in between */
+    setInterval(function () { if (mx >= 0 && mode() === "grid") sched(); }, 150);
   }
   if (document.body) start(); else addEventListener("DOMContentLoaded", start);
 })();
