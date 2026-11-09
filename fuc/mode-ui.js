@@ -28,7 +28,7 @@
       '.ls-row{display:block;margin:0 auto;width:max-content;max-width:100%;color:#4d4d4d;white-space:nowrap;cursor:pointer;pointer-events:auto;transition:color .22s ease}' +
       '.ls-row.act{color:#fff}' +
       /* touch devices: one endless scrolling column, the name on the centre line is the active one, its picture sits behind the names */
-      '#ls-scroll{position:fixed;left:0;right:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;pointer-events:auto;text-align:center;font-family:"Anton","Inter Display",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;mix-blend-mode:difference;-webkit-mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent)}' +
+      '#ls-scroll{position:fixed;left:0;right:0;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;pointer-events:auto;text-align:center;font-family:"Anton","Inter Display",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;mix-blend-mode:difference}' +
       '#ls-scroll .ls-row{position:absolute;left:0;right:0;top:0;margin:0;width:auto;max-width:none;will-change:transform;-webkit-tap-highlight-color:transparent}' +
       '#ls-mpv{position:fixed;left:0;top:0;border-radius:2px;overflow:hidden;background:#111;pointer-events:none}' +
       '#ls-mpv i{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .3s ease}' +
