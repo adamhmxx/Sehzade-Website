@@ -21,14 +21,14 @@
     dribbble: "https://dribbble.com/adamhmwn", instagram: "https://www.instagram.com/adamhmwn/"
   };
   var DEF_SITE = { logo: "Sehzade.", aboutLabel: "About", callLabel: "Book a call", clock: "ID (WIB)", cardName: "Adam Himawan", copyright: "\u00a9 Sehzade 2026", title: "Adam Himawan Portfolio",
-                   modes: ["Twister", "Space", "Grid"] };
+                   modes: ["Twister", "Space", "Grid", "List"] };
   var SOCIALS = [["x", "X"], ["behance", "Behance"], ["linkedin", "LinkedIn"], ["dribbble", "Dribbble"], ["instagram", "Instagram"]];
 
   function read() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
   var data = read() || { items: null, about: {} };
   function site() { var o = Object.assign({}, DEF_SITE, (data && data.site) || {}); o.modes = DEF_SITE.modes.map(function (d, i) { return savedModes()[i] || d; }); return o; }
   /* names saved while there were five modes (Twister, Space, Cross, Globe, Grid) keep Twister, Space and Grid */
-  function savedModes() { var m = ((data.site || {}).modes || []); return m.length > 3 ? [m[0], m[1], m[4]] : m; }
+  function savedModes() { var m = ((data.site || {}).modes || []); return m.length > 4 ? [m[0], m[1], m[4]] : m; }
   function about() {
     var o = Object.assign({}, DEF_ABOUT, data.about || {});
     if (!Array.isArray(o.socials)) o.socials = SOCIALS.map(function (s) { return { label: s[1], url: o[s[0]] || "" }; });
@@ -396,7 +396,7 @@
   function renderSite() {
     var o = site();
     function set(k) { return function (v) { data.site = data.site || {}; data.site[k] = v; changed(); }; }
-    function setMode(i) { return function (v) { data.site = data.site || {}; var m = savedModes().slice(); while (m.length < 3) m.push(""); m[i] = v; data.site.modes = m; changed(); }; }
+    function setMode(i) { return function (v) { data.site = data.site || {}; var m = savedModes().slice(); while (m.length < 4) m.push(""); m[i] = v; data.site.modes = m; changed(); }; }
     var c1 = el("div", { class: "cp-col6" }), c2 = el("div", { class: "cp-col6" });
     c1.append(el("div", { class: "cp-label" }, "Navigation and page"),
       field("Logo (top left)", o.logo, set("logo")), field("About menu (centre)", o.aboutLabel, set("aboutLabel")),
