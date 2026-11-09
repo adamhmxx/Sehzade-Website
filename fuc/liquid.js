@@ -533,8 +533,8 @@
     };
     var hide = document.createElement("button"); hide.type = "button"; hide.textContent = "Save & hide";
     hide.onclick = function () { save(); showUI(false); };
-    var cmsBtn = document.createElement("button"); cmsBtn.type = "button"; cmsBtn.textContent = "Open CMS"; cmsBtn.onclick = function () { location.href = "cms.html"; };
-    actions.append(reset, toggle, copy, hide, cmsBtn); card.appendChild(actions);
+    var cmsBtn = document.createElement("button"); cmsBtn.type = "button"; cmsBtn.textContent = "Open CMS"; cmsBtn.onclick = function () { location.href = "/cms"; };
+    actions.append(reset, toggle, copy, hide); if (/^(localhost|127\.)/.test(location.hostname)) actions.append(cmsBtn); card.appendChild(actions);
     var btn = document.createElement("button"); btn.type = "button"; btn.className = "lq-btn"; btn.setAttribute("aria-expanded", "false");
     btn.innerHTML = '<span class="lq-dot"></span><span>Liquid</span>';
     btn.onclick = function () { var o = ui.classList.toggle("open"); btn.setAttribute("aria-expanded", o); };

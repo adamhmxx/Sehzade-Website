@@ -11,7 +11,13 @@ import base64, hashlib, hmac, http.server, json, os, re, secrets, socketserver, 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CONTENT = os.path.join(ROOT, "content.json")
 UPLOADS = os.path.join(ROOT, "uploads")
-PAGES = {"/": "index.html", "/about": "about.html", "/about/": "about.html", "/cms": "cms.html"}
+import glob
+PAGES = {"/": "index.html", "/about": "about.html", "/about/": "about.html"}
+
+
+def studio_page():
+    f = sorted(glob.glob(os.path.join(ROOT, "studio-*.html")))
+    return os.path.basename(f[0]) if f else None
 HIDDEN = {"server.py", "build.py", "readme.md"}          # never served
 IMG_EXT = {"image/webp": "webp", "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/avif": "avif"}
 MAX_BODY = 40 * 1024 * 1024
@@ -118,12 +124,18 @@ class H(http.server.SimpleHTTPRequestHandler):
     # ---------- static ----------
     def translate_path(self, path):
         p = path.split("?")[0].split("#")[0]
-        return super().translate_path("/" + PAGES[p] if p in PAGES else p)
+        if p == "/cms" and studio_page():            # local shortcut; on the live site the editor lives at its private file name
+            p = "/" + studio_page()
+        if p in PAGES:
+            p = "/" + PAGES[p]
+        elif "." not in os.path.basename(p) and os.path.isfile(os.path.join(ROOT, p.lstrip("/") + ".html")):
+            p += ".html"
+        return super().translate_path(p)
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
-        if self.path.split("?")[0] in ("/cms", "/cms.html"):
+        if self.path.split("?")[0].startswith(("/cms", "/studio-")):
             self.send_header("X-Robots-Tag", "noindex, nofollow")
         super().end_headers()
 

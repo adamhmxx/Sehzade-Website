@@ -54,7 +54,7 @@
   ],
   "headers": [
     {
-      "source": "/(cms|cms.html)",
+      "source": "/studio-(.*)",
       "headers": [
         {
           "key": "X-Robots-Tag",

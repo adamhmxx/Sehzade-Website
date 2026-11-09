@@ -5,8 +5,8 @@
    With server.py running, the editor asks for the CMS password once, then every change is published to content.json / uploads/
    (visitors load content.json). On a static host (Vercel) the editor connects to GitHub with a token and commits content.json and
    uploads/ to the repo; the host redeploys by itself. Without either it falls back to this browser only (localStorage).
-   The editor is its own page (cms.html, which sets window.__cmsPage); the main page and the About page only read the data
-   and pick up changes through the storage event. Open the editor with Shift+C on the site, or go to /cms. */
+   The editor is its own page (the studio-*.html file, which sets window.__cmsPage; its file name is the address, so nothing on the
+   public site links to it); the main page and the About page only read the data and pick up changes through the storage event. */
 (function () {
   if (window.__cmsLoaded) return;
   window.__cmsLoaded = 1;
@@ -216,10 +216,7 @@
         try { localStorage.setItem(DKEY, JSON.stringify(d.map(function (x) { return { name: x.name || "", description: x.description || "", services: x.services || "", year: x.year || "", link: x.link || "", image: x.image ? { src: x.image.src || "", srcSet: x.image.srcSet || "" } : null }; }))); } catch (e) {}
       } else if (++tries > 40) clearInterval(iv);
     }, 500);
-    addEventListener("keydown", function (e) {
-      if (e.shiftKey && (e.key === "C" || e.key === "c") && !/INPUT|TEXTAREA/.test((e.target || {}).tagName || "")) location.href = "cms.html";
-    });
-    function start() { if (/cms/.test(location.hash)) location.href = "cms.html"; watch(); if (data.items) window.dispatchEvent(new Event("cms-change")); loadRemote(); }
+    function start() { watch(); if (data.items) window.dispatchEvent(new Event("cms-change")); loadRemote(); }
     if (document.body) start(); else addEventListener("DOMContentLoaded", start);
     return;
   }
