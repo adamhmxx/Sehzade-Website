@@ -416,6 +416,7 @@
       }).catch(function (x) { err.textContent = x === "perm" ? "This token cannot write to that repository. Give it Contents: Read and write." : x === 401 || x === 404 ? "GitHub did not accept that token for this repository." : "Could not reach GitHub."; });
     } }, [el("div", { class: "cp-label" }, "Connect GitHub to publish"), tok, repo, err,
       el("div", { class: "cp-actions" }, [el("button", { type: "submit", class: "cp-btn cp-add", style: "margin:0;width:auto" }, "Connect"), skip]),
+      el("p", { class: "cp-help" }, el("a", { href: "https://github.com/settings/personal-access-tokens/new", target: "_blank", rel: "noopener", style: "color:inherit;opacity:.55;font-size:13px;text-decoration:underline" }, "Need a token? Create one (this repo, Contents: Read and write)")),
       el("p", { class: "cp-hint" }, "One time only. Create a fine-grained token at github.com/settings/personal-access-tokens/new, limited to this repository with Contents: Read and write. It stays in this browser. Every change is saved to the repo and the site redeploys by itself in about a minute.")]);
     body.appendChild(form); tok.focus();
   }
