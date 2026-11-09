@@ -7,7 +7,7 @@
 (function () {
   var DEF = { imin: 2400, iline: 2, ildl: 600, iltr: 1300, ilst: 60, iliq: 8, iliqp: 20, iliqd: 3100, ioutd: 800, ioutl: 200,
     iseept: 3200, iseeps: 18, iseepl: 20, iseepd: 60, iseepf: 130, iseepb: 30, iseepr: 30, iseepg: 4,
-    itdur: 2400, itstart: 1800, itui: 1600 };
+    itdur: 2800, itstart: 1800, itui: 1800 };
   window.__introDef = DEF;
   var CFG = {};
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
@@ -15,7 +15,7 @@
   var root = document.documentElement;
   if (!root.classList.contains("intro-on")) return;
   var intro = document.getElementById("intro");
-  window.__twRise = 1; window.__twSp = 0; /* the ribbon waits folded up below the screen until its entrance */
+  window.__twRise = 1; window.__twSp = 0; window.__twAll = 0; /* the ribbon waits folded up below the screen until its entrance */
   if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
   /* from the very first frame every Twister card is switched off by the gallery itself (not only the page hidden by CSS), so nothing of the
      ribbon can show before its entrance and the hidden cards cost the GPU nothing; reveal() then brings them in one by one */
@@ -214,7 +214,7 @@
   function reveal() {
     /* the turn is the same angle on every screen: itstart is measured on the 1440px desktop ribbon (radius 714px); a phone ribbon is much
        tighter, so the same distance in px turned it more than twice as far */
-    var gk = window.__galK && window.__galK.current, START = CFG.itstart * (window.__twRnow || 714) / 714, D = CFG.itdur, s0 = performance.now();
+    var gk = window.__galK && window.__galK.current, START = 2 * Math.PI * (window.__twRnow || 714), /* exactly one turn of the ribbon: the band swings in along its own curve */ D = CFG.itdur, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     /* a blank page first; then the whole ribbon is pulled up from below the screen as ONE piece while it turns into place: every card moves
        together (window.__twRise, in px, is added to the ribbon's height by the gallery; cards below the screen are not drawn at all) */
@@ -232,10 +232,10 @@
       s0 = performance.now(); root.classList.remove("intro-on");
       (function step(now) {
         var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
-        window.__twSp = er;
+        window.__twSp = er; window.__twAll = Math.max(0, Math.min(1, (k - .74) / .26)); /* the rest of the coil joins, all at once, as the band lands */
         if (gk) { gk.ox = v; gk.tx = v; }
         if (k < 1) return requestAnimationFrame(step);
-        window.__twRise = 0; window.__twSp = 1;
+        window.__twRise = 0; window.__twSp = 1; window.__twAll = 1;
       })(performance.now());
     }); });
     setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, CFG.itui);
