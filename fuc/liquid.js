@@ -12,7 +12,7 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, cfa: 42, cdx: 6.5, cdy: 4, cdz: 0, cscl: 90, clift: 10, clz: 30, cspr: 60, cstep: 10, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, cbl: 1, gsz: 100, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, grad: 30, gbl: 6, ggap: 16, gstag: 15, gpar: 20 };
+  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, ggap: 16, gstag: 15, gpar: 20 };
   if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
@@ -420,11 +420,6 @@
       pliq: "Ripple strength on the About card text while it moves.",
       fstep: "Distance between items along the depth of Space. Higher spreads them further apart in depth.", fnear: "How close to the screen items get before they pass you.",
       fsc: "Size of every card in Space.", fx: "How far items spread left and right.", fy: "How far items spread up and down.", fbl: "Blur on items that are far away.",
-      cfa: "How much the cards turn sideways. 0 faces you, higher turns them toward the left.", cdx: "Horizontal gap between neighbouring cards along the diagonal.",
-      cdy: "Vertical gap between neighbouring cards along the diagonal.", cdz: "How quickly cards shrink toward the back. Higher makes the deck feel deeper.",
-      cscl: "Size of every card in Cross.", cstep: "How far the deck moves for each scroll.", clift: "How high a hovered card rises.", clz: "How far a hovered card comes toward you.",
-      cspr: "How far the neighbours of a hovered card move away.", cbl: "Blur on cards far at the back. 0 keeps them sharp.",
-      grad: "Size of the globe relative to the screen.", gsz: "Size of every card on the globe.", gbl: "Blur on cards on the far side of the globe.",
       ggap: "Space between cards in the grid.", gstag: "Shifts every second column down to make the grid uneven.", gpar: "How much columns move at different speeds when you scroll.",
       jel: "Master strength of the wet-paint wobble of the cards under the cursor. 0 turns the whole wobble off.", jpush: "How strongly moving the cursor shoves the cards along with it, as if dragging a finger through paint.",
       jjolt: "The squashy jolt a card gets, away from the cursor, the moment the cursor arrives on it.", jbnc: "How long the wobble keeps swinging. Low settles at once, high keeps sloshing for a while.",
@@ -435,7 +430,7 @@
       asp: "How fast the gallery keeps moving by itself. It pauses while the cursor is over it or while it is dragged. 0 turns it off.", twr: "Radius of the spiral. Smaller is a tighter, rounder curve.", twn: "How many slices each card is cut into. More is smoother but heavier.",
       twg: "Gap between neighbouring cards. 100 means they touch, higher opens gaps.", twp: "How steeply the ribbon climbs each turn. Lower packs the turns closer together.", twsc: "Size of every card in Twister."
     };
-    var GALLERY = /^(asp|c(fa|dx|dy|dz|scl|step|lift|lz|spr)|tw(r|p|sc|g|n)|f(step|near|bl|sc|x|y)|cbl|gsz|grad|gbl|ggap|gstag|gpar)$/;
+    var GALLERY = /^(asp|tw(r|p|sc|g|n)|f(step|near|bl|sc|x|y)|ggap|gstag|gpar)$/;
     var css = document.createElement("style");
     css.textContent =
       '#liquid-ui{position:fixed;right:var(--lm,32px);bottom:88px;z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
