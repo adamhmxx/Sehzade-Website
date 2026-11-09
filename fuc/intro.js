@@ -7,7 +7,7 @@
 (function () {
   var DEF = { imin: 2400, iline: 2, ildl: 600, iltr: 1300, ilst: 60, iliq: 8, iliqp: 20, iliqd: 3100, ioutd: 800, ioutl: 200,
     iseept: 3200, iseeps: 18, iseepl: 20, iseepd: 60, iseepf: 130, iseepb: 30, iseepr: 30, iseepg: 4,
-    itdur: 3600, itstart: 2400, itui: 2200 };
+    itdur: 2400, itstart: 1800, itui: 1600 };
   window.__introDef = DEF;
   var CFG = {};
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
@@ -202,7 +202,8 @@
       seepT = .5 - .5 * Math.cos(Math.PI * k); /* sine in-out: slow start, steady soak, soft tail */
       draw(); liquid(now);
       /* the red is already gone well before the drain formally ends: the Twister starts at 86%, so the empty black is short */
-      if (!go && k >= .86) { go = true; reveal(); }
+      /* ...and the shader stops right there: the red is invisible by then, so the GPU is free for the Twister */
+      if (!go && k >= .86) { go = true; k = 1; reveal(); }
       if (k < 1) return requestAnimationFrame(step);
       wipeActive = false; cv.style.display = "none"; intro.style.display = "none"; /* the heavy GPU release (losing the WebGL context blocks the main thread) waits until the Twister has landed and the page is idle */ window.addEventListener("intro-done", function () { setTimeout(teardown, 1200); }, { once: true }); if (!go) { go = true; reveal(); }
     })(performance.now());
@@ -216,8 +217,9 @@
     if (gk) { gk.ox = gk.tx = START; }
     /* a blank page first; then the whole ribbon is pulled up from below the screen as ONE piece while it turns into place: every card moves
        together (window.__twRise, in px, is added to the ribbon's height by the gallery; cards below the screen are not drawn at all) */
-    /* far enough down that even the top end of the ribbon starts below the screen (the ribbon is taller than the screen, much taller on phones) */
-    var riseH = reduce ? 0 : (window.__twSpan || innerHeight) + innerHeight * .5 + 40;
+    /* the ribbon rises exactly one screen height (plus one card, so it starts fully below the screen); only the cards that are on screen once
+       it has landed take part, so it reads as the screen's own ribbon coming up from below, not a tall coil scrolling past */
+    var riseH = reduce ? 0 : innerHeight + 2 * (window.__twHH || 120);
     window.__twRise = riseH; window.__twRev = null; window.__twRevK = null;
     root.classList.remove("intro-on");
     (function step(now) {
