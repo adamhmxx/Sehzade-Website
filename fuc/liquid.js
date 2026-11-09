@@ -377,21 +377,6 @@
       ["fx", "Spread across", 10, 80, 1, "%"],
       ["fy", "Spread up", 10, 80, 1, "%"],
       ["fbl", "Depth blur", 0, 30, 1, "px"],
-      ["#", "Cross"],
-      ["cfa", "Facing (0 = front)", 0, 80, 1, "\u00b0"],
-      ["cdx", "Spacing across", 2, 16, .5, "%"],
-      ["cdy", "Spacing up", 0, 20, .5, "%"],
-      ["cdz", "Depth step", 0, 16, .5, "%"],
-      ["cscl", "Card size", 40, 120, 1, "%"],
-      ["cstep", "Scroll step", 10, 40, 1, "%"],
-      ["clift", "Hover lift", 0, 30, .5, "%"],
-      ["clz", "Hover forward", 0, 120, 1, "px"],
-      ["cspr", "Hover spread", 0, 200, 5, "%"],
-      ["cbl", "Depth blur", 0, 12, .5, "px"],
-      ["#", "Globe"],
-      ["grad", "Radius", 15, 60, 1, "%"],
-      ["gsz", "Card size", 50, 150, 1, "%"],
-      ["gbl", "Depth blur", 0, 20, 1, "px"],
       ["#", "Grid"],
       ["ggap", "Gap", 0, 64, 1, "px"],
       ["gstag", "Column stagger", 0, 300, 5, "px"],
@@ -499,7 +484,7 @@
     card.innerHTML = '<div class="lq-title"><span>Liquid hover</span></div>';
     var inputs = {}, pages = {}, tabs = document.createElement("div"), cur = null;
     tabs.className = "lq-tabs";
-    [["Cursor", "Cursor"], ["Link hover", "Links"], ["About popup", "Popup"], ["Intro", "Intro"], ["Space", "Space"], ["Cross", "Cross"], ["Globe", "Globe"], ["Grid", "Grid"], ["Gallery hover", "Hover"], ["Twister", "Twist"]].forEach(function (t) {
+    [["Cursor", "Cursor"], ["Link hover", "Links"], ["About popup", "Popup"], ["Intro", "Intro"], ["Space", "Space"], ["Grid", "Grid"], ["Gallery hover", "Hover"], ["Twister", "Twist"]].forEach(function (t) {
       var pg = document.createElement("div"); pg.className = "lq-page"; pages[t[0]] = pg;
       var tb = document.createElement("button"); tb.type = "button"; tb.textContent = t[1]; tb.dataset.page = t[0];
       tb.onclick = function () { setPage(t[0]); try { localStorage.setItem(KEY + "-tab", t[0]); } catch (e) {} };

@@ -1,5 +1,5 @@
 /* Project info on hover in the Twister: the name, a short description and the year of the item under the cursor appear top left, in the
-   same place and style as the Cross mode caption. Mouse only; hidden while dragging, while the About card is open and during the intro. */
+   top left. Mouse only; hidden while dragging, while the About card is open and during the intro. */
 (function () {
   if (!matchMedia("(pointer: fine)").matches) return;
   var el = null, rows = [], shownKey = "", hideT = 0, down = false, mx = -1, my = -1, pend = false, lastRun = 0;
