@@ -84,7 +84,7 @@
   function told() { try { window.dispatchEvent(new Event("ls-active")); } catch (e) {} }
 
   /* ---------- touch: endless column ---------- */
-  var scroller, inner, mpv, la, lb, lcur, mRows = [], mN = 0, RH = 0, mK = -1, mSig = "", mTimer = 0, mRaf = 0;
+  var scroller, inner, mpv, la, lb, lcur, mRows = [], mN = 0, RH = 0, mK = -1, mSig = "", mTimer = 0, mRaf = 0, touching = false;
   function buildTouch() {
     listEl.style.display = "none"; pv.style.display = "none";
     mpv = document.createElement("div"); mpv.id = "ls-mpv"; la = document.createElement("i"); lb = document.createElement("i"); mpv.append(la, lb); lcur = la;
@@ -92,8 +92,10 @@
     box.append(mpv, scroller);
     scroller.addEventListener("scroll", function () {
       if (!mRaf) mRaf = requestAnimationFrame(function () { mRaf = 0; mActive(); });
-      clearTimeout(mTimer); mTimer = setTimeout(recentre, 140);
+      clearTimeout(mTimer); mTimer = setTimeout(recentre, 220);
     }, { passive: true });
+    scroller.addEventListener("touchstart", function () { touching = true; clearTimeout(mTimer); }, { passive: true });
+    ["touchend", "touchcancel"].forEach(function (n) { scroller.addEventListener(n, function () { touching = false; clearTimeout(mTimer); mTimer = setTimeout(recentre, 260); }, { passive: true }); });
     /* the page behind must not react to touches on the list */
     ["pointerdown", "pointermove", "touchstart", "wheel"].forEach(function (n) { scroller.addEventListener(n, function (e) { e.stopPropagation(); }, { passive: true }); });
     scroller.addEventListener("click", function (e) {
@@ -115,9 +117,9 @@
   }
   /* the list is repeated; once scrolling stops far from the middle copy, jump to the same name in the middle copy (nobody can see it) */
   function recentre() {
-    if (!mN || !scroller) return;
+    if (!mN || !scroller || touching) return;
     var k = Math.round(scroller.scrollTop / RH), copies = Math.round(mRows.length / mN), mid = Math.floor(copies / 2);
-    if (k >= mN && k < mN * (copies - 1)) return;
+    var m = Math.max(1, Math.floor(copies / 4)); if (k >= mN * m && k < mN * (copies - m)) return;
     scroller.style.scrollSnapType = "none"; scroller.scrollTop = (mid * mN + (k % mN)) * RH;
     requestAnimationFrame(function () { scroller.style.scrollSnapType = ""; mK = -1; mActive(); });
   }
@@ -130,7 +132,7 @@
     if (!mN) { inner.textContent = ""; mRows = []; mpv.style.display = "none"; return; }
     mpv.style.display = "";
     var fs = Math.round(Math.min(78, Math.max(46, vw * .19))); RH = Math.round(fs * 1.04);
-    var copies = Math.max(3, Math.ceil(130 / mN)); if (copies % 2 === 0) copies++;
+    var copies = Math.max(3, Math.ceil(700 / mN)); if (copies % 2 === 0) copies++;
     inner.textContent = ""; mRows = []; mK = -1;
     scroller.style.top = top + "px"; scroller.style.height = H + "px"; scroller.style.fontSize = fs + "px";
     inner.style.padding = Math.round((H - RH) / 2) + "px 0";
@@ -195,7 +197,7 @@
     if (tl) {
       var r = tl.getBoundingClientRect(), h = hint.offsetHeight || 16, phone = innerWidth < 810;
       hint.style.right = m + "px"; hint.style.left = "auto";
-      hint.style.top = Math.round(phone ? r.bottom + 10 : r.top + (r.height - h) / 2) + "px";
+      hint.style.top = Math.round(r.top + (r.height - h) / 2) + "px";
       hint.style.fontSize = phone ? "13px" : "16px";
     }
   }
