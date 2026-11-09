@@ -1,0 +1,7 @@
+# not part of the site: sources, notes, the original Framer exports and the stand-alone loading sandbox
+_original
+loading
+build.py
+server.py
+README.md
+.cms-password

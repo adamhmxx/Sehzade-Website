@@ -2,6 +2,8 @@
    The live page is always the one shown; the card sways and settles on springs while it moves.
    Press Shift+G (or add #grid to the address) to show the page grid. */
 (function () {
+  /* the gallery (mode-ui.js) listens for this instead of polling */
+  function abOpen(v) { if (window.__abOpen !== v) { window.__abOpen = v; dispatchEvent(new Event("ab-toggle")); } }
   if (window.__aboutCard) return;
   window.__aboutCard = 1;
   var root = document.documentElement, reduce = matchMedia("(prefers-reduced-motion: reduce)");
@@ -102,7 +104,7 @@
     if (moving) raf = requestAnimationFrame(step);
     else {
       raf = 0; window.__abBusy = false;
-      if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); window.__abOpen = false; }
+      if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); abOpen(false); }
       else { S.x = T.x; S.y = T.y; S.r = 0; S.s = 1; S.rx = 0; S.ry = 0; paint(); pauseFrame(false); }
     }
   }
@@ -219,7 +221,7 @@
   }
   function open() {
     build(); layout();
-    if (open_) return; open_ = true; window.__abOpen = true;
+    if (open_) return; open_ = true; abOpen(true);
     sheet.style.visibility = "visible";
     glide = false; var h = hiddenPose(); S.x = h.x; S.y = h.y; S.r = h.r; S.s = h.s; S.rx = h.rx; S.ry = 0;
     V.x = V.y = V.r = V.s = V.rx = V.ry = 0; T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }; hx = []; hy = [];
@@ -230,7 +232,7 @@
     if (!open_) return; open_ = false; drag = null; /* window.__abOpen stays true until the card has left the screen: the gallery behind starts moving again only then, so the two never compete for the GPU while the card flies out (that made the close stutter on phones) */ glide = false; card.classList.remove("dragging", "grip-drag");
     root.classList.remove("about-open");
     T = hiddenPose(); V.r = 0;
-    if (reduce.matches) { S = hiddenPose(); paint(); sheet.style.visibility = "hidden"; window.__abOpen = false; return; }
+    if (reduce.matches) { S = hiddenPose(); paint(); sheet.style.visibility = "hidden"; abOpen(false); return; }
     run();
   }
   /* a button released outside the window, or a lost window focus, must never leave the card stuck to the pointer */

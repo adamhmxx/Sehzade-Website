@@ -16,7 +16,8 @@ Run:  python3 server.py   ->  http://localhost:8000   (CMS: http://localhost:800
 ## Interaction scripts (fuc/)
 - liquid.js   liquid hover: a soft blob, distortion and blur near the cursor, plus a control panel for it, the Intro settings and the About popup (Shift+L; settings kept in localStorage). Shared by index.html and about.html.
 - linkfx.js   one hover effect for every text link, tab and button: letters slide in from both edges with a motion blur.
-- cms.js + studio-*.html   the CMS. The editor page is the studio-….html file in the repo root: its file name is its web address (kept unguessable; nothing on the public site links to it, /cms does not exist on the live site). Locally http://localhost:8000/cms opens it. projects (add, edit, reorder, delete, drop images to add), About text, social links (any number), navbar/page texts, JSON backup. With server.py it signs in with a password and publishes to content.json + uploads/, which visitors load. Without the server it falls back to this browser's localStorage.
+- cms.js   small, loaded on every page: reads the saved content (content.json, cached in localStorage) and applies it (gallery items, navbar texts, About text, social links).
+- cms-editor.js + studio-*.html   the CMS editor, loaded by the studio page only (not by visitors). The editor page is the studio-….html file in the repo root: its file name is its web address (kept unguessable; nothing on the public site links to it, /cms does not exist on the live site). Locally http://localhost:8000/cms opens it. projects (add, edit, reorder, delete, drop images to add), About text, social links (any number), navbar/page texts, JSON backup. With server.py it signs in with a password and publishes to content.json + uploads/, which visitors load. Without the server it falls back to this browser's localStorage.
 - about-card.js   the About card: draggable paper sheet that bends while it moves (strip copy of the page), grid overlay (Shift+G)
 
 ## Loading entrance, stand-alone (loading/)
@@ -39,3 +40,8 @@ Run:  python3 server.py   ->  http://localhost:8000   (CMS: http://localhost:800
 - Neither: the editor still works but only in that browser (localStorage).
 - server.py hides dotfiles, server.py and build.py from visitors; run it behind HTTPS if you ever host it.
 
+
+## Weight and caching
+- vercel.json: fonts (fuc/assets), project pictures (fuc/images) and CMS uploads (uploads/) are cached for a year (their file names never change when the content does). Scripts keep the default revalidation; bump the ?v= number in index.html / about.html when you edit one.
+- .vercelignore: the original Framer exports, the loading sandbox, build.py, server.py and README.md are not deployed.
+- fuc/perf-probe.js is only requested when the address ends in #perf. mode-ui.js reacts to the About card through the "ab-toggle" event (about-card.js), no polling.

@@ -220,7 +220,7 @@
     new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ["class"] });
     addEventListener("resize", function () { layout(); placeHint(); });
     addEventListener("cms-change", function () { if (idx() === LIST) layout(); });
-    setInterval(function () { if (hint) { var o = !!window.__abOpen; if (o !== watch.o) { watch.o = o; sync(); } } }, 400);
+    addEventListener("ab-toggle", sync);
   }
   if (document.readyState === "loading") addEventListener("DOMContentLoaded", start); else start();
 })();
