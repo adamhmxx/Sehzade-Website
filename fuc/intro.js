@@ -214,7 +214,7 @@
   function reveal() {
     /* the turn is the same angle on every screen: itstart is measured on the 1440px desktop ribbon (radius 714px); a phone ribbon is much
        tighter, so the same distance in px turned it more than twice as far */
-    var gk = window.__galK && window.__galK.current, START = reduce ? 0 : CFG.itstart * (window.__twRnow || 714) / 714, D = CFG.itdur, s0 = performance.now();
+    var gk = window.__galK && window.__galK.current, START = CFG.itstart * (window.__twRnow || 714) / 714, D = CFG.itdur, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     /* a blank page first; then the whole ribbon is pulled up from below the screen as ONE piece while it turns into place: every card moves
        together (window.__twRise, in px, is added to the ribbon's height by the gallery; cards below the screen are not drawn at all) */
@@ -222,7 +222,9 @@
        it has landed take part, so it reads as the screen's own ribbon coming up from below, not a tall coil scrolling past */
     /* the whole ribbon starts folded into one line just below the screen and unrolls upward: every row comes out of the bottom edge at
        the same time, as one band, instead of rows arriving one after another */
-    window.__twRise = reduce ? 0 : 1; window.__twSp = 0; window.__twRev = null; window.__twRevK = null;
+    /* the entrance always plays, also when the phone asks for reduced motion (many phones have it switched on by battery saver or by "remove
+       animations"): it is one slow rise from below, with nothing flashing */
+    window.__twRise = 1; window.__twSp = 0; window.__twRev = null; window.__twRevK = null;
     if (gk) { gk.ox = gk.tx = START; }
     /* the gallery draws its frames on its own clock: wait until it has drawn the ribbon in its starting place (below the screen) before the page
        is shown, or the first visible frame would be the finished ribbon */
@@ -236,6 +238,6 @@
         window.__twRise = 0; window.__twSp = 1;
       })(performance.now());
     }); });
-    setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : CFG.itui);
+    setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, CFG.itui);
   }
 })();
