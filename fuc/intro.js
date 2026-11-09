@@ -214,7 +214,7 @@
   function reveal() {
     /* the turn is the same angle on every screen: itstart is measured on the 1440px desktop ribbon (radius 714px); a phone ribbon is much
        tighter, so the same distance in px turned it more than twice as far */
-    var gk = window.__galK && window.__galK.current, START = 2 * Math.PI * (window.__twRnow || 714), /* exactly one turn of the ribbon: the band swings in along its own curve */ D = CFG.itdur, s0 = performance.now();
+    var gk = window.__galK && window.__galK.current, START = Math.PI * (window.__twRnow || 714), /* half a turn of the ribbon: the band swings in along its own curve */ D = CFG.itdur, s0 = performance.now();
     if (gk) { gk.ox = gk.tx = START; }
     /* a blank page first; then the whole ribbon is pulled up from below the screen as ONE piece while it turns into place: every card moves
        together (window.__twRise, in px, is added to the ribbon's height by the gallery; cards below the screen are not drawn at all) */
@@ -232,7 +232,7 @@
       s0 = performance.now(); root.classList.remove("intro-on");
       (function step(now) {
         var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
-        window.__twSp = er; window.__twAll = Math.max(0, Math.min(1, (k - .74) / .26)); /* the rest of the coil joins, all at once, as the band lands */
+        window.__twSp = er; window.__twAll = Math.max(0, Math.min(1, (k - .38) / .42)); /* the rest of the coil grows in, all together, while the band is on its way up */
         if (gk) { gk.ox = v; gk.tx = v; }
         if (k < 1) return requestAnimationFrame(step);
         window.__twRise = 0; window.__twSp = 1; window.__twAll = 1;
