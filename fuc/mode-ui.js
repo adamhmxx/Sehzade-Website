@@ -147,6 +147,7 @@
     for (var s = 0; s < S; s++) {
       var y = wrap(s * RH - pos + T / 2, T) - T / 2;
       mRows[s].style.transform = "translate3d(0," + (c + y).toFixed(1) + "px,0)";
+      mRows[s].style.visibility = Math.abs(y) <= c + 1 ? "" : "hidden";
     }
     if (slot !== mK) {
       if (mK >= 0 && mRows[mK]) mRows[mK].classList.remove("act");
@@ -162,7 +163,7 @@
     items = data(); mN = items.length;
     var tl = document.querySelector('[role="tablist"]'), nav = document.querySelector("nav"), vw = innerWidth, vh = innerHeight;
     var top = Math.round((nav ? nav.getBoundingClientRect().bottom : 56) + 8), bottom = Math.round((tl ? tl.getBoundingClientRect().top : vh - 72) - 8);
-    H = Math.max(160, bottom - top);
+    var AH = Math.max(160, bottom - top); H = AH;
     var sig = [mN, vw, H, items.map(function (x) { return x.name + "|" + (x.image && x.image.src || ""); }).join(",")].join("/");
     if (sig === mSig) return; mSig = sig;
     if (!mN) { inner.textContent = ""; mRows = []; mpv.style.display = "none"; return; }
@@ -170,7 +171,7 @@
     var fs = Math.round(Math.min(78, Math.max(46, vw * .19))); RH = Math.round(fs * 1.04);
     var copies = Math.max(2, Math.ceil((H + 2 * 36) / (mN * 36)) + 1); S = mN * copies;   /* enough rows even if long names shrink the type */
     inner.textContent = ""; mRows = []; mK = -1; pos = 0; vel = 0; target = null;
-    scroller.style.top = top + "px"; scroller.style.height = H + "px"; scroller.style.fontSize = fs + "px";
+    scroller.style.fontSize = fs + "px";
     var frag = document.createDocumentFragment();
     for (var s = 0; s < S; s++) {
       var r = document.createElement("div"); r.className = "ls-row"; r.dataset.i = s % mN; r.dataset.k = s; r.textContent = items[s % mN].name;
@@ -179,6 +180,9 @@
     inner.appendChild(frag);
     var widest = 0; for (var j = 0; j < mN; j++) widest = Math.max(widest, mRows[j].scrollWidth);
     if (widest > vw * .92) { fs = Math.floor(fs * vw * .92 / widest); RH = Math.round(fs * 1.04); scroller.style.fontSize = fs + "px"; mRows.forEach(function (r) { r.style.height = RH + "px"; r.style.lineHeight = RH + "px"; }); }
+    /* the box holds a whole, odd number of rows and is centred in the free space, so no name is ever cut at the top or the bottom */
+    var nr = Math.max(3, Math.floor(AH / RH)); if (nr % 2 === 0) nr--; H = nr * RH; top += Math.round((AH - H) / 2);
+    scroller.style.top = top + "px"; scroller.style.height = H + "px";
     var w = Math.round(Math.min(vw * .74, 340)), h = Math.round(w * .75);
     mpv.style.width = w + "px"; mpv.style.height = h + "px"; mpv.style.transform = "translate3d(" + Math.round((vw - w) / 2) + "px," + Math.round(top + (H - h) / 2) + "px,0)";
     items.forEach(function (it) { if (it.image && it.image.src) { var im = new Image(); im.src = sm(it.image.src); } });
