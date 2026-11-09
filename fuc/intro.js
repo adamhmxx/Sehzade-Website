@@ -15,6 +15,7 @@
   var root = document.documentElement;
   if (!root.classList.contains("intro-on")) return;
   var intro = document.getElementById("intro");
+  window.__twRise = 1e5; /* the ribbon waits far below the screen until its entrance */
   if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
   /* from the very first frame every Twister card is switched off by the gallery itself (not only the page hidden by CSS), so nothing of the
      ribbon can show before its entrance and the hidden cards cost the GPU nothing; reveal() then brings them in one by one */
@@ -221,14 +222,19 @@
        it has landed take part, so it reads as the screen's own ribbon coming up from below, not a tall coil scrolling past */
     var riseH = reduce ? 0 : innerHeight + 2 * (window.__twHH || 120);
     window.__twRise = riseH; window.__twRev = null; window.__twRevK = null;
-    root.classList.remove("intro-on");
-    (function step(now) {
-      var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
-      window.__twRise = riseH * (1 - er);
-      if (gk) { gk.ox = v; gk.tx = v; }
-      if (k < 1) return requestAnimationFrame(step);
-      window.__twRise = 0;
-    })(performance.now());
+    if (gk) { gk.ox = gk.tx = START; }
+    /* the gallery draws its frames on its own clock: wait until it has drawn the ribbon in its starting place (below the screen) before the page
+       is shown, or the first visible frame would be the finished ribbon */
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      s0 = performance.now(); root.classList.remove("intro-on");
+      (function step(now) {
+        var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
+        window.__twRise = riseH * (1 - er);
+        if (gk) { gk.ox = v; gk.tx = v; }
+        if (k < 1) return requestAnimationFrame(step);
+        window.__twRise = 0;
+      })(performance.now());
+    }); });
     setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, reduce ? 100 : CFG.itui);
   }
 })();
