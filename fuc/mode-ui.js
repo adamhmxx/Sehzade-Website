@@ -195,7 +195,7 @@
     if (!hint) return;
     var tl = document.querySelector('[role="tablist"]'), m = innerWidth >= 1440 ? 32 : innerWidth >= 810 ? 24 : 16;
     if (tl) {
-      var r = tl.getBoundingClientRect(), h = hint.offsetHeight || 16, phone = innerWidth < 810;
+      var t0 = tabs()[0], r = (t0 || tl).getBoundingClientRect(), h = hint.offsetHeight || 16, phone = innerWidth < 810;
       hint.style.right = m + "px"; hint.style.left = "auto";
       hint.style.top = Math.round(r.top + (r.height - h) / 2) + "px";
       hint.style.fontSize = phone ? "13px" : "16px";
@@ -210,7 +210,8 @@
     cardsHidden(i === LIST && live());
     if (i !== LIST) { clearTimeout(hideT); deactivate(); told(); }
     else { layout(); }
-    placeHint(); hint.classList.toggle("on", ok && i >= 0 && i < LIST);
+    placeHint(); clearTimeout(sync.t); sync.t = setTimeout(placeHint, 1100);
+    hint.classList.toggle("on", ok && i >= 0 && i < LIST);
   }
 
   function start() {
@@ -220,7 +221,9 @@
     var tl = document.querySelector('[role="tablist"]');
     if (tl) new MutationObserver(sync).observe(tl, { attributes: true, subtree: true, attributeFilter: ["aria-selected"] });
     new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ["class"] });
-    addEventListener("resize", function () { layout(); placeHint(); });
+    addEventListener("resize", function () { layout(); placeHint(); setTimeout(placeHint, 300); });
+    if (tl) tl.addEventListener("transitionend", placeHint);
+    var pl = 0; (function again() { placeHint(); if (++pl < 12) setTimeout(again, 500); })();
     addEventListener("cms-change", function () { if (idx() === LIST) layout(); });
     addEventListener("ab-toggle", sync);
   }
