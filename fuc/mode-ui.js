@@ -33,6 +33,12 @@
       '#ls-hit{position:fixed;left:0;right:0;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}' +
       '#ls-mpv{position:fixed;left:0;top:0;border-radius:2px;overflow:hidden;background:#111;pointer-events:none}' +
       '#ls-mpv i{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .3s ease}' +
+      /* touch List: the navbar and the mode menu are plainly in front of the names (no blend with them), with a thin dark halo so they stay clear */
+      'html.ls-on .ls-navw,html.ls-on [role="tablist"]{mix-blend-mode:normal!important}' +
+      'html.ls-on .ls-navw *,html.ls-on [role="tablist"] *{text-shadow:0 0 10px #0b0b0b,0 0 3px #0b0b0b,0 0 1px #0b0b0b}' +
+      'html.ls-on [role="tab"][aria-selected="false"],html.ls-on [role="tab"][aria-selected="false"] *{color:#d0d0d0!important}' +
+      'html.ls-on [role="tab"]{opacity:1!important}' +
+      'html.ls-on [role="tab"][aria-selected="true"],html.ls-on [role="tab"][aria-selected="true"] *{color:#fff!important}' +
       '#sc-hint{position:fixed;z-index:4;pointer-events:none;color:#fff;mix-blend-mode:difference;font:400 16px/1 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;opacity:0;transition:opacity .5s ease}' +
       '#sc-hint.on{opacity:1}';
     document.head.appendChild(s);
@@ -240,6 +246,8 @@
     build();
     var i = idx(), ok = live() && !window.__abOpen;
     box.classList.toggle("on", i === LIST && ok);
+    var nv = document.querySelector("nav"); if (nv && nv.parentElement) nv.parentElement.classList.add("ls-navw");
+    root.classList.toggle("ls-on", touchUI && i === LIST && ok);
     cardsHidden(i === LIST && live());
     if (i !== LIST) { clearTimeout(hideT); deactivate(); told(); }
     else { layout(); }
