@@ -1,15 +1,66 @@
 {
   "cleanUrls": true,
   "redirects": [
-    { "source": "/loading", "destination": "/", "permanent": false },
-    { "source": "/loading/", "destination": "/", "permanent": false },
-    { "source": "/loading/:path*", "destination": "/", "permanent": false },
-    { "source": "/_original", "destination": "/", "permanent": false },
-    { "source": "/_original/", "destination": "/", "permanent": false },
-    { "source": "/_original/:path*", "destination": "/", "permanent": false },
-    { "source": "/build.py", "destination": "/", "permanent": false },
-    { "source": "/server.py", "destination": "/", "permanent": false },
-    { "source": "/README.md", "destination": "/", "permanent": false },
-    { "source": "/README", "destination": "/", "permanent": false }
+    {
+      "source": "/loading",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/loading/",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/loading/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/_original",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/_original/",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/_original/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/build.py",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/server.py",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/README.md",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/README",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(cms|cms.html)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
   ]
 }

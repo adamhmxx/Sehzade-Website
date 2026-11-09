@@ -123,6 +123,8 @@ class H(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
+        if self.path.split("?")[0] in ("/cms", "/cms.html"):
+            self.send_header("X-Robots-Tag", "noindex, nofollow")
         super().end_headers()
 
     def blocked(self):
