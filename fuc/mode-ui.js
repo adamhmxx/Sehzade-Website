@@ -5,7 +5,7 @@
    Modes are found by their place in the mode menu (0 Twister, 1 Space, 2 Grid, 3 List), so the names can be edited in the CMS. */
 (function () {
   var root = document.documentElement, LIST = 3, built = false, box, listEl, pv, hint, rows = [], act = -1, mx = 0, my = 0, px = 0, py = 0, raf = 0, items = [], hideT = 0, touchT = 0;
-  var fine = matchMedia("(pointer: fine)").matches;
+  var fine = matchMedia("(pointer: fine)").matches, touchUI = !fine;
 
   function tabs() { return [].slice.call(document.querySelectorAll('[role="tab"]')); }
   function idx() { return tabs().findIndex(function (t) { return t.getAttribute("aria-selected") === "true"; }); }
@@ -27,6 +27,12 @@
       '#ls-list{position:fixed;left:0;right:0;text-align:center;font-family:"Anton","Inter Display",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;touch-action:none;-webkit-user-select:none;user-select:none;mix-blend-mode:difference}' +
       '.ls-row{display:block;margin:0 auto;width:max-content;max-width:100%;color:#4d4d4d;white-space:nowrap;cursor:pointer;pointer-events:auto;transition:color .22s ease}' +
       '.ls-row.act{color:#fff}' +
+      /* touch devices: one endless scrolling column, the name on the centre line is the active one, its picture sits behind the names */
+      '#ls-scroll{position:fixed;left:0;right:0;overflow-y:scroll;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scroll-snap-type:y mandatory;scrollbar-width:none;pointer-events:auto;text-align:center;font-family:"Anton","Inter Display",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;mix-blend-mode:difference;-webkit-mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent)}' +
+      '#ls-scroll::-webkit-scrollbar{display:none}' +
+      '#ls-scroll .ls-row{scroll-snap-align:center;max-width:none;-webkit-tap-highlight-color:transparent}' +
+      '#ls-mpv{position:fixed;left:0;top:0;border-radius:2px;overflow:hidden;background:#111;pointer-events:none}' +
+      '#ls-mpv i{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .3s ease}' +
       '#sc-hint{position:fixed;z-index:4;pointer-events:none;color:#fff;mix-blend-mode:difference;font:400 16px/1 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;opacity:0;transition:opacity .5s ease}' +
       '#sc-hint.on{opacity:1}';
     document.head.appendChild(s);
@@ -37,7 +43,9 @@
     box = document.createElement("div"); box.id = "ls-root"; box.setAttribute("aria-hidden", "true");
     pv = document.createElement("div"); pv.id = "ls-pv";
     listEl = document.createElement("div"); listEl.id = "ls-list";
-    box.append(pv, listEl); document.body.appendChild(box);
+    box.append(pv, listEl);
+    if (touchUI) buildTouch();
+    document.body.appendChild(box);
     hint = document.createElement("div"); hint.id = "sc-hint"; hint.setAttribute("aria-hidden", "true"); hint.textContent = "(scroll)"; document.body.appendChild(hint);
     var move = function (e) {
       mx = e.clientX; my = e.clientY;
@@ -75,11 +83,78 @@
   window.__lsActive = function () { return act >= 0 ? items[act] || null : null; };
   function told() { try { window.dispatchEvent(new Event("ls-active")); } catch (e) {} }
 
+  /* ---------- touch: endless column ---------- */
+  var scroller, inner, mpv, la, lb, lcur, mRows = [], mN = 0, RH = 0, mK = -1, mSig = "", mTimer = 0, mRaf = 0;
+  function buildTouch() {
+    listEl.style.display = "none"; pv.style.display = "none";
+    mpv = document.createElement("div"); mpv.id = "ls-mpv"; la = document.createElement("i"); lb = document.createElement("i"); mpv.append(la, lb); lcur = la;
+    scroller = document.createElement("div"); scroller.id = "ls-scroll"; inner = document.createElement("div"); scroller.appendChild(inner);
+    box.append(mpv, scroller);
+    scroller.addEventListener("scroll", function () {
+      if (!mRaf) mRaf = requestAnimationFrame(function () { mRaf = 0; mActive(); });
+      clearTimeout(mTimer); mTimer = setTimeout(recentre, 140);
+    }, { passive: true });
+    /* the page behind must not react to touches on the list */
+    ["pointerdown", "pointermove", "touchstart", "wheel"].forEach(function (n) { scroller.addEventListener(n, function (e) { e.stopPropagation(); }, { passive: true }); });
+    scroller.addEventListener("click", function (e) {
+      var row = e.target.closest && e.target.closest(".ls-row"); if (!row) return;
+      var k = +row.dataset.k; if (k === mK) openLink(+row.dataset.i); else scroller.scrollTo({ top: k * RH, behavior: "smooth" });
+    });
+  }
+  function showImg(i) {
+    var it = items[i], u = it && it.image && it.image.src ? "url(" + sm(it.image.src) + ")" : "", nx = lcur === la ? lb : la;
+    nx.style.backgroundImage = u; nx.style.opacity = 1; lcur.style.opacity = 0; lcur = nx;
+  }
+  function mActive() {
+    if (!mN) return;
+    var k = Math.max(0, Math.min(mRows.length - 1, Math.round(scroller.scrollTop / RH)));
+    if (k === mK) return;
+    if (mK >= 0 && mRows[mK]) mRows[mK].classList.remove("act");
+    var i = k % mN, prev = mK < 0 ? -1 : mK % mN; mK = k; mRows[k].classList.add("act");
+    if (i !== prev) showImg(i);
+  }
+  /* the list is repeated; once scrolling stops far from the middle copy, jump to the same name in the middle copy (nobody can see it) */
+  function recentre() {
+    if (!mN || !scroller) return;
+    var k = Math.round(scroller.scrollTop / RH), copies = Math.round(mRows.length / mN), mid = Math.floor(copies / 2);
+    if (k >= mN && k < mN * (copies - 1)) return;
+    scroller.style.scrollSnapType = "none"; scroller.scrollTop = (mid * mN + (k % mN)) * RH;
+    requestAnimationFrame(function () { scroller.style.scrollSnapType = ""; mK = -1; mActive(); });
+  }
+  function layoutTouch() {
+    items = data(); mN = items.length;
+    var tl = document.querySelector('[role="tablist"]'), nav = document.querySelector("nav"), vw = innerWidth, vh = innerHeight;
+    var top = Math.round((nav ? nav.getBoundingClientRect().bottom : 56) + 8), bottom = Math.round((tl ? tl.getBoundingClientRect().top : vh - 72) - 8), H = Math.max(160, bottom - top);
+    var sig = [mN, vw, H, items.map(function (x) { return x.name + "|" + (x.image && x.image.src || ""); }).join(",")].join("/");
+    if (sig === mSig) return; mSig = sig;
+    if (!mN) { inner.textContent = ""; mRows = []; mpv.style.display = "none"; return; }
+    mpv.style.display = "";
+    var fs = Math.round(Math.min(78, Math.max(46, vw * .19))); RH = Math.round(fs * 1.04);
+    var copies = Math.max(3, Math.ceil(130 / mN)); if (copies % 2 === 0) copies++;
+    inner.textContent = ""; mRows = []; mK = -1;
+    scroller.style.top = top + "px"; scroller.style.height = H + "px"; scroller.style.fontSize = fs + "px";
+    inner.style.padding = Math.round((H - RH) / 2) + "px 0";
+    var frag = document.createDocumentFragment();
+    for (var c = 0; c < copies; c++) for (var i = 0; i < mN; i++) {
+      var r = document.createElement("div"); r.className = "ls-row"; r.dataset.i = i; r.dataset.k = mRows.length; r.textContent = items[i].name;
+      r.style.height = RH + "px"; r.style.lineHeight = RH + "px"; frag.appendChild(r); mRows.push(r);
+    }
+    inner.appendChild(frag);
+    var widest = 0; for (var j = 0; j < mN; j++) widest = Math.max(widest, mRows[j].getBoundingClientRect().width);
+    if (widest > vw * .92) { fs = Math.floor(fs * vw * .92 / widest); RH = Math.round(fs * 1.04); scroller.style.fontSize = fs + "px"; inner.style.padding = Math.round((H - RH) / 2) + "px 0"; mRows.forEach(function (r) { r.style.height = RH + "px"; r.style.lineHeight = RH + "px"; }); }
+    var w = Math.round(Math.min(vw * .74, 340)), h = Math.round(w * .75);
+    mpv.style.width = w + "px"; mpv.style.height = h + "px"; mpv.style.transform = "translate3d(" + Math.round((vw - w) / 2) + "px," + Math.round(top + (H - h) / 2) + "px,0)";
+    items.forEach(function (it) { if (it.image && it.image.src) { var im = new Image(); im.src = sm(it.image.src); } });
+    scroller.style.scrollSnapType = "none"; scroller.scrollTop = Math.floor(copies / 2) * mN * RH;
+    requestAnimationFrame(function () { scroller.style.scrollSnapType = ""; mActive(); });
+  }
+
   function openLink(i) { var it = items[i]; if (it && it.link) { try { window.open(it.link, "_blank", "noopener"); } catch (e) {} } }
 
   /* one big line per project, together exactly as tall as the free space between the navbar and the mode menu */
   function layout() {
     if (!built) return;
+    if (touchUI) return layoutTouch();
     items = data(); listEl.textContent = ""; rows = [];
     items.forEach(function (it, i) { var r = document.createElement("div"); r.className = "ls-row"; r.dataset.i = i; r.textContent = it.name; listEl.appendChild(r); rows.push(r); });
     var tl = document.querySelector('[role="tablist"]'), nav = document.querySelector("nav"), vw = innerWidth, vh = innerHeight;
