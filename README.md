@@ -24,7 +24,7 @@ Run:  python3 server.py   ->  http://localhost:8000
 - The same sequence runs in the site from fuc/intro.js (red seeps into black; as it drains the Twister builds itself, its pictures appearing from the bottom of the screen to the top while the ribbon turns into place). Its numbers live in `DEF` at the top of intro.js and in the Liquid panel (Shift+L, tab "Intro"). Keep the two in step: loading/index.html is the sandbox, fuc/intro.js is what ships.
 
 ## Phones
-- Mode switches morph the cards exactly like on desktop. Phones load 720px copies of the pictures (fuc/images/sm/), Space is a little smaller and Globe larger (window.__gcPh in index.html).
+- Mode switches morph the cards exactly like on desktop. Phones load 720px copies of the pictures (fuc/images/sm/), Space is a little smaller (window.__gcPh in index.html).
 - The Twister uses 10 slices per card on touch devices and its items are 30% smaller (see index.html and the gallery chunk). Link hover is off on touch.
 - fuc/hover-info.js   Twister: name, short description and year of the picture under the mouse, top left.
 - fuc/perf-probe.js   add #perf to the address for a live frame-rate readout.
