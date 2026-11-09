@@ -470,6 +470,11 @@
     '#cp .cp-two{display:grid;grid-template-columns:1fr 120px;gap:16px}',
     '#cp .cp-soc{display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;margin-bottom:8px}',
     '#cp .cp-login{grid-column:1/6;max-width:420px}',
+    /* sign-in / connect screens: only the title, the fields and the button, in the middle of the page */
+    '#cp.cp-gate header,#cp.cp-gate .cp-label,#cp.cp-gate .cp-hint:not(.cp-err),#cp.cp-gate .cp-link{display:none!important}',
+    '#cp.cp-gate{min-height:100vh}#cp.cp-gate main{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px var(--m);box-sizing:border-box}',
+    '#cp.cp-gate main .cp-grid{display:block;padding:0;width:100%;max-width:420px}#cp.cp-gate h1{margin:0 0 32px;text-align:center}',
+    '#cp.cp-gate .cp-login{max-width:420px;width:100%}#cp.cp-gate .cp-actions{justify-content:center;margin-top:16px}#cp.cp-gate .cp-err{text-align:center}',
     '#cp .cp-err{min-height:18px;color:#ff8a7e}',
     '#cp .cp-link{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;opacity:.7}',
     '#cp .cp-link:hover{opacity:1}',
@@ -484,6 +489,7 @@
   /* ---------- start: ask the server who we are, sign in if needed, then show the editor ---------- */
   var logoutEl = null;
   function enter() {
+    gate(false);
     if (logoutEl) { logoutEl.style.display = API || GHM ? "" : "none"; logoutEl.textContent = GHM ? "Disconnect" : "Log out"; }
     var go = function () {
       var def = window.__cmsDefaults || defaults();
@@ -505,8 +511,9 @@
       setStatus(GHM ? "Connected to GitHub" : "Published"); go();
     });
   }
+  function gate(on) { var r = document.getElementById("cp"); if (r) r.classList.toggle("cp-gate", !!on); }
   function showLogin() {
-    body.textContent = "";
+    gate(true); body.textContent = "";
     var pw = el("input", { type: "password", autocomplete: "current-password", placeholder: "Password", "aria-label": "Password" }), err = el("p", { class: "cp-err cp-hint" });
     var form = el("form", { class: "cp-login", onsubmit: function (e) {
       e.preventDefault(); err.textContent = "";
@@ -520,7 +527,7 @@
   }
   /* static host: connect GitHub once with a fine-grained token (Contents: read and write on this one repo) */
   function showConnect(msg) {
-    GHM = true; body.textContent = ""; if (logoutEl) logoutEl.style.display = "none";
+    GHM = true; gate(true); body.textContent = ""; if (logoutEl) logoutEl.style.display = "none";
     var tok = el("input", { type: "password", autocomplete: "off", placeholder: "github_pat_…", "aria-label": "GitHub token" }), repo = el("input", { type: "text", "aria-label": "Repository" }), err = el("p", { class: "cp-err cp-hint" }, msg || "");
     repo.value = GHC.repo || DEF_REPO;
     /* the editor-without-publishing escape hatch exists on localhost only; on the public site nothing shows until a token is accepted */
