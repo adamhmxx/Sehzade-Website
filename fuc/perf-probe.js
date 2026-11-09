@@ -14,7 +14,7 @@
     if (!f.n || (f.n = (f.n + 1) % 15) === 1) {
       var mx = 0, slow = 0; win.forEach(function (w) { if (w[1] > mx) mx = w[1]; if (w[1] > 33.4) slow++; });
       var tab = document.querySelector('[role="tab"][aria-selected="true"]');
-      box.textContent = "fps " + Math.round(win.length / 2) + "   worst " + Math.round(mx) + " ms   slow " + slow + "\nlong tasks " + lt + "   " + (document.documentElement.classList.contains("intro-on") ? "intro" : (tab ? tab.textContent.trim() : "")) + "   " + innerWidth + "x" + innerHeight + " @" + (devicePixelRatio || 1);
+      box.textContent = "build " + (window.__build || "?") + "   fps " + Math.round(win.length / 2) + "   worst " + Math.round(mx) + " ms   slow " + slow + "\nlong tasks " + lt + "   " + (document.documentElement.classList.contains("intro-on") ? "intro" : (tab ? tab.textContent.trim() : "")) + "   " + innerWidth + "x" + innerHeight + " @" + (devicePixelRatio || 1);
     }
     f.n = f.n || 1; requestAnimationFrame(f);
   })(performance.now());
