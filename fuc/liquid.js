@@ -305,7 +305,7 @@
   function kick() { if (!run) { run = true; requestAnimationFrame(step); } }
 
   function start() {
-    if (!ENABLED) { if (TOP) panel(); return; }
+    if (!ENABLED) { if (TOP) lazyPanel(); return; }
     document.body.appendChild(cv);
     addEventListener("pointermove", function (e) {
       if (e.pointerType === "touch") return;
@@ -316,10 +316,22 @@
     }, { passive: true });
     document.addEventListener("pointerleave", function () { inside = false; kick(); });
     document.addEventListener("mouseleave", function () { inside = false; kick(); });
-    if (TOP) panel();
+    if (TOP) lazyPanel();
   }
 
   /* ---------- control panel ---------- */
+  /* the panel (a few hundred controls) is only built when someone asks for it: Shift+L, #liquid in the address, or left open last time */
+  function lazyPanel() {
+    var want = false;
+    try { want = localStorage.getItem(KEY + "-ui3") === "1"; } catch (e) {}
+    if (want || /liquid/.test(location.hash)) return panel();
+    var onKey = function (e) {
+      if (!(e.shiftKey && (e.key === "L" || e.key === "l")) || /INPUT|TEXTAREA/.test((e.target || {}).tagName || "")) return;
+      removeEventListener("keydown", onKey); window.__lqOpenNow = 1; panel();
+    };
+    addEventListener("keydown", onKey);
+    addEventListener("hashchange", function h() { if (/liquid/.test(location.hash)) { removeEventListener("hashchange", h); removeEventListener("keydown", onKey); panel(); } });
+  }
   function panel() {
     var ROWS = [
       ["radius", "Radius", 16, 140, 1, "px"],
@@ -478,6 +490,7 @@
     var shown = false;
     try { shown = localStorage.getItem(UIKEY) === "1"; } catch (e) {}
     if (/liquid/.test(location.hash)) shown = true;
+    if (window.__lqOpenNow) { shown = true; window.__lqOpenNow = 0; setTimeout(function () { showUI(true); ui.classList.add("open"); }, 30); }
     ui.style.display = shown ? "" : "none";
     addEventListener("keydown", function (e) {
       if (e.shiftKey && (e.key === "L" || e.key === "l") && !/INPUT|TEXTAREA/.test((e.target || {}).tagName || "")) { showUI(ui.style.display === "none"); if (ui.style.display !== "none") ui.classList.add("open"); }
