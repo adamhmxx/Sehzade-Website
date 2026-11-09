@@ -14,12 +14,28 @@ Run:  python3 server.py   ->  http://localhost:8000   (CMS: http://localhost:800
 - build.py        makes build/page.html for the Claude artifact and lists the files to publish with it
 
 ## Interaction scripts (fuc/)
-- liquid.js   liquid hover: a soft blob, distortion and blur near the cursor, plus a control panel for it, link hover and the About popup (Shift+L; settings kept in localStorage). Shared by index.html and about.html.
+- liquid.js   liquid hover: a soft blob, distortion and blur near the cursor, plus a control panel for it, the Intro settings and the About popup (Shift+L; settings kept in localStorage). Shared by index.html and about.html.
 - linkfx.js   one hover effect for every text link, tab and button: letters slide in from both edges with a motion blur.
 - cms.js + cms.html   the CMS (Shift+C on the site, or open /cms): projects (add, edit, reorder, delete, drop images to add), About text, social links (any number), navbar/page texts, JSON backup. With server.py it signs in with a password and publishes to content.json + uploads/, which visitors load. Without the server it falls back to this browser's localStorage.
 - about-card.js   the About card: draggable paper sheet that bends while it moves (strip copy of the page), grid overlay (Shift+G)
 
-## CMS password and publishing
-- server.py makes a password on first start (printed once, kept in .cms-password, which is git-ignored). Or set CMS_PASSWORD in the environment.
-- Content is content.json, images are uploads/. Commit/deploy both to ship edits; back them up like any other file.
-- The server hides dotfiles, server.py and build.py from visitors. Run it behind HTTPS in production (the login cookie is HttpOnly, SameSite=Strict).
+## Loading entrance, stand-alone (loading/)
+- loading/index.html   the loading entrance on its own, from the red screen until the background is plain black, with its control panel (Hide/Show with C, Replay with R). Every setting has a slider and a description; values are kept in localStorage, "Copy values" gives the numbers as JSON. Open it through `python3 server.py` -> http://localhost:8000/loading/
+- The same sequence runs in the site from fuc/intro.js (red seeps into black; as it drains the Twister builds itself, its pictures appearing from the bottom of the screen to the top while the ribbon turns into place). Its numbers live in `DEF` at the top of intro.js and in the Liquid panel (Shift+L, tab "Intro"). Keep the two in step: loading/index.html is the sandbox, fuc/intro.js is what ships.
+
+## Phones
+- Mode switches morph the cards exactly like on desktop. Phones load 720px copies of the pictures (fuc/images/sm/), Space is a little smaller and Globe larger (window.__gcPh in index.html).
+- The Twister uses 10 slices per card on touch devices and its items are 30% smaller (see index.html and the gallery chunk). Link hover is off on touch.
+- fuc/hover-info.js   Twister: name, short description and year of the picture under the mouse, top left.
+- fuc/perf-probe.js   add #perf to the address for a live frame-rate readout.
+
+## Twister and hover liquid
+- Twister: the cards ride along one spiral. Scrolling, dragging and auto scroll move every card ALONG the spiral (it turns and rises, and cards wrap from the top back to the bottom off screen). Never fewer than 24 slices per card on desktop.
+- Gallery hover (liquid.js, jellyFx): wet-paint wobble. Cards near the cursor are shoved along by the cursor, jolt away on arrival and slosh back on springs (translate, scale, rotate of the whole card, so edges stay smooth). Over it sits the picture layer of the loading screen's disappear (melt + dissolve of the picture under the cursor). Both are tuned in the Liquid panel (Shift+L, tab "Hover"); melt and dissolve can be set to 0. Text keeps the flowing-noise ripple.
+
+## CMS: how it publishes
+- Live site (Vercel, static): open /cms, connect GitHub once with a fine-grained token (this repo only, Contents: Read and write; kept in that browser only). Every edit is committed to content.json (images to uploads/) and Vercel redeploys by itself, so edits are live in about a minute. Visitors only read content.json.
+- Local: python3 server.py makes a password on first start (printed once, saved in .cms-password, git-ignored; or set CMS_PASSWORD), then /cms publishes straight to content.json and uploads/ on disk. Commit them to ship.
+- Neither: the editor still works but only in that browser (localStorage).
+- server.py hides dotfiles, server.py and build.py from visitors; run it behind HTTPS if you ever host it.
+

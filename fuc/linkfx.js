@@ -3,8 +3,8 @@
 (function () {
   if (window.__linkfx) return;
   window.__linkfx = 1;
-  var SPLIT = "#none-split"; /* plain-text controls (the card's Close button), split into letters on first hover */
-  var SEL = 'a[href], [role="tab"], ' + SPLIT;
+  var SPLIT = "#none-split"; /* plain-text controls, split into letters on first hover (none at the moment: every link and tab already has letter spans) */
+  var SEL = 'a[href], [role="tab"], button.abx-close, ' + SPLIT;
   var css = document.createElement("style");
   css.textContent =
     'a[href]{text-decoration:none!important}' +
@@ -35,6 +35,7 @@
     return Object.assign({}, LD, c || {});
   }
 
+  /* The hover text interaction: the letters fly in from both edges toward the middle with a motion blur (the liquid ripple on the word comes from liquid.js) */
   function play(el) {
     var s = letters(el);
     if (!s.length || !s[0].animate) return;
@@ -60,13 +61,25 @@
     document.addEventListener("click", function (e) { var l = e.target.closest && e.target.closest('nav a[href="/"], nav a[href="./"]'); if (l) { e.preventDefault(); e.stopPropagation(); } }, true);
     var lcss = document.createElement("style"); lcss.textContent = 'nav a[href="/"],nav a[href="./"]{cursor:default!important}'; document.head.appendChild(lcss);
   }
+  /* phones and tablets have no hover: a tap must not trigger the letter animation (the logo rule above still applies) */
+  if (matchMedia("(hover: none), (pointer: coarse)").matches) return;
   document.addEventListener("mouseover", function (e) {
     var el = e.target.closest && e.target.closest(SEL);
-    if (!el || el === cur || isLogo(el)) return;
+    if (!el || isLogo(el)) return;
+    /* the effect restarts on every real entry, even if the previous element was replaced by a re-render or the pointer left the window */
+    if (el === cur && el.isConnected) return;
     cur = el;
     play(el);
+    /* the mode menu re-renders its letters right when the pointer arrives, which would throw the animation away: replay it once on the new letters */
+    if (window.MutationObserver) {
+      var n = 0, mo = new MutationObserver(function () { if (cur !== el || ++n > 2) return mo.disconnect(); if (letters(el).some(function (x) { return !x.getAnimations().length; })) play(el); });
+      mo.observe(el, { childList: true, subtree: true }); setTimeout(function () { mo.disconnect(); }, 900);
+    }
   }, true);
   document.addEventListener("mouseout", function (e) {
-    if (cur && !cur.contains(e.relatedTarget)) cur = null;
+    if (cur && !cur.contains(e.relatedTarget)) { cur = null; }
   }, true);
+  document.addEventListener("pointerleave", function () { cur = null; });
+  /* a click re-renders the mode menu: let the next hover play again */
+  document.addEventListener("click", function () { cur = null; }, true);
 })();

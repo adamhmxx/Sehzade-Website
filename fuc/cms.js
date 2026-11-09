@@ -3,7 +3,8 @@
    - About tab: the About text, client list, email, booking link and social links.
    - Data tab: export / import everything as JSON, or reset to the original content.
    With server.py running, the editor asks for the CMS password once, then every change is published to content.json / uploads/
-   (visitors load content.json). Without the server it falls back to this browser only (localStorage).
+   (visitors load content.json). On a static host (Vercel) the editor connects to GitHub with a token and commits content.json and
+   uploads/ to the repo; the host redeploys by itself. Without either it falls back to this browser only (localStorage).
    The editor is its own page (cms.html, which sets window.__cmsPage); the main page and the About page only read the data
    and pick up changes through the storage event. Open the editor with Shift+C on the site, or go to /cms. */
 (function () {
@@ -31,12 +32,55 @@
     if (!Array.isArray(o.socials)) o.socials = SOCIALS.map(function (s) { return { label: s[1], url: o[s[0]] || "" }; });
     return o;
   }
-  var API = false, AUTHED = false, pushTimer = 0, pushing = false, pushAgain = false;
+  var API = false, GHM = false, AUTHED = false, pushTimer = 0, pushing = false, pushAgain = false, ghTimer = 0, previews = {};
+  function remote() { return (API || GHM) && AUTHED; }
+  function gated() { return (API || GHM) && !AUTHED; }
+  /* GitHub mode: token + repo are kept in this browser only */
+  var GHKEY = "site-cms-gh", DEF_REPO = "adamhmxx/sehzade-website";
+  function readGH() { try { return JSON.parse(localStorage.getItem(GHKEY) || "null") || {}; } catch (e) { return {}; } }
+  var GHC = readGH();
+  function ghApi(path, opts) {
+    opts = opts || {};
+    return fetch((GHC.api || "https://api.github.com") + path, Object.assign({}, opts, { headers: Object.assign({ Authorization: "Bearer " + GHC.token, Accept: "application/vnd.github+json" }, opts.headers || {}) }));
+  }
+  function b64utf8(str) { var b = new TextEncoder().encode(str), s = ""; for (var i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
+  function ghFile(path) {
+    return ghApi("/repos/" + GHC.repo + "/contents/" + path + "?ref=" + encodeURIComponent(GHC.branch || "main") + "&t=" + Date.now()).then(function (r) {
+      if (r.status === 404) return null; if (r.status === 401 || r.status === 403) throw "auth"; if (!r.ok) throw r.status; return r.json();
+    });
+  }
+  /* create or update one file in the repo (skips the commit when nothing changed) */
+  function ghPut(path, b64, msg, isNew) {
+    function attempt(n) {
+      return (isNew ? Promise.resolve(null) : ghFile(path)).then(function (f) {
+        if (f && f.content && f.content.replace(/\s/g, "") === b64) return { same: true };
+        var body = { message: msg, content: b64, branch: GHC.branch || "main" }; if (f && f.sha) body.sha = f.sha;
+        return ghApi("/repos/" + GHC.repo + "/contents/" + path, { method: "PUT", body: JSON.stringify(body) }).then(function (r) {
+          if (r.ok) return r.json(); if ((r.status === 409 || r.status === 422) && n < 2) return attempt(n + 1);
+          if (r.status === 401 || r.status === 403 || r.status === 404) throw "auth"; throw r.status;
+        });
+      });
+    }
+    return attempt(0);
+  }
+  function ghPush() {
+    if (pushing) { pushAgain = true; return; }
+    pushing = true; pushAgain = false; setStatus("Publishing…");
+    var text = JSON.stringify({ items: data.items, about: data.about || {}, site: data.site || {} }, null, 1) + "\n";
+    ghPut("content.json", b64utf8(text), "CMS: update content").then(function () {
+      pushing = false; if (pushAgain) ghPush(); else setStatus("Published. Live in about a minute.");
+    }).catch(function (e) {
+      pushing = false;
+      if (e === "auth") { AUTHED = false; showConnect("GitHub refused the token. It may have expired or lack write access to the repo."); setStatus("Not connected", true); }
+      else setStatus("Could not publish (" + e + "). Your edits are kept in this browser.", true);
+    });
+  }
   var saveTimer = 0, statusEl = null;
   function setStatus(t, bad) { if (statusEl) { statusEl.textContent = t; statusEl.style.color = bad ? "#ff6b5e" : "rgba(242,242,242,.55)"; } }
   function persist() {
     var ok = true;
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { ok = false; }
+    if (PAGE && GHM && AUTHED) { clearTimeout(ghTimer); setStatus("Saved. Publishing in a moment…"); ghTimer = setTimeout(function () { ghTimer = 0; ghPush(); }, 2500); return; }
     if (PAGE && API && AUTHED) { push(); return; }
     if (ok) setStatus(PAGE && !API ? "Saved in this browser only" : "Saved"); else setStatus("Storage is full. Remove a project or use smaller images.", true);
   }
@@ -211,6 +255,14 @@
   }
   /* with the server: store the image as a file and keep only its path; otherwise keep the data URL */
   function uploadImage(dataUrl, done) {
+    if (GHM && AUTHED) {
+      var m = /^data:(image\/[a-z+.-]+);base64,(.*)$/.exec(dataUrl), ext = m && ({ "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png" })[m[1]];
+      if (!m || !ext) { done(dataUrl); return; }
+      var path = "uploads/" + Math.random().toString(16).slice(2, 10) + Date.now().toString(16) + "." + ext;
+      setStatus("Uploading image…");
+      ghPut(path, m[2], "CMS: add image", true).then(function () { previews[path] = dataUrl; done(path); }).catch(function () { setStatus("Could not upload the image.", true); done(""); });
+      return;
+    }
     if (!(API && AUTHED)) { done(dataUrl); return; }
     fetch(dataUrl).then(function (r) { return r.blob(); }).then(function (b) {
       return fetch("api/upload", { method: "POST", credentials: "same-origin", headers: { "Content-Type": b.type || "image/jpeg" }, body: b });
@@ -226,6 +278,7 @@
       compress(files[i], function (out) {
         if (!out) { next(i + 1); return; }
         uploadImage(out, function (url) {
+          if (!url) { next(i + 1); return; }
           var id = "p" + Date.now().toString(36) + i;
           data.items.unshift({ id: id, name: files[i].name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "), description: "", services: "", year: String(new Date().getFullYear()), link: "", src: url, srcSet: "" });
           sel = id; tab = "portfolio"; next(i + 1);
@@ -233,7 +286,7 @@
       });
     })(0);
   }
-  function bg(src) { return src ? "url('" + src.replace(/'/g, "%27") + "')" : ""; }
+  function bg(src) { src = previews[src] || src; return src ? "url('" + src.replace(/'/g, "%27") + "')" : ""; }
 
   var tab = "portfolio", body = null, tabsEl = null, sel = null;
   function render() {
@@ -300,7 +353,7 @@
           field("Year", it.year, function (v) { it.year = v; if (rowEl) rowEl.querySelector(".cp-year").textContent = v; changed(); })
         ]),
         field("Link (optional)", it.link, function (v) { it.link = v; changed(); }, { placeholder: "https://…" }),
-        el("p", { class: "cp-hint" }, "Tip: 4:3 images fit the cards best. Drop image files anywhere on this page to add them as new projects. Images are resized to 1500px" + (API ? "." : " and stored in this browser."))
+        el("p", { class: "cp-hint" }, "Tip: 4:3 images fit the cards best. Drop image files anywhere on this page to add them as new projects. Images are resized to 1500px" + (API || GHM ? "." : " and stored in this browser."))
       );
     } else right.appendChild(el("p", { class: "cp-hint" }, "Select a project to edit it."));
     body.append(left, right);
@@ -362,7 +415,7 @@
       el("div", { class: "cp-actions" }, [el("button", { type: "button", class: "cp-btn", onclick: function () {
         ta.select(); try { navigator.clipboard.writeText(ta.value).then(function () { setStatus("Copied to clipboard"); }, function () { setStatus("Select the text and copy it"); }); } catch (e) { setStatus("Select the text and copy it"); }
       } }, "Copy JSON")]),
-      el("p", { class: "cp-hint" }, API ? "Backup of everything on the site. The live copy is content.json in the site folder." : "The server is not running, so changes live in this browser only. Start it with python3 server.py to publish for every visitor."));
+      el("p", { class: "cp-hint" }, API || GHM ? "Backup of everything on the site. The live copy is content.json in the site." : "Not connected, so changes live in this browser only. Connect GitHub (or run python3 server.py) to publish for every visitor."));
     var rs = el("button", { type: "button", class: "cp-btn cp-danger" }, "Reset all content");
     ask(rs, "Reset all content", function () { data = { items: null, about: {} }; try { localStorage.removeItem(KEY); } catch (e) {} window.dispatchEvent(new Event("cms-change")); sel = null; render(); setStatus("Back to the original content"); });
     c2.append(el("div", { class: "cp-label" }, "Import"), imp,
@@ -432,7 +485,7 @@
   /* ---------- start: ask the server who we are, sign in if needed, then show the editor ---------- */
   var logoutEl = null;
   function enter() {
-    if (logoutEl) logoutEl.style.display = API ? "" : "none";
+    if (logoutEl) { logoutEl.style.display = API || GHM ? "" : "none"; logoutEl.textContent = GHM ? "Disconnect" : "Log out"; }
     var go = function () {
       var def = window.__cmsDefaults || defaults();
       if (data.items || def) { render(); return; }
@@ -442,12 +495,15 @@
       document.body.appendChild(f);
       var n = 0, t = setInterval(function () { if (defaults() || ++n > 60) { clearInterval(t); f.remove(); render(); } }, 300);
     };
-    if (!API) { setStatus("Saved in this browser only"); go(); return; }
-    /* the server copy wins; if it has none yet, publish what this browser already has */
-    fetch("content.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (j) {
+    if (!API && !GHM) { setStatus("Saved in this browser only"); go(); return; }
+    /* the published copy wins; if there is none yet, publish what this browser already has */
+    var first = GHM ? ghFile("content.json").then(function (f) { return f && f.content ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(f.content.replace(/\s/g, "")), function (c) { return c.charCodeAt(0); }))) : null; })
+                    : fetch("content.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; });
+    first.catch(function (e) { if (e === "auth") { AUTHED = false; showConnect("GitHub refused the token. It may have expired or lack write access to the repo."); return "stop"; } return null; }).then(function (j) {
+      if (j === "stop") return;
       if (j) applyRemote(j);
-      else if (data.items || Object.keys(data.about || {}).length || Object.keys(data.site || {}).length) push();
-      setStatus("Published"); go();
+      else if (data.items || Object.keys(data.about || {}).length || Object.keys(data.site || {}).length) { if (GHM) ghPush(); else push(); }
+      setStatus(GHM ? "Connected to GitHub" : "Published"); go();
     });
   }
   function showLogin() {
@@ -463,15 +519,40 @@
       el("p", { class: "cp-hint" }, "The password is in .cms-password next to server.py (or the CMS_PASSWORD you set).")]);
     body.appendChild(form); pw.focus();
   }
+  /* static host: connect GitHub once with a fine-grained token (Contents: read and write on this one repo) */
+  function showConnect(msg) {
+    GHM = true; body.textContent = ""; if (logoutEl) logoutEl.style.display = "none";
+    var tok = el("input", { type: "password", autocomplete: "off", placeholder: "github_pat_…", "aria-label": "GitHub token" }), repo = el("input", { type: "text", "aria-label": "Repository" }), err = el("p", { class: "cp-err cp-hint" }, msg || "");
+    repo.value = GHC.repo || DEF_REPO;
+    var skip = el("button", { type: "button", class: "cp-link", style: "margin-left:16px", onclick: function () { GHM = false; AUTHED = false; enter(); } }, "Edit without publishing");
+    var form = el("form", { class: "cp-login", onsubmit: function (e) {
+      e.preventDefault(); err.textContent = "Checking…";
+      GHC = { token: tok.value.trim(), repo: repo.value.trim(), branch: "main", api: GHC.api };
+      ghApi("/repos/" + GHC.repo).then(function (r) { if (!r.ok) throw r.status; return r.json(); }).then(function (j) {
+        if (!j.permissions || !j.permissions.push) throw "perm";
+        GHC.branch = j.default_branch || "main"; try { localStorage.setItem(GHKEY, JSON.stringify(GHC)); } catch (x) {}
+        AUTHED = true; enter();
+      }).catch(function (x) { err.textContent = x === "perm" ? "This token cannot write to that repository. Give it Contents: Read and write." : x === 401 || x === 404 ? "GitHub did not accept that token for this repository." : "Could not reach GitHub."; });
+    } }, [el("div", { class: "cp-label" }, "Connect GitHub to publish"), tok, repo, err,
+      el("div", { class: "cp-actions" }, [el("button", { type: "submit", class: "cp-btn cp-add", style: "margin:0;width:auto" }, "Connect"), skip]),
+      el("p", { class: "cp-hint" }, "One time only. Create a fine-grained token at github.com/settings/personal-access-tokens/new, limited to this repository with Contents: Read and write. It stays in this browser. Every change is saved to the repo and the site redeploys by itself in about a minute.")]);
+    body.appendChild(form); tok.focus();
+  }
   function boot() {
     fetch("api/session", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
-      .then(function (s) { API = !!(s && s.api); AUTHED = !!(s && s.authed); if (API && !AUTHED) { if (logoutEl) logoutEl.style.display = "none"; showLogin(); } else enter(); });
+      .then(function (s) {
+        API = !!(s && s.api);
+        if (API) { AUTHED = !!s.authed; if (!AUTHED) { if (logoutEl) logoutEl.style.display = "none"; showLogin(); } else enter(); return; }
+        GHM = true; if (GHC.token && GHC.repo) { AUTHED = true; enter(); } else showConnect();
+      });
   }
+  addEventListener("beforeunload", function (e) { if (PAGE && (ghTimer || pushing)) { e.preventDefault(); e.returnValue = ""; } });
 
   function build() {
     document.head.appendChild(el("style", {}, CSS));
     statusEl = el("span", { id: "cp-status" }, "Saved");
     logoutEl = el("button", { type: "button", class: "cp-link", style: "display:none", onclick: function () {
+      if (GHM) { try { localStorage.removeItem(GHKEY); } catch (e) {} GHC = {}; AUTHED = false; setStatus(""); showConnect(); return; }
       fetch("api/logout", { method: "POST", credentials: "same-origin" }).then(function () { AUTHED = false; logoutEl.style.display = "none"; setStatus(""); showLogin(); });
     } }, "Log out");
     tabsEl = el("div", { class: "cp-tabs" }, [["portfolio", "Portfolio"], ["about", "About"], ["site", "Site"], ["data", "Data"]].map(function (t) {
@@ -485,8 +566,8 @@
       el("main", {}, [el("div", { class: "cp-grid" }, el("h1", {}, "CMS")), body])
     ]);
     document.body.appendChild(root);
-    addEventListener("dragover", function (e) { if (AUTHED || !API) { var t = (e.dataTransfer || {}).types; if (t && [].indexOf.call(t, "Files") >= 0) e.preventDefault(); } });
-    addEventListener("drop", function (e) { if (!(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length)) return; e.preventDefault(); if (API && !AUTHED) return; addFiles(e.dataTransfer.files); });
+    addEventListener("dragover", function (e) { if (!gated()) { var t = (e.dataTransfer || {}).types; if (t && [].indexOf.call(t, "Files") >= 0) e.preventDefault(); } });
+    addEventListener("drop", function (e) { if (!(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length)) return; e.preventDefault(); if (gated()) return; addFiles(e.dataTransfer.files); });
     boot();
     document.title = "CMS — Sehzade";
   }

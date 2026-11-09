@@ -5,31 +5,46 @@
 <meta name="viewport" content="width=device-width">
 <title>Adam Himawan Portfolio</title>
 <style>html,body{background:#0b0b0b;margin:0;padding:0}</style>
+<style id="nav-blend">/* no edge vignettes any more: the navbar and the mode menu are pure white and blend with "difference", so they stay readable over any picture */
+.framer-1lxe4ax-container,[role="tablist"]{mix-blend-mode:difference}
+.framer-1lxe4ax-container a,.framer-1lxe4ax-container a *,.framer-1lxe4ax-container p,.framer-1lxe4ax-container span,[role="tablist"] button,[role="tablist"] button *{color:#fff!important}</style>
 <style id="intro-css">
-html.intro-on #main{opacity:0;pointer-events:none}
+html.intro-on #main,html.intro-on #main *{visibility:hidden!important;pointer-events:none}/* a truly blank page behind the loader: a faint copy of the Twister used to show through on some browsers (opacity does not reach 3D layers there) */
 html.intro-on body{background:#0b0b0b}
 #intro{position:fixed;inset:0;z-index:2147483646;pointer-events:none;display:none;color:#0b0b0b}
 html.intro-on #intro{display:block}
-#intro svg.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
-#intro .in-ui{position:absolute;inset:0;transition:opacity .7s ease}
-#intro.out .in-ui{opacity:0}
-#intro .in-line{position:absolute;left:32px;right:32px;top:50%;height:2px;background:rgba(11,11,11,.18)}
+#intro canvas.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+#intro .in-ui{position:absolute;inset:0}
+#intro .in-pct,#intro .in-welcome,#intro .in-line{transition:opacity .7s ease}
+#intro.out .in-pct,#intro.out .in-welcome,#intro.out .in-line{opacity:0}
+#intro .in-line{position:absolute;left:0;right:0;top:50%;height:2px}
 #intro .in-line i{position:absolute;left:0;top:0;bottom:0;width:100%;background:#0b0b0b;transform-origin:0 50%;transform:scaleX(0)}
 #intro .in-pct,#intro .in-welcome{position:absolute;top:50%;margin-top:-34px;font:400 16px/1 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;font-variant-numeric:tabular-nums}
-#intro .in-pct{left:32px}
-#intro .in-welcome{right:32px}
+#intro .in-pct{right:32px}
+#intro .in-welcome{left:32px;font-size:20px;margin-top:-38px}
+#intro .in-dots{font-style:normal}#intro .in-dots b{font-weight:400;animation:indot 1.2s infinite}#intro .in-dots b:nth-child(2){animation-delay:.2s}#intro .in-dots b:nth-child(3){animation-delay:.4s}@keyframes indot{0%,60%,100%{opacity:.2}30%{opacity:1}}
 #intro .in-big{padding-bottom:.07em;position:absolute;left:24px;bottom:3vw;font:400 20vw/.82 "Anton",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;filter:url(#in-liquid);will-change:filter}
 #intro .in-big span{display:inline-block;transform:translateY(105%);opacity:0}
-@media (max-width:809.98px){#intro .in-line{left:16px;right:16px}#intro .in-pct{left:16px}#intro .in-welcome{right:16px}#intro .in-big{left:12px;font-size:23vw;bottom:5vw}}
-#intro-row{position:fixed;left:0;top:0;width:100%;height:100%;z-index:2147483640;pointer-events:none;overflow:hidden;display:none}
-#intro-row .rw{position:absolute;left:0;top:50%;display:flex;gap:16px;will-change:transform}
-#intro-row .rw div{flex:none;border-radius:2px;background-size:cover;background-position:center;background-color:#111}
+@media (max-width:809.98px){#intro .in-pct{right:16px;font-size:14px}#intro .in-welcome{left:16px;font-size:16px;margin-top:-34px}#intro .in-big{left:12px;font-size:23vw;bottom:5vw}}
 html.intro-ui nav,html.intro-ui [role=tablist]{opacity:0!important;pointer-events:none}
 html nav,html [role=tablist]{transition:opacity .9s ease,transform .9s cubic-bezier(.22,1,.36,1)}
 html.intro-ui nav{transform:translateY(-10px)!important}
 html.intro-ui [role=tablist]{transform:translateX(-50%) translateY(12px)!important}
 </style>
+<script>/* phone sizes for the gallery modes (Space smaller so items stop overlapping, Globe larger) */window.__gcPh={fsc:52,fx:40,grad:38};</script>
 <script>if(!/nointro/.test(location.hash)){document.documentElement.classList.add("intro-on","intro-ui")}</script>
+<style id="mobile-fit">
+/* phones: the layout must follow the VISIBLE screen (dvh), not the tall one that hides the bottom behind the browser toolbar; the mode menu then always sits above the toolbar and the home bar */
+@supports (height:100dvh){html,body{height:100dvh!important}div[style*="min-height: 100vh"]{min-height:100dvh!important}}
+/* landscape phones: the gallery asked for at least 520px of height, which pushed the mode menu below the visible screen */
+@media (max-height:560px){div[style*="min-height: 520px"]{min-height:0!important}}
+@media (pointer:coarse){[role=tablist]{bottom:max(64px,calc(env(safe-area-inset-bottom,0px) + 40px))!important}}
+/* touch: every link, tab and button gets a tap area at least 44px tall (40px+ even inside the scaled About card), without moving or resizing anything visible */
+@media (pointer:coarse){:where(a[href],[role=tab],button){position:relative}a[href]::before,[role=tab]::before,button::before{content:"";position:absolute;left:50%;top:50%;width:100%;height:max(100%,var(--tap,44px));transform:translate(-50%,-50%)}}
+</style>
+<script>/* phones: the Twister is drawn with fewer slices (a quarter of the layers), which keeps dragging and the entrance smooth on a phone GPU */
+if(matchMedia("(pointer:coarse)").matches)window.__twEff=16;</script>
+
 
 
 	
@@ -110,14 +125,11 @@ html.intro-ui [role=tablist]{transform:translateX(-50%) translateY(12px)!importa
 </head>
 <body>
 <div id="intro" aria-hidden="true">
-<svg class="in-bg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><defs>
-<filter id="in-edge" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feTurbulence id="in-edge-t" type="fractalNoise" baseFrequency="0.004 0.006" numOctaves="2" seed="7" result="n"/><feOffset id="in-edge-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap in="SourceGraphic" in2="o" scale="140" xChannelSelector="R" yChannelSelector="G"/></filter>
-<mask id="in-mask" maskUnits="userSpaceOnUse" x="-200" y="-200" width="4000" height="3000"><rect x="-200" y="-200" width="4000" height="3000" fill="#fff"/><g filter="url(#in-edge)" id="in-holes"></g></mask>
-<filter id="in-liquid" x="-10%" y="-30%" width="120%" height="170%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>
-</defs><rect id="in-red" x="-200" y="-200" width="4000" height="3000" fill="#ff2d20" mask="url(#in-mask)"/></svg>
-<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Welcome to Sehzade Sphere</span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>
+<canvas class="in-bg" id="seep"></canvas><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<filter id="in-liquid" x="-25%" y="-60%" width="150%" height="240%" color-interpolation-filters="sRGB"><feTurbulence id="in-liq-t" type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="3" result="n"/><feOffset id="in-liq-o" in="n" dx="0" dy="0" result="o"/><feDisplacementMap id="in-liq-d" in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>
+</defs></svg>
+<div class="in-ui"><span class="in-pct">0%</span><span class="in-welcome">Loading<i class="in-dots"><b>.</b><b>.</b><b>.</b></i></span><div class="in-line"><i></i></div><div class="in-big" aria-hidden="true"></div></div>
 </div>
-<div id="intro-row" aria-hidden="true"><div class="rw"></div></div>
 
 	<!-- Start of bodyStart -->
     
@@ -130,13 +142,19 @@ html.intro-ui [role=tablist]{transform:translateX(-50%) translateY(12px)!importa
 	<div id="__framer-badge-container"><!--$--><!--$--><!--$--><a class="framer-6jWyo framer-n0ccwk framer-v-n0ccwk framer-bmpgw8 __framer-badge" data-framer-appear-id="n0ccwk" data-framer-name="Light" data-nosnippet="true" style="will-change:transform;pointer-events:auto;opacity:0.001;transform:translateY(10px)" href="https://www.framer.com" rel="noopener" title="Create a free website with Framer, the website builder loved by startups, designers and agencies."><div class="framer-13yxzio" data-framer-name="Backdrop" style="background-color:rgb(11, 11, 11);border-bottom-left-radius:10px;border-bottom-right-radius:10px;border-top-left-radius:10px;border-top-right-radius:10px;box-shadow:0px 0.6021873017743928px 1.5656869846134214px -1.5px rgba(0, 0, 0, 0.17), 0px 2.288533303243457px 5.950186588432988px -3px rgba(0, 0, 0, 0.14), 0px 10px 26px -4.5px rgba(0, 0, 0, 0.02)"></div><div class="framer-19yaanm" data-framer-name="Content" style="transform:translate(-50%, -50%)"><div class="framer-1kflzx5"><div data-framer-name="Logo" class="framer-hcsc7 framer-e50co" style="--1bd4d3i:rgb(242, 242, 242);--otdjsv:rgb(242, 242, 242);transform:translateX(-50%)"></div></div><!--$--><p style="position:absolute;transform:scale(0.001)">Create a free website with Framer, the website builder loved by startups, designers and agencies.</p><div data-framer-name="Text" class="framer-g7oZR framer-1um7t9d" style="--1bd4d3i:rgb(242, 242, 242);--otdjsv:rgb(242, 242, 242)"></div><!--/$--></div><div class="framer-j4ugry" data-framer-name="Bottom" style="mask:linear-gradient(180deg, rgba(0,0,0,0) 65%, rgba(0,0,0,1) 100%) add;-webkit-mask:linear-gradient(180deg, rgba(0,0,0,0) 65%, rgba(0,0,0,1) 100%) add;border-bottom-left-radius:11px;border-bottom-right-radius:11px;border-top-left-radius:11px;border-top-right-radius:11px;box-shadow:inset 0px 0px 0px 1px rgb(242, 242, 242);opacity:0.06"></div><div class="framer-jnuwbw" data-framer-name="Border" style="border-bottom-left-radius:11px;border-bottom-right-radius:11px;border-top-left-radius:11px;border-top-right-radius:11px;box-shadow:inset 0px 0px 0px 1px rgb(242, 242, 242);opacity:0.04"></div></a><!--/$--><!--/$--><!--/$--></div>
 	<script data-framer-appear-animation="no-preference"></script>
 	<script>typeof document<"u"&&(window.process={...window.process,env:{...window.process?.env,NODE_ENV:"production"}});</script>
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
-<script src="fuc/ascii-portrait.js" defer></script>
-<script src="fuc/intro.js" defer></script>
-<script src="fuc/works-ascii.js" defer></script>
-<script src="fuc/linkfx.js" defer></script>
-<script src="fuc/cms.js" defer></script>
-<script src="fuc/liquid.js" defer></script>
+	<link rel="preload" href="fuc/assets/anton-latin.woff2" as="font" type="font/woff2" crossorigin><style>@font-face{font-family:"Anton";font-style:normal;font-weight:400;font-display:swap;src:url(fuc/assets/anton-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}</style>
+<script>window.__build="20261109e"</script>
+<script src="fuc/perf-probe.js?v=20261109e" defer></script>
+<script src="fuc/hover-info.js?v=20261109e" defer></script>
+<script>/* every portfolio picture is decoded once, in quiet moments after the entrance, and kept decoded: a mode switch builds new picture
+   elements for the cards, and an undecoded picture is blank for a few frames, which on phones swallowed the start of the morph */
+(function(){var keep=[];function go(){var a=(window.__cmsItems&&window.__cmsItems())||window.__cmsDefaults||[],q=[];a.forEach(function(it){var u=it&&it.image&&it.image.src;if(u)q.push(window.__sms?window.__sms(u):u)});q=q.filter(function(u,i){return q.indexOf(u)===i});
+(function next(){var u=q.shift();if(!u)return;var im=new Image();im.decoding="async";im.src=u;keep.push(im);(im.decode?im.decode():Promise.resolve()).catch(function(){}).then(function(){(window.requestIdleCallback||setTimeout)(next,{timeout:400})})})();window.__galDecoded=keep;}
+if(document.documentElement.classList.contains("intro-ui"))addEventListener("intro-done",function(){setTimeout(go,300)},{once:true});else addEventListener("load",function(){setTimeout(go,800)});})();</script>
+<script src="fuc/intro.js?v=20261109e" defer></script>
+<script src="fuc/linkfx.js?v=20261109e" defer></script>
+<script src="fuc/cms.js?v=20261109f" defer></script>
+<script src="fuc/liquid.js?v=20261109e" defer></script>
 <link rel="icon" href="data:,">
 <style id="site-overrides">
 html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
@@ -149,8 +167,8 @@ body *{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weig
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 #__framer-badge-container{display:none!important}
 </style>
-<script src="fuc/about-card.js" defer></script>
-<link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/rolldown-runtime.Dh6celcD.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/react.D20wc1Tc.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/framer.Byg2jyrS.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/motion.B09WepHq.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/QHQXYhTjjHvyon0f_k6M-OfqjnUAbqgCLQVvwyxe1Ww.CvVJUcg3.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/shared-lib.Dm0hivNl.mjs"><script type="module" async data-framer-bundle="main" fetchpriority="low" src="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/script_main.C3M_euHQ.mjs"></script><div id="svg-templates" style="position: absolute; overflow: hidden; bottom: 0; left: 0; width: 0; height: 0; z-index: 0; contain: strict" aria-hidden="true">
+<script src="fuc/about-card.js?v=20261109e" defer></script>
+<link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/rolldown-runtime.Dh6celcD.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/react.D20wc1Tc.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/framer.Byg2jyrS.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/motion.B09WepHq.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/QHQXYhTjjHvyon0f_k6M-OfqjnUAbqgCLQVvwyxe1Ww.v2.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/shared-lib.Dm0hivNl.mjs"><script type="module" async data-framer-bundle="main" fetchpriority="low" src="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/script_main.C3M_euHQ.mjs"></script><div id="svg-templates" style="position: absolute; overflow: hidden; bottom: 0; left: 0; width: 0; height: 0; z-index: 0; contain: strict" aria-hidden="true">
 </div>
 	<!-- Start of bodyEnd -->
     
