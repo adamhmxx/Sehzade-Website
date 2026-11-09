@@ -526,7 +526,8 @@
     GHM = true; body.textContent = ""; if (logoutEl) logoutEl.style.display = "none";
     var tok = el("input", { type: "password", autocomplete: "off", placeholder: "github_pat_…", "aria-label": "GitHub token" }), repo = el("input", { type: "text", "aria-label": "Repository" }), err = el("p", { class: "cp-err cp-hint" }, msg || "");
     repo.value = GHC.repo || DEF_REPO;
-    var skip = el("button", { type: "button", class: "cp-link", style: "margin-left:16px", onclick: function () { GHM = false; AUTHED = false; enter(); } }, "Edit without publishing");
+    /* the editor-without-publishing escape hatch exists on localhost only; on the public site nothing shows until a token is accepted */
+    var skip = /^(localhost|127\.|\[::1\])/.test(location.hostname) ? el("button", { type: "button", class: "cp-link", style: "margin-left:16px", onclick: function () { GHM = false; AUTHED = false; enter(); } }, "Edit without publishing") : "";
     var form = el("form", { class: "cp-login", onsubmit: function (e) {
       e.preventDefault(); err.textContent = "Checking…";
       GHC = { token: tok.value.trim(), repo: repo.value.trim(), branch: "main", api: GHC.api };
