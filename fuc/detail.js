@@ -28,6 +28,8 @@
       '#wk.on{visibility:visible;clip-path:inset(0 0 0 0);transition:clip-path .75s cubic-bezier(.76,0,.24,1),visibility 0s}' +
       'html.wk-open [role="tablist"]{opacity:0!important;pointer-events:none!important}' +
       /* the content rises in, one piece after the other, once the page has opened */
+      '#wk.fx{opacity:0}#wk.fx.on{opacity:1;clip-path:inset(0 0 0 0);transition:opacity .45s ease,visibility 0s}' +
+      '#wk.pre .wk-in{opacity:0!important;transition:none!important}' +
       '#wk .wk-in{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .8s cubic-bezier(.22,1,.36,1)}' +
       '#wk.on .wk-in{opacity:1;transform:none;transition-delay:calc(.35s + var(--i,0) * .07s)}' +
       '#wk.sw .wk-in{opacity:0;transform:translateY(10px);transition-delay:0s;transition-duration:.18s}' +
@@ -210,31 +212,39 @@
     fit(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     try { window.dispatchEvent(new Event("wk-render")); } catch (e) {}
   }
-  /* works -> project: the picture that was clicked flies into the picture pane while the page opens, like the switch between modes */
-  function fly(src, from) {
-    if (reduce || !from || !src || !ov || !ov.animate) return;
-    var r = ov.querySelector(".wk-r"); if (!r) return; var to = r.getBoundingClientRect(); if (!to.width) return;
-    var d = el("div"); d.style.cssText = "position:fixed;z-index:6;left:0;top:0;overflow:hidden;background:#161616;pointer-events:none;will-change:transform,clip-path;transform-origin:0 0";
-    var im = new Image(); im.src = src; im.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(im);
-    d.style.width = to.width + "px"; d.style.height = to.height + "px"; document.body.appendChild(d);
-    var sx = from.width / to.width, sy = from.height / to.height;
-    var a = d.animate([{ transform: "translate(" + from.left + "px," + from.top + "px) scale(" + sx + "," + sy + ")", filter: "blur(0px)" },
-                       { transform: "translate(" + to.left + "px," + to.top + "px) scale(1,1)", filter: "blur(0px)" }], { duration: 820, easing: "cubic-bezier(.76,0,.24,1)", fill: "forwards" });
-    a.onfinish = function () { d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" }).onfinish = function () { d.remove(); }; };
-    setTimeout(function () { if (d.parentNode) d.remove(); }, 2000);
+  /* works -> project: the clicked picture keeps its shape and slides to where the first picture of the scroll sits, the works page fades away,
+     then the project's content appears */
+  function fly(src, from, done) {
+    var r = ov && ov.querySelector(".wk-r"); if (!r || !from || !src || !ov.animate) { done(); return; }
+    var im = new Image(); im.src = src;
+    var run = function () {
+      var b = r.getBoundingClientRect(), pad = 12, ar = (im.naturalWidth && im.naturalHeight) ? im.naturalWidth / im.naturalHeight : 4 / 3, tw, th;
+      if (phone()) { th = b.height - pad * 2; tw = th * ar; } else { tw = b.width - pad * 2; th = tw / ar; }
+      var d = el("div"); d.style.cssText = "position:fixed;z-index:6;overflow:hidden;background:#161616;pointer-events:none;left:" + from.left + "px;top:" + from.top + "px;width:" + from.width + "px;height:" + from.height + "px";
+      var pic = new Image(); pic.src = src; pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
+      var a = d.animate([{ left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px" },
+                         { left: (b.left + pad) + "px", top: (b.top + pad) + "px", width: tw + "px", height: th + "px" }], { duration: 650, easing: "cubic-bezier(.76,0,.24,1)", fill: "forwards" });
+      var fin = 0, end = function () { if (fin) return; fin = 1; done(); setTimeout(function () { d.remove(); }, 450); };
+      a.onfinish = end; setTimeout(end, 1500);
+    };
+    if (im.complete) run(); else { im.onload = im.onerror = run; }
   }
   function show(i) {
     build(); var list = data(); if (i < 0 || i >= list.length) return;
     var was = shown; cur = i; shown = true; closing = 0;
     if (!was) { lastFocus = document.activeElement; window.__wkOpen = true; root.classList.add("wk-open"); window.dispatchEvent(new Event("ab-toggle")); }
     render(i);
-    if (!was) { ov.classList.remove("sw"); requestAnimationFrame(function () { requestAnimationFrame(function () { ov.classList.add("on"); if (flyFrom) { fly(flySrc, flyFrom); flyFrom = null; } }); }); }
+    if (!was) {
+      ov.classList.remove("sw"); var ff = flyFrom, fs = flySrc; flyFrom = null;
+      if (ff && !reduce) ov.classList.add("fx", "pre");
+      requestAnimationFrame(function () { requestAnimationFrame(function () { ov.classList.add("on"); if (ff && !reduce) fly(fs, ff, function () { if (ov) ov.classList.remove("pre"); }); }); });
+    }
     else { ov.classList.add("on"); }
     if (!was) setTimeout(function () { if (shown) ov.focus({ preventScroll: true }); }, 60);
   }
   function hide() {
     if (!shown) return; shown = false; cur = -1;
-    ov.classList.remove("on"); window.__wkOpen = false; root.classList.remove("wk-open"); window.dispatchEvent(new Event("ab-toggle"));
+    ov.classList.remove("on", "fx", "pre"); window.__wkOpen = false; root.classList.remove("wk-open"); window.dispatchEvent(new Event("ab-toggle"));
     clearTimeout(closing); closing = setTimeout(function () { if (!shown && strip) { strip.destroy(); strip = null; } }, reduce ? 0 : 850);
     if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
   }
