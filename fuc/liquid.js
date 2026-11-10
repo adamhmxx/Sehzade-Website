@@ -242,14 +242,14 @@
     /* small text gets a fraction of the strength a large card gets, so every component distorts to the same degree visually */
     return { id: id, ph: fid * 1.7, fq: fq, turb: f.children[0], off: f.children[1], map: f.children[2], k: 1 };
   }
-  function spring(st, key, target, k, damp) { st["v" + key] = (st["v" + key] + (target - st[key]) * k) * damp; st[key] += st["v" + key]; }
+  function spring(st, key, target, k, damp) { var t = spring.ts || 1; st["v" + key] = (st["v" + key] + (target - st[key]) * k * t) * Math.pow(damp, t); st[key] += st["v" + key] * t; }   /* time-based: the same softness at 20 or 144 fps (the About card runs slowly inside its scaled iframe and felt stiff) */
 
   function step(now) {
     var c = C();
     scan(now);
     var sp = Math.min(1, Math.hypot(cvx, cvy) / 40);
     cvx *= .88; cvy *= .88;
-    var dtf = Math.min(.12, (now - (step.last || now)) / 1000); step.last = now;
+    var dtf = Math.min(.12, (now - (step.last || now)) / 1000); step.last = now; spring.ts = Math.min(3, Math.max(.4, dtf * 60));
     var active = 0, follow = Math.max(.12, Math.min(.5, .46 - c.trail * .24));
     head.vx = (head.vx + (mx - head.x) * .08) * .8; head.vy = (head.vy + (my - head.y) * .08) * .8; head.x += head.vx; head.y += head.vy;
     chain[0].x = head.x; chain[0].y = head.y;
