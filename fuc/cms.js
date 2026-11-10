@@ -8,7 +8,7 @@
   var KEY = "site-cms-v1", DKEY = "site-cms-defaults", PAGE = !!window.__cmsPage;
   var ABOUT = !!document.getElementById("about-overrides");
   var DEF_ABOUT = {
-    description: "22 y.o Designer with experience since 2022, working with multiple global clients including corporate and studio.",
+    description: "22 y.o Designer with experience since 2024, working with multiple global clients including corporate and studio.",
     trustedBy: "SlabPixel, One Week Wonders, Lexur, Webser, Enso Build, Orenji, Recruitpilot AI, Wegonorth, Varelo, Circles & more.",
     email: "adamhimawan24@gmail.com", call: "https://cal.com/adam-himawan",
     x: "https://x.com/adamhmwn", behance: "https://www.behance.net/adamhimawan", linkedin: "https://www.linkedin.com/in/adamhimawan/",
