@@ -267,7 +267,7 @@
     /* filters are expensive: only the few components closest to the cursor get one, the rest relax back to normal */
     near.sort(function (a, z) { return z.f - a.f; });
     for (var q = 0; q < near.length; q++) {
-      var it = near[q], el = it.el, b = it.b, dx = it.dx, dy = it.dy, f = q < 6 ? it.f : 0;
+      var it = near[q], el = it.el, b = it.b, dx = it.dx, dy = it.dy, f = q < (ABOUT ? 2 : 6) ? it.f : 0;
       var st = states.get(el);
       if (!st) { st = { b: 0, vb: 0, d: 0, vd: 0, set: 0, warp: null }; states.set(el, st); }
       var tgt = el.__fxt || el, vs = it.vs; /* the filter works in the element's own pixels: far (small) cards get the matching boost, so every mode shows the panel's on-screen strength */
