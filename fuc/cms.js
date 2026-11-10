@@ -15,7 +15,7 @@
     dribbble: "https://dribbble.com/adamhmwn", instagram: "https://www.instagram.com/adamhmwn/"
   };
   var DEF_SITE = { logo: "Sehzade.", aboutLabel: "About", callLabel: "Book a call", clock: "ID (WIB)", cardName: "Adam Himawan", copyright: "\u00a9 Sehzade 2026", title: "Adam Himawan Portfolio",
-                   modes: ["Twister", "Grid", "List"] };
+                   modes: ["Twist", "Grid", "List"] };
   var SOCIALS = [["x", "X"], ["behance", "Behance"], ["linkedin", "LinkedIn"], ["dribbble", "Dribbble"], ["instagram", "Instagram"]];
 
   function read() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }

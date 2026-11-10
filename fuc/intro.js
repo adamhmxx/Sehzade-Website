@@ -49,7 +49,7 @@
   if (document.readyState === "complete") stage(75); else addEventListener("load", function () { stage(75); });
   var seenGal = 0, poll = setInterval(function () {
     if (window.__galK && window.__galK.current) { if (!seenGal) seenGal = performance.now(); stage(92); if (performance.now() - seenGal > 500 && !(window.__twGLpend > 0)) stage(100); }   /* the Twister pictures are on the GPU before the reveal, so no card can show up empty */
-    if (performance.now() - T0 > 9000) stage(100); /* never hang */
+    if (performance.now() - T0 > (window.__twGLpend > 0 ? 16000 : 9000)) stage(100); /* never hang (a slow connection gets longer, so no Twister card shows up empty) */
   }, 120);
 
   var exitT0 = 0, wiping = false, wipeActive = false, liqAmp = 0;
