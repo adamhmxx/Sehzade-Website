@@ -94,6 +94,7 @@
         else { d.style.top = PAD + "px"; d.style.height = (H - PAD * 2) + "px"; d.style.width = metrics[i] + "px"; }
         box.appendChild(d); slots.push({ el: d, off: o, size: metrics[i] }); o += metrics[i] + GAP; } }
       place(); kick();
+      try { window.dispatchEvent(new Event("wk-render")); } catch (e) {}   /* the hover effect learns the new pictures at once */
     }
     function place() {
       for (var s = 0; s < slots.length; s++) {

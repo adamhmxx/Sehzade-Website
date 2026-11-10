@@ -91,6 +91,7 @@
     if (now - lastScan < 800) return;
     lastScan = now;
     var list = [].slice.call(document.querySelectorAll(SEL)), tw = [];
+    if (ABOUT) tw = list.filter(function (e) { return /^(H1|H2|P)$/.test(e.tagName) && !e.closest("#liquid-ui"); });   /* About: the text blocks sway under the cursor like the cards of the gallery do */
     if (!ABOUT) {
       /* the browser's own selector engine finds the gallery cards and the project caption (a loop over every div of the page, run twice a second, was far heavier).
          A Twister card is built from many 3D slices: a filter on it (or on one slice) flattens or tears the ribbon, so cards only wobble and never get a per-card filter */
@@ -115,7 +116,7 @@
      is squeezed the other (it keeps its volume). It is pure motion of the card as a whole, so every edge stays perfectly smooth in every mode. */
   var galR = [], galBR = null;
   function jellyFx(c, sp, on, now, dtf) {
-    var k = Math.max(0, c.jel / 100), kp = c.jpush / 100, kj = c.jjolt / 100, ksq = c.jsq / 100, ktw = c.jtw / 100, any = 0, reach = (c.reach + 160) * c.jrng / 100;
+    var k = Math.max(0, c.jel / 100), kp = c.jpush / 100, kj = c.jjolt / 100, ksq = c.jsq / 100, ktw = c.jtw / 100, any = 0, reach = (c.reach + 160) * c.jrng / 100 / KS(), aks = 1 / KS();
     var damp = .8 + (c.jbnc / 100) * .16;
     /* the same feel at 30, 60 or 144 frames per second */
     var ts = Math.min(2.5, Math.max(.4, dtf * 60)), d9 = Math.pow(damp, ts), d88 = Math.pow(damp - .02, ts);
@@ -145,7 +146,7 @@
       var lim = 26 * size * Math.max(.2, k * Math.max(kp, kj)); st.x = Math.max(-lim, Math.min(lim, st.x)); st.y = Math.max(-lim, Math.min(lim, st.y));
       var live = Math.abs(st.x) > .05 || Math.abs(st.y) > .05 || Math.abs(st.q) > .0005 || Math.abs(st.r) > .01 || Math.abs(st.vx) > .02 || Math.abs(st.vy) > .02;
       if (live) {
-        card.style.translate = st.x.toFixed(2) + "px " + st.y.toFixed(2) + "px";
+        card.style.translate = (st.x * aks).toFixed(2) + "px " + (st.y * aks).toFixed(2) + "px";
         card.style.scale = (1 + st.q + Math.abs(st.vx) * .004).toFixed(4) + " " + (1 - st.q + Math.abs(st.vy) * .004).toFixed(4);
         card.style.rotate = st.r.toFixed(3) + "deg"; st.set = 1; any = 1;
       } else if (st.set) { card.style.translate = card.style.scale = card.style.rotate = ""; st.set = 0; st.x = st.y = st.q = st.r = st.vx = st.vy = st.vq = st.vr = 0; }
@@ -180,10 +181,13 @@
       '<feComposite in="sl" in2="nb1" operator="arithmetic" k1="0" k2="-1" k3="1" k4="1" result="df"/>' +
       '<feComponentTransfer in="df" result="kp"><feFuncR type="linear" slope="7" intercept="-5.6"/></feComponentTransfer>' +
       '<feColorMatrix in="kp" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" result="ka"/>' +
-      '<feComposite in="dm" in2="ka" operator="in"/>';
+      '<feComposite in="dm" in2="ka" operator="in" result="res"/>' +
+      /* a project page: the pictures fill their pane edge to edge, so where the melt pulls the picture away from an edge the picture itself shows through, never a black tear */
+      '<feFlood flood-opacity="0" result="nil"/>' +
+      '<feComposite in="res" in2="nil" operator="over"/>';
     svg.appendChild(f); document.body.appendChild(svg);
     var ch = f.children;
-    gal = { turb: ch[0], off: ch[1], img: ch[4], map: ch[7], turb2: ch[8], off2: ch[9], sl: ch[11].children[0] };
+    gal = { turb: ch[0], off: ch[1], img: ch[4], map: ch[7], turb2: ch[8], off2: ch[9], sl: ch[11].children[0], fin: ch[ch.length - 1] };
     return gal;
   }
   function galFx(c, sp, on, now, dtf) {
@@ -196,7 +200,7 @@
     var hover = null, halo = false;
     on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
     if (on) for (var i = 0; i < galCards.length; i++) {
-      var r = galR[i] || galCards[i].getBoundingClientRect(); if (r.width < 40) continue;
+      var r = galR[i] || galCards[i].getBoundingClientRect(); if (r.width < 40) continue; if (galCards[i].style.visibility === "hidden") continue;
       if (mx > r.left && mx < r.right && my > r.top && my < r.bottom) hover = galCards[i];
       else if (mx > r.left - 90 && mx < r.right + 90 && my > r.top - 90 && my < r.bottom + 90) halo = true;
     }
@@ -210,7 +214,7 @@
     var g = galFilter(), br = galBR || box.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100;
     /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
     if (box.style.filter !== "url(#lq-gal)") box.style.filter = "url(#lq-gal)"; galBox = box;
-    g.map.setAttribute("scale", galS.toFixed(2));
+    g.map.setAttribute("scale", galS.toFixed(2)); var inWk = !!box.closest("#wk"); if (g.wk !== inWk) { g.wk = inWk; g.fin.setAttribute("in2", inWk ? "SourceGraphic" : "nil"); }
     /* how much of the picture dissolves: a lot at the arrival burst, a light veil while the cursor rests */
     var lvl = ((c.gdis / 100) * Math.min(1, galPulse + (hover ? .2 : .05))).toFixed(3);
     [0, 1, 2].forEach(function (i) { g.sl.parentNode.children[i].setAttribute("slope", lvl); });
@@ -233,7 +237,7 @@
     f.setAttribute("id", id); f.setAttribute("x", "-30%"); f.setAttribute("y", "-60%"); f.setAttribute("width", "160%"); f.setAttribute("height", "220%");
     f.setAttribute("color-interpolation-filters", "sRGB");
     /* wavelength follows the size of the element, so small text ripples as clearly as a large card */
-    var fq = Math.max(.004, Math.min(.05, 3.2 / Math.max(60, Math.max(b.width, b.height))));
+    var fq = Math.max(ABOUT ? .0025 : .004, Math.min(.05, (ABOUT ? 1.7 : 3.2) / Math.max(60, Math.max(b.width, b.height))));   /* About: longer, softer waves (big text on a flat card looked torn with the short ones) */
     f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="' + fq.toFixed(4) + ' ' + (fq * 1.5).toFixed(4) + '" numOctaves="1" seed="' + (fid % 7 + 2) + '" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="o"/>' +
       '<feDisplacementMap in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G" result="w"/>' +
@@ -267,7 +271,7 @@
     /* filters are expensive: only the few components closest to the cursor get one, the rest relax back to normal */
     near.sort(function (a, z) { return z.f - a.f; });
     for (var q = 0; q < near.length; q++) {
-      var it = near[q], el = it.el, b = it.b, dx = it.dx, dy = it.dy, f = q < (ABOUT ? 2 : 6) ? it.f : 0;
+      var it = near[q], el = it.el, b = it.b, dx = it.dx, dy = it.dy, f = q < (ABOUT ? 4 : 6) ? it.f : 0;
       var st = states.get(el);
       if (!st) { st = { b: 0, vb: 0, d: 0, vd: 0, set: 0, warp: null }; states.set(el, st); }
       var tgt = el.__fxt || el, vs = it.vs; /* the filter works in the element's own pixels: far (small) cards get the matching boost, so every mode shows the panel's on-screen strength */
@@ -300,7 +304,7 @@
       } else if (st.set) { tgt.style.filter = ""; st.set = 0; }
     }
     var galOn = !ABOUT && inside && c.on && !drag_ && !(TOP && window.__abOpen) && !window.__wkMove && !(window.__hoverLock && window.__hoverLock());
-    var twAny = !ABOUT && ((jellyFx(c, sp, galOn, now, dtf) ? 1 : 0) | (galFx(c, sp, galOn, now, dtf) ? 1 : 0));
+    var twAny = ABOUT ? (jellyFx(c, sp, inside && c.on && !drag_, now, dtf) ? 1 : 0) : ((jellyFx(c, sp, galOn, now, dtf) ? 1 : 0) | (galFx(c, sp, galOn, now, dtf) ? 1 : 0));
     idle = active || twAny || inside ? 0 : idle + 1;
     if (inside || active || idle < 40) requestAnimationFrame(step); else run = false;
   }
