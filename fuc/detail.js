@@ -28,7 +28,8 @@
       '#wk.on{visibility:visible;clip-path:inset(0 0 0 0);transition:clip-path .75s cubic-bezier(.76,0,.24,1),visibility 0s}' +
       'html.wk-open [role="tablist"]{opacity:0!important;pointer-events:none!important}' +
       /* the content rises in, one piece after the other, once the page has opened */
-      '#wk.fx{opacity:0}#wk.fx.on{opacity:1;clip-path:inset(0 0 0 0);transition:opacity .9s cubic-bezier(.4,0,.2,1),visibility 0s}' +
+      '#wk.fx{opacity:0;transition:opacity .9s cubic-bezier(.4,0,.2,1),visibility 0s .9s}#wk.fx.on{opacity:1;clip-path:inset(0 0 0 0);transition:opacity .9s cubic-bezier(.4,0,.2,1),visibility 0s}#wk.fx.out{pointer-events:none;clip-path:inset(0 0 0 0);visibility:visible}#wk.out .wk-in{opacity:0!important;transition:opacity .4s ease!important}' +
+      '.wk-melt{transition:filter 1.3s cubic-bezier(.4,0,.2,1),opacity 1.3s cubic-bezier(.4,0,.2,1),scale 1.4s cubic-bezier(.4,0,.2,1),rotate 1.4s cubic-bezier(.4,0,.2,1)}html.wk-open .wk-melt{filter:blur(16px)!important;opacity:0!important;scale:var(--wk-s,1.06);rotate:var(--wk-r,0deg)}' +
       '#wk.pre .wk-in{opacity:0!important;transition:none!important}#wk.fx .wk-in{transition:opacity 1s ease,transform 1.2s cubic-bezier(.22,1,.36,1)}#wk.fx.on .wk-in{transition-delay:calc(.15s + var(--i,0) * .1s)}' +
       '#wk .wk-in{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .8s cubic-bezier(.22,1,.36,1)}' +
       '#wk.on .wk-in{opacity:1;transform:none;transition-delay:calc(.35s + var(--i,0) * .07s)}' +
@@ -223,11 +224,43 @@
       var d = el("div"); d.style.cssText = "position:fixed;z-index:6;overflow:hidden;background:#161616;pointer-events:none;left:" + from.left + "px;top:" + from.top + "px;width:" + from.width + "px;height:" + from.height + "px";
       var pic = new Image(); pic.src = src; pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
       var a = d.animate([{ left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px" },
-                         { left: (b.left + pad) + "px", top: (b.top + pad) + "px", width: tw + "px", height: th + "px" }], { duration: 1250, easing: "cubic-bezier(.65,0,.15,1)", fill: "forwards" });
+                         { left: (b.left + pad) + "px", top: (b.top + pad) + "px", width: tw + "px", height: th + "px" }], { duration: 1400, easing: "cubic-bezier(.65,0,.15,1)", fill: "forwards" });
       var fin = 0, end = function () { if (fin) return; fin = 1; done(); setTimeout(function () { d.remove(); }, 800); };
       a.onfinish = end; setTimeout(end, 2600);
     };
     if (im.complete) run(); else { im.onload = im.onerror = run; }
+  }
+  /* the gallery behind the page melts away while the picture flies (and comes back when the page closes): a blur, a fade and a slow turn (Twist) or sink (Grid) */
+  var origin = null, flyMode = "twist", flyCard = null, meltEl = null;
+  function meltOn(mode, card) {
+    var t = card && card.parentElement; if (t && window.__twGLon && t.parentElement) t = t.parentElement;
+    if (meltEl && meltEl !== t) meltEl.classList.remove("wk-melt");
+    meltEl = t; if (!t) return;
+    t.style.setProperty("--wk-s", mode === "grid" ? ".93" : "1.07"); t.style.setProperty("--wk-r", mode === "grid" ? "0deg" : "-2.5deg");
+    t.classList.add("wk-melt");
+  }
+  function cardFor(o) {
+    var best = null, bd = 1e18, cx = o.rect.left + o.rect.width / 2, cy = o.rect.top + o.rect.height / 2;
+    [].forEach.call(document.querySelectorAll("#main div"), function (d) {
+      if (!(d.style && d.style.position === "absolute" && d.style.top === "50%" && d.style.left === "50%" && d.style.zIndex)) return;
+      var im = d.querySelector("img"), f = fname(d.dataset.src || (im && (im.currentSrc || im.src)) || ""); if (f !== fname(o.src)) return;
+      var r = d.getBoundingClientRect(); if (r.width < 20) return;
+      var dd = Math.hypot(r.left + r.width / 2 - cx, r.top + r.height / 2 - cy); if (dd < bd) { bd = dd; best = r; }
+    });
+    return best;
+  }
+  /* project -> works: the exact reverse; the picture goes back to its card while the project's content fades out and the gallery returns */
+  function exitFly(o) {
+    var r = ov.querySelector(".wk-r"), it = null, first = null;
+    [].forEach.call(r ? r.querySelectorAll(".wk-it") : [], function (n) { if (it) return; var b = n.getBoundingClientRect(); if (b.width > 20 && b.right > 0 && b.left < innerWidth && b.bottom > 0 && b.top < innerHeight) it = b; });
+    var to = cardFor(o) || o.rect;
+    if (!it || !to || to.bottom < 0 || to.top > innerHeight || to.right < 0 || to.left > innerWidth) { return; }
+    var d = el("div"); d.style.cssText = "position:fixed;z-index:6;overflow:hidden;background:#161616;pointer-events:none;left:" + it.left + "px;top:" + it.top + "px;width:" + it.width + "px;height:" + it.height + "px";
+    var pic = new Image(); pic.src = o.src; pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
+    var a = d.animate([{ left: it.left + "px", top: it.top + "px", width: it.width + "px", height: it.height + "px", opacity: 1 },
+                       { left: to.left + "px", top: to.top + "px", width: to.width + "px", height: to.height + "px", opacity: 1 }], { duration: 1400, delay: 350, easing: "cubic-bezier(.65,0,.15,1)", fill: "both" });
+    var fin = 0, end = function () { if (fin) return; fin = 1; d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 350, fill: "forwards" }).onfinish = function () { d.remove(); }; };
+    a.onfinish = end; setTimeout(end, 3200);
   }
   function show(i) {
     build(); var list = data(); if (i < 0 || i >= list.length) return;
@@ -236,7 +269,8 @@
     render(i);
     if (!was) {
       ov.classList.remove("sw"); var ff = flyFrom, fs = flySrc; flyFrom = null;
-      if (ff && !reduce) ov.classList.add("fx", "pre");
+      origin = (ff && !reduce) ? { rect: ff, src: fs, mode: flyMode, i: i } : null;
+      if (ff && !reduce) { ov.classList.add("fx", "pre"); meltOn(flyMode, flyCard); }
       requestAnimationFrame(function () { requestAnimationFrame(function () { ov.classList.add("on"); if (ff && !reduce) fly(fs, ff, function () { if (ov) ov.classList.remove("pre"); }); }); });
     }
     else { ov.classList.add("on"); }
@@ -244,7 +278,10 @@
   }
   function hide() {
     if (!shown) return; shown = false; cur = -1;
-    ov.classList.remove("on", "fx", "pre"); window.__wkOpen = false; root.classList.remove("wk-open"); window.dispatchEvent(new Event("ab-toggle"));
+    var o = origin; origin = null;
+    if (o && !reduce && ov.classList.contains("fx") && ov.animate) { exitFly(o); ov.classList.remove("on", "pre"); ov.classList.add("out"); setTimeout(function () { if (!shown) ov.classList.remove("fx", "out"); }, 1100); }
+    else ov.classList.remove("on", "fx", "pre");
+    window.__wkOpen = false; root.classList.remove("wk-open"); window.dispatchEvent(new Event("ab-toggle"));
     clearTimeout(closing); closing = setTimeout(function () { if (!shown && strip) { strip.destroy(); strip = null; } }, reduce ? 0 : 850);
     if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
   }
@@ -305,7 +342,7 @@
     var im = c.querySelector("img"), f = fname(c.dataset.src || (im && (im.currentSrc || im.src)) || ""), list = data(), it = null;
     for (var i = 0; i < list.length; i++) if (list[i].image && fname(list[i].image.src) === f) { it = list[i]; break; }
     if (!it) return;
-    flyFrom = c.getBoundingClientRect(); flySrc = (im && (im.currentSrc || im.src)) || c.dataset.src || "";
+    flyFrom = c.getBoundingClientRect(); flyCard = c; flyMode = window.__twGLon ? "twist" : "grid"; flySrc = (im && (im.currentSrc || im.src)) || c.dataset.src || "";
     e.preventDefault(); e.stopPropagation(); go(it);
   }, true);
 
