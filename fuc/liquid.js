@@ -107,7 +107,7 @@
     /* pieces that just left the list drop their ripple */
     states.forEach(function (st, el) { if (st.set && els.indexOf(el) < 0) { (el.__fxt || el).style.filter = ""; st.set = 0; st.b = st.d = st.vb = st.vd = 0; } });
     /* cards that left the list keep no wobble style behind */
-    galCards.forEach(function (c0) { if (!window.__wkMove && tw.indexOf(c0) < 0 && c0.__jl) { c0.style.translate = c0.style.scale = c0.style.rotate = ""; c0.__jl = null; } });
+    galCards.forEach(function (c0) { if (!c0.__wkAway && tw.indexOf(c0) < 0 && c0.__jl) { c0.style.translate = c0.style.scale = c0.style.rotate = ""; c0.__jl = null; } });
     galCards = tw;
   }
   /* The gallery's hover liquid: the cards near the cursor behave like blobs of wet paint. Dragging the cursor through them shoves them along and they
@@ -125,7 +125,7 @@
     for (n = 0; n < galCards.length; n++) rects.push(galCards[n].isConnected ? galCards[n].getBoundingClientRect() : null);
     galR = rects; galBR = galCards.length && galCards[0].parentElement ? galCards[0].parentElement.getBoundingClientRect() : null;   /* shared with the picture layer, which runs right after */
     for (n = 0; n < galCards.length; n++) {
-      card = galCards[n]; cb = rects[n]; if (!cb) continue;
+      card = galCards[n]; cb = rects[n]; if (!cb) continue; if (card.__wkAway) continue;
       /* a card that has become tiny or hidden (another mode) must not keep a leftover wobble style */
       if (cb.width < 20) { if (card.__jl && card.__jl.set) { card.style.translate = card.style.scale = card.style.rotate = ""; card.__jl = null; } continue; }
       var cx = cb.left + cb.width / 2, cy = cb.top + cb.height / 2, dx = cx - mx, dy = cy - my, d = Math.hypot(dx, dy) || 1;

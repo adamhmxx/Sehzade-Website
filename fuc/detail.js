@@ -23,17 +23,16 @@
     var s = document.createElement("style");
     s.textContent =
       /* the page sits under the navbar (the navbar stays exactly as it is) and replaces the mode menu with its own Back button */
-      '#wk{position:fixed;inset:0;z-index:4;background:#0b0b0b;color:#f2f2f2;font-family:"Inter Display",Inter,-apple-system,BlinkMacSystemFont,sans-serif;visibility:hidden;clip-path:inset(0 0 100% 0);' +
-      'transition:clip-path .75s cubic-bezier(.76,0,.24,1),visibility 0s .75s;display:grid;grid-template-columns:1fr 1fr;-webkit-font-smoothing:antialiased;overscroll-behavior:contain}' +
-      '#wk.on{visibility:visible;clip-path:inset(0 0 0 0);transition:clip-path .75s cubic-bezier(.76,0,.24,1),visibility 0s}' +
-      'html.wk-open [role="tablist"]{opacity:0!important;pointer-events:none!important}' +
-      /* the content rises in, one piece after the other, once the page has opened */
-      '#wk.fx{background:rgba(11,11,11,0);transition:background-color .9s cubic-bezier(.4,0,.2,1),visibility 0s .9s}#wk.fx.on{background:#0b0b0b;clip-path:inset(0 0 0 0);transition:background-color .9s cubic-bezier(.4,0,.2,1),visibility 0s}#wk.fx.out{pointer-events:none;clip-path:inset(0 0 0 0);visibility:visible}#wk.out .wk-in{opacity:0!important;transition:opacity .4s ease!important}' +
-      '.wk-melt{will-change:opacity,scale,rotate;transition:opacity 1.3s cubic-bezier(.4,0,.2,1),scale 1.4s cubic-bezier(.4,0,.2,1),rotate 1.4s cubic-bezier(.4,0,.2,1)}html.wk-open .wk-melt{opacity:0!important;scale:var(--wk-s,1.06);rotate:var(--wk-r,0deg)}' +
-      '#wk.gq,#wk.gq.on{transition:none!important}#wk.pre-g .wk-in{opacity:0!important;transition:none!important}#wk.gq .wk-in{transition:opacity .5s ease,transform .7s cubic-bezier(.22,1,.36,1)}#wk.gq.on .wk-in{transition-delay:calc(var(--i,0) * .05s)}' +
-      '#wk.pre .wk-in{opacity:0!important;transition:none!important}#wk.fx .wk-in{transition:opacity 1s ease,transform 1.2s cubic-bezier(.22,1,.36,1)}#wk.fx.on .wk-in{transition-delay:calc(.15s + var(--i,0) * .1s)}' +
-      '#wk .wk-in{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .8s cubic-bezier(.22,1,.36,1)}' +
-      '#wk.on .wk-in{opacity:1;transform:none;transition-delay:calc(.35s + var(--i,0) * .07s)}' +
+      '#wk{position:fixed;inset:0;z-index:4;background:#0b0b0b;color:#f2f2f2;font-family:"Inter Display",Inter,-apple-system,BlinkMacSystemFont,sans-serif;visibility:hidden;display:grid;grid-template-columns:1fr 1fr;-webkit-font-smoothing:antialiased;overscroll-behavior:contain}' +
+      '#wk.on{visibility:visible}' +
+      'html.wk-open [role="tablist"],html.wk-air [role="tablist"]{opacity:0!important;pointer-events:none!important;transition:none!important}html.wk-nt [role="tablist"]{transition:none!important}' +
+      /* while the picture travels (in or out) the page is only a transparent layer: no fade, no wipe. It becomes the page the moment the picture has landed */
+      '#wk.air{background:transparent}#wk.air .wk-in{opacity:0!important;transition:none!important}#wk.air .wk-bar{visibility:hidden}.wk-hide{visibility:hidden!important}' +
+      /* the text rises in, one piece after the other */
+      '#wk .wk-in{opacity:0;transform:translateY(22px);transition:opacity 0s,transform .8s cubic-bezier(.22,1,.36,1)}' +
+      '#wk .wk-in.wk-now{transition:none!important}html.wk-open #ls-root,html.wk-air #ls-root{transition:none!important}html.wk-open #hv-info,html.wk-air #hv-info{opacity:0!important;transition:none!important}' +
+      '#wk.on .wk-in{opacity:1;transform:none;transition-delay:calc(var(--i,0) * .07s)}' +
+      '#wk .wk-r.wk-in{transition:none!important;transform:none!important}' +
       '#wk.sw .wk-in{opacity:0;transform:translateY(10px);transition-delay:0s;transition-duration:.18s}' +
       '#wk .wk-l{position:relative;display:flex;flex-direction:column;min-height:0;padding:104px 76px 28px 32px;box-sizing:border-box}' +
       '#wk button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
@@ -76,7 +75,7 @@
   }
 
   /* ---------- the endless scroll of pictures ---------- */
-  function Strip(box, urls, vertical) {
+  function Strip(box, urls, vertical, held) {
     var GAP = 12, PAD = 12, slots = [], C = 0, maxS = 0, view = 0, pos = 0, tgt = 0, vel = 0, drag = null, raf = 0, last = 0, idle = 0, alive = true, metrics = [];
     var imgs = urls.map(function (u) { var im = new Image(); im.decoding = "async"; im.src = u; return im; });
     var ready = Promise.all(imgs.map(function (im) { return im.decode ? im.decode().catch(function () {}) : new Promise(function (r) { im.onload = im.onerror = r; }); }));
@@ -109,7 +108,7 @@
       var dt = Math.min(40, now - last); last = now;
       if (!drag) {
         if (Math.abs(vel) > .02) { tgt += vel * dt; vel *= Math.exp(-dt / 320); } else vel = 0;
-        idle += dt; if (!reduce && idle > 1400 && Math.abs(vel) < .02) tgt += (vertical ? 22 : 30) * dt / 1000;
+        idle += dt; if (!held && !reduce && idle > 1400 && Math.abs(vel) < .02) tgt += (vertical ? 22 : 30) * dt / 1000;
       }
       pos += (tgt - pos) * (1 - Math.exp(-dt / (drag ? 45 : 120)));
       place(); raf = requestAnimationFrame(tick);
@@ -138,7 +137,7 @@
     box.addEventListener("wheel", onWheel, { passive: false });
     box.addEventListener("pointerdown", down); box.addEventListener("pointermove", move); box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
     ready.then(layout);
-    return { relayout: layout, destroy: function () { alive = false; cancelAnimationFrame(raf); box.removeEventListener("wheel", onWheel); box.removeEventListener("pointerdown", down); box.removeEventListener("pointermove", move); box.removeEventListener("pointerup", up); box.removeEventListener("pointercancel", up); box.textContent = ""; } };
+    return { release: function () { held = false; idle = 0; }, relayout: layout, destroy: function () { alive = false; cancelAnimationFrame(raf); box.removeEventListener("wheel", onWheel); box.removeEventListener("pointerdown", down); box.removeEventListener("pointermove", move); box.removeEventListener("pointerup", up); box.removeEventListener("pointercancel", up); box.textContent = ""; } };
   }
 
   /* ---------- the name, as big as the column allows ---------- */
@@ -175,7 +174,7 @@
     var g = parseFloat(getComputedStyle(tl).columnGap || getComputedStyle(tl).gap); bar.style.setProperty("--g", (isNaN(g) ? 16 : g) + "px");
     if (ov) ov.style.setProperty("--bar", Math.max(80, innerHeight - r.top + 14) + "px");
   }
-  function render(i, keepScroll) {
+  function render(i, keepScroll, hold) {
     var list = data(), it = list[i]; if (!it) return;
     ov.textContent = ""; if (strip) { strip.destroy(); strip = null; }
     var bar = el("div", "wk-bar"), back = el("button", "wk-back", "Back");
@@ -198,16 +197,53 @@
     placeBar(bar);
     var urls = [it.image && it.image.src].concat(it.gallery || []).filter(Boolean).map(sm);
     if (!urls.length) urls = [];
-    strip = urls.length ? Strip(r, urls, !phone()) : null;
+    strip = urls.length ? Strip(r, urls, !phone(), !!hold) : null;
     var fit = function () { placeBar(bar); fitName(h1, it.name); };
     fit(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     try { window.dispatchEvent(new Event("wk-render")); } catch (e) {}
   }
-  /* works -> project: the clicked picture keeps its shape and slides to where the first picture of the scroll sits, the works page fades away,
-     then the project's content appears */
-  /* One moving picture, animated with transforms only (translate + one uniform scale) and a clip that follows the shape of the card, so nothing is
-     stretched and no layout is recomputed while it moves. "big" is where it rests in the project page, "small" is the card in the gallery. */
-  function flyBox(big, small, src, back, delay, done, quick) {
+  /* ---------- works <-> project: no fade and no wipe, only movement ----------
+     In: the cards that were not chosen turn and leave (up or down, by where they are), the chosen picture straightens out and travels to the first
+     slot of the picture scroll; the moment it lands it IS that slot, and the text comes in. Out: the same film, played backwards. */
+  var origin = null, flyMode = "twist", flyCard = null, meltEl = null, inFlight = null, flTok = 0;
+  function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function seg(t, a, b) { return ease(Math.max(0, Math.min(1, (t - a) / (b - a)))); }
+  function airOff() { root.classList.add("wk-nt"); root.classList.remove("wk-air"); requestAnimationFrame(function () { requestAnimationFrame(function () { root.classList.remove("wk-nt"); }); }); }
+  /* where the first picture of the scroll rests */
+  function target(src, cb) {
+    var r = ov && ov.querySelector(".wk-r"); if (!r) { cb(null); return; }
+    var im = new Image(), done = 0, run = function () {
+      if (done) return; done = 1;
+      var b = r.getBoundingClientRect(), pad = 12, ar = (im.naturalWidth && im.naturalHeight) ? im.naturalWidth / im.naturalHeight : 4 / 3, tw, th;
+      if (phone()) { th = b.height - pad * 2; tw = Math.round(th * ar); } else { tw = b.width - pad * 2; th = Math.round(tw / ar); }
+      cb({ left: b.left + pad, top: b.top + pad, width: tw, height: th });
+    };
+    im.onload = im.onerror = run; im.src = src; if (im.complete) run(); setTimeout(run, 1200);
+  }
+  /* the slot that shows the project's first picture right now (the scroll may have moved) */
+  function slotRect(src) {
+    var r = ov.querySelector(".wk-r"), hit = null, any = null, f = fname(src);
+    [].forEach.call(r ? r.querySelectorAll(".wk-it") : [], function (n) {
+      var b = n.getBoundingClientRect(); if (!(b.width > 20 && b.right > 40 && b.left < innerWidth - 40 && b.bottom > 40 && b.top < innerHeight - 40)) return;
+      var im = n.querySelector("img"); if (!any) any = b; if (!hit && im && fname(im.currentSrc || im.src) === f) hit = b;
+    });
+    return hit || any;
+  }
+  /* Twist (drawn on the GPU): the gallery itself plays the move */
+  function twFlight(card, rect, back, done) {
+    var tok = ++flTok, t0 = 0, D = window.__twD || 1700;
+    var X = window.__twX = { live: true, hold: !back, sel: card, a: back ? 1 : 0, f: back ? 1 : 0, m: back ? 1 : 0, cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, w: rect.width, h: rect.height };
+    window.__twFreeze = false;
+    requestAnimationFrame(function f(now) {
+      if (tok !== flTok) return;
+      if (!t0) t0 = now;
+      var k = Math.min(1, (now - t0) / D), t = back ? 1 - k : k;
+      X.a = seg(t, 0, .55); X.f = seg(t, .12, .55); X.m = seg(t, .45, 1);
+      if (k < 1) requestAnimationFrame(f); else { requestAnimationFrame(function () { requestAnimationFrame(function () { if (tok === flTok) X.live = false; }); }); done && done(); }
+    });
+  }
+  /* Grid: one moving picture (transform + a clip that follows the card's shape, so nothing is stretched) */
+  function flyBox(big, small, src, back, delay, dur, done) {
     var d = el("div"), pic = new Image(); pic.src = src; pic.decoding = "async";
     d.style.cssText = "position:fixed;z-index:6;left:" + big.left + "px;top:" + big.top + "px;width:" + big.width + "px;height:" + big.height + "px;overflow:hidden;background:#0b0b0b;pointer-events:none;will-change:transform,clip-path;transform-origin:50% 50%;backface-visibility:hidden";
     pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
@@ -215,110 +251,112 @@
     var from = { transform: "translate3d(" + (small.left + small.width / 2 - cx) + "px," + (small.top + small.height / 2 - cy) + "px,0) scale(" + sc + ")",
                  clipPath: "inset(" + ((big.height - small.height / sc) / 2) + "px " + ((big.width - small.width / sc) / 2) + "px)" },
         to = { transform: "translate3d(0,0,0) scale(1)", clipPath: "inset(0px 0px)" };
-    var a = d.animate(back ? [to, from] : [from, to], { duration: quick ? 800 : 1500, delay: delay || 0, easing: quick ? "cubic-bezier(.5,0,.15,1)" : "cubic-bezier(.62,0,.18,1)", fill: "both" });
-    var fin = 0, end = function () { if (fin) return; fin = 1; done && done(); if (quick) { d.remove(); return; } var f = d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 420, easing: "ease", fill: "forwards" }); f.onfinish = function () { d.remove(); }; };
-    a.onfinish = end; setTimeout(end, 3600 + (delay || 0));
+    var a = d.animate(back ? [to, from] : [from, to], { duration: dur, delay: delay || 0, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+    var fin = 0, end = function () { if (fin) return; fin = 1; done && done(); d.remove(); };
+    a.onfinish = end; var tm = setTimeout(end, dur + (delay || 0) + 1500);
+    return function () { fin = 1; clearTimeout(tm); try { a.cancel(); } catch (e) {} d.remove(); };
   }
-  function fly(src, from, done, quick) {
-    var r = ov && ov.querySelector(".wk-r"); if (!r || !from || !src || !ov.animate) { done(); return; }
-    var im = new Image(); im.src = src;
-    var run = function () {
-      var b = r.getBoundingClientRect(), pad = 12, ar = (im.naturalWidth && im.naturalHeight) ? im.naturalWidth / im.naturalHeight : 4 / 3, tw, th;
-      if (phone()) { th = b.height - pad * 2; tw = th * ar; } else { tw = b.width - pad * 2; th = tw / ar; }
-      flyBox({ left: b.left + pad, top: b.top + pad, width: tw, height: th }, from, src, false, 0, done, quick);
-    };
-    if (im.complete) run(); else { im.onload = im.onerror = run; }
-  }
-  /* Twist: the cards that were not chosen turn and sink away (up or down, by where they are) and come back the same way; the chosen card is the moving picture */
-  var twTok = 0;
-  function twAnim(card, from, to, dur, delay, done) {
-    var tok = ++twTok, t0 = 0;
-    window.__twX = { p: from, sel: card };
-    function f(now) {
-      if (tok !== twTok) return;
-      if (!t0) t0 = now + delay;
-      var k = Math.max(0, Math.min(1, (now - t0) / dur)); window.__twX.p = from + (to - from) * k;
-      if (k < 1) requestAnimationFrame(f); else { if (to === 0) window.__twX = null; done && done(); }
-    }
-    requestAnimationFrame(f);
-  }
-  /* Grid: the cards that were not chosen slide out of the screen, away from the chosen one (and slide back in when the page closes) */
+  /* Grid: the cards that were not chosen turn and leave, up or down by where they are (and come back the same way) */
   var gridOut = [];
-  function gridAway(card, rect) {
-    var H = innerHeight; gridOut = []; window.__wkMove = true;
+  function isCard(d) { return d.style && d.style.position === "absolute" && d.style.top === "50%" && d.style.left === "50%" && d.style.zIndex && d.querySelector("img"); }
+  function gridAway(card) {
+    var H = innerHeight, e = "cubic-bezier(.65,0,.35,1)"; gridOut = [];
     [].forEach.call(document.querySelectorAll("#main div"), function (d) {
-      if (d === card || !(d.style && d.style.position === "absolute" && d.style.top === "50%" && d.style.left === "50%" && d.style.zIndex && d.querySelector("img"))) return;
+      if (d === card || !isCard(d)) return;
       var r = d.getBoundingClientRect(); if (r.width < 20) return;
-      var up = (r.top + r.height / 2) < H / 2, dist = H * 1.05, ease = "cubic-bezier(.65,0,.35,1)";
-      d.style.transition = "translate 1s " + ease + ",rotate 1s " + ease + ",scale 1s " + ease;
-      d.style.translate = "0px " + (up ? -dist : dist).toFixed(0) + "px"; d.style.rotate = (up ? -14 : 14) + "deg"; d.style.scale = ".8"; gridOut.push(d);
+      var up = (r.top + r.height / 2) < H / 2;
+      d.__wkAway = true; d.__jl = null;
+      d.style.transition = "translate 1s " + e + ",rotate 1s " + e;
+      d.style.translate = "0px " + (up ? -H * 1.15 : H * 1.15).toFixed(0) + "px"; d.style.rotate = (up ? -16 : 16) + "deg"; d.style.scale = ""; gridOut.push(d);
     });
   }
-  function gridBack() {
-    var g = gridOut, ease; gridOut = []; ease = "cubic-bezier(.65,0,.35,1)";
-    g.forEach(function (d) { d.style.transition = "translate 1.1s " + ease + ",rotate 1.1s " + ease + ",scale 1.1s " + ease; d.style.translate = ""; d.style.rotate = ""; d.style.scale = ""; });
-    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; }); window.__wkMove = false; }, 1300);
+  function gridBack(now) {
+    var g = gridOut, e = "cubic-bezier(.65,0,.35,1)"; gridOut = [];
+    g.forEach(function (d) { d.style.transition = now ? "none" : "translate 1.1s " + e + ",rotate 1.1s " + e; d.style.translate = ""; d.style.rotate = ""; });
+    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; d.__wkAway = false; }); }, now ? 0 : 1200);
   }
-  /* the gallery behind the page melts away while the picture flies (and comes back when the page closes): a blur, a fade and a slow turn (Twist) or sink (Grid) */
-  var origin = null, flyMode = "twist", flyCard = null, meltEl = null;
-  function meltOn(mode, card) {
-    var t = card && card.parentElement; if (t && window.__twGLon && t.parentElement) t = t.parentElement;
-    if (meltEl && meltEl !== t) meltEl.classList.remove("wk-melt");
-    meltEl = t; if (!t) return;
-    t.style.setProperty("--wk-s", mode === "grid" ? ".93" : "1.07"); t.style.setProperty("--wk-r", mode === "grid" ? "0deg" : "-2.5deg");
-    t.classList.add("wk-melt");
-  }
-  function cardFor(o) {
+  /* where the chosen card sits in the gallery (measured with the other cards at home) */
+  function homeRect(o) {
+    if (o.card && o.card.isConnected) { var r0 = o.card.getBoundingClientRect(); if (r0.width > 20) return r0; }
+    var saved = gridOut.map(function (d) { var v = [d.style.transition, d.style.translate, d.style.rotate]; d.style.transition = "none"; d.style.translate = ""; d.style.rotate = ""; return v; });
     var best = null, bd = 1e18, cx = o.rect.left + o.rect.width / 2, cy = o.rect.top + o.rect.height / 2;
     [].forEach.call(document.querySelectorAll("#main div"), function (d) {
-      if (!(d.style && d.style.position === "absolute" && d.style.top === "50%" && d.style.left === "50%" && d.style.zIndex)) return;
-      var im = d.querySelector("img"), f = fname(d.dataset.src || (im && (im.currentSrc || im.src)) || ""); if (f !== fname(o.src)) return;
+      if (!isCard(d)) return; var im = d.querySelector("img"); if (fname(d.dataset.src || im.currentSrc || im.src || "") !== fname(o.src)) return;
       var r = d.getBoundingClientRect(); if (r.width < 20) return;
       var dd = Math.hypot(r.left + r.width / 2 - cx, r.top + r.height / 2 - cy); if (dd < bd) { bd = dd; best = r; }
     });
+    gridOut.forEach(function (d, k) { d.style.translate = saved[k][1]; d.style.rotate = saved[k][2]; void d.offsetWidth; d.style.transition = saved[k][0]; });
     return best;
   }
-  /* project -> works: the exact reverse; the picture goes back to its card while the project's content fades out and the gallery returns */
-  function exitFly(o) {
-    var r = ov.querySelector(".wk-r"), it = null;
-    [].forEach.call(r ? r.querySelectorAll(".wk-it") : [], function (n) { if (it) return; var b = n.getBoundingClientRect(); if (b.width > 20 && b.right > 0 && b.left < innerWidth && b.bottom > 0 && b.top < innerHeight) it = b; });
-    var to = cardFor(o) || o.rect;
-    if (!it || !to || to.bottom < 0 || to.top > innerHeight || to.right < 0 || to.left > innerWidth) return;
-    flyBox({ left: it.left, top: it.top, width: it.width, height: it.height }, to, o.src, true, 300);
-  }
+  function onScreen(r) { return r && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
   function show(i) {
     build(); var list = data(); if (i < 0 || i >= list.length) return;
     var was = shown; cur = i; shown = true; closing = 0;
     if (!was) { lastFocus = document.activeElement; window.__wkOpen = true; root.classList.add("wk-open"); window.dispatchEvent(new Event("ab-toggle")); }
-    render(i);
-    if (!was) {
-      ov.classList.remove("sw"); var ff = flyFrom, fs = flySrc; flyFrom = null;
-      var tw = ff && !reduce && flyMode === "twist" && !!window.__twGLon;
-      origin = (ff && !reduce) ? { rect: ff, src: fs, mode: flyMode, i: i, card: flyCard, tw: tw } : null;
-      window.__twFreeze = !tw;
-      var gq = false, gr = ff && !reduce && flyMode === "grid";   /* Grid works exactly like Twist now */
-      if (ff && !reduce) { ov.classList.add("fx", gq ? "pre-g" : "pre"); if (gq) ov.classList.add("gq"); if (tw) twAnim(flyCard, 0, 1, 1000, 0, function () { if (shown) window.__twFreeze = true; }); else if (gr) gridAway(flyCard, ff); else meltOn(flyMode, flyCard); }
-      requestAnimationFrame(function () { requestAnimationFrame(function () {
-        if (ff && !reduce) fly(fs, ff, function () { if (ov) ov.classList.remove("pre", "pre-g"); }, gq);
-        if (gq) setTimeout(function () { if (shown && ov) ov.classList.add("on"); }, 520); else ov.classList.add("on");
-      }); });
+    var ff = flyFrom, fs = flySrc, card = flyCard, mode = flyMode; flyFrom = null;
+    var flyOk = !was && ff && fs && !reduce && card && ov.animate;
+    render(i, false, flyOk);
+    if (was) { ov.classList.add("on"); return; }
+    ov.classList.remove("sw");
+    if (!flyOk) { origin = null; window.__twFreeze = true; ov.classList.remove("air"); ov.classList.add("on"); }
+    else {
+      var o = origin = { rect: ff, src: fs, mode: mode, card: card, tw: mode === "twist" && !!window.__twGLon };
+      ov.classList.add("air", "on"); root.classList.add("wk-air"); window.__wkMove = true;
+      var land = function () {
+        inFlight = null; window.__wkMove = false; if (!shown || origin !== o) return;
+        ov.classList.remove("air"); airOff(); if (strip) strip.release();
+        requestAnimationFrame(function () { requestAnimationFrame(function () { if (shown && origin === o) window.__twFreeze = true; }); });
+      };
+      inFlight = function () { flTok++; };
+      target(fs, function (big) {
+        if (!shown || origin !== o) return;
+        if (!big) { land(); return; }
+        if (o.tw) { twFlight(card, big, false, land); inFlight = function () { flTok++; window.__twX = null; }; }
+        else if (mode === "list") {
+          /* the name goes to its place first, then the picture rises into the scroll, then the text comes */
+          var h1 = ov.querySelector(".wk-name"), nm = listName, rmName = nameFly(nm, h1, 900);
+          var fin = function () { if (h1 && nm) { h1.classList.add("wk-now"); setTimeout(function () { h1.classList.remove("wk-now"); }, 400); } land(); rmName(); };
+          var killL = fs ? flyBox(big, ff, fs, false, 550, 1200, fin) : (setTimeout(fin, 950), function () {});
+          inFlight = function () { killL(); rmName(); };
+        }
+        else {
+          card.classList.add("wk-hide"); if (mode === "grid") gridAway(card);
+          var kill = flyBox(big, ff, fs, false, 350, 1250, land);
+          inFlight = function () { kill(); card.classList.remove("wk-hide"); gridBack(true); };
+        }
+      });
     }
-    else { ov.classList.add("on"); }
-    if (!was) setTimeout(function () { if (shown) ov.focus({ preventScroll: true }); }, 60);
+    setTimeout(function () { if (shown) ov.focus({ preventScroll: true }); }, 60);
   }
   function hide() {
     if (!shown) return; shown = false; cur = -1;
     var o = origin; origin = null;
-    if (o && !reduce && ov.classList.contains("fx") && ov.animate) { exitFly(o); if (o.mode === "grid") setTimeout(gridBack, 450); ov.classList.remove("on", "pre", "pre-g", "gq"); ov.classList.add("out"); setTimeout(function () { if (!shown) ov.classList.remove("fx", "out"); }, 1100); }
-    else ov.classList.remove("on", "fx", "pre", "pre-g", "gq");
     window.__wkOpen = false; root.classList.remove("wk-open");
-    /* the gallery is a still picture while the page flies back (no GPU drawing during the move); it comes alive again as soon as the picture has landed or the user touches it */
-    if (o && o.tw && ov.classList.contains("out")) { window.__twFreeze = false; twAnim(o.card, 1, 0, 1100, 450); }
-    else if (o && ov.classList.contains("out")) {
-      var thaw = function () { window.__twFreeze = false; removeEventListener("pointerdown", thaw, true); removeEventListener("wheel", thaw, true); };
-      addEventListener("pointerdown", thaw, true); addEventListener("wheel", thaw, true); setTimeout(thaw, 2200);
-    } else window.__twFreeze = false; window.dispatchEvent(new Event("ab-toggle"));
-    clearTimeout(closing); closing = setTimeout(function () { if (!shown && strip) { strip.destroy(); strip = null; } }, reduce ? 0 : 850);
+    var gone = function () {
+      inFlight = null; window.__wkMove = false; if (shown) return;
+      ov.classList.remove("on", "air"); airOff(); if (strip) { strip.destroy(); strip = null; }
+    };
+    if (inFlight) { inFlight(); o = null; window.__twX = null; }   /* Back while the picture was still on its way in: everything snaps home */
+    if (o && o.mode === "list") o = null;   /* List: Back simply returns to the list */
+    var slot = o ? slotRect(o.src) : null;
+    if (!o || !slot) { if (o && !o.tw) { o.card.classList.remove("wk-hide"); gridBack(true); } window.__twX = null; window.__twFreeze = false; gone(); }
+    else {
+      ov.classList.add("air"); root.classList.add("wk-air"); window.__wkMove = true;
+      if (o.tw && window.__twGLon && o.card.isConnected) {
+        twFlight(o.card, slot, true, function () { window.__twX = null; gone(); });
+        inFlight = function () { flTok++; window.__twX = null; };
+      } else {
+        window.__twX = null; window.__twFreeze = false;
+        var to = homeRect(o);
+        if (!onScreen(to)) { o.card.classList.remove("wk-hide"); gridBack(true); gone(); }
+        else {
+          if (o.mode === "grid") setTimeout(function () { gridBack(); }, 450);
+          var kill = flyBox({ left: slot.left, top: slot.top, width: slot.width, height: slot.height }, to, o.src, true, 0, 1250, function () { o.card.classList.remove("wk-hide"); gone(); });
+          inFlight = function () { kill(); o.card.classList.remove("wk-hide"); gridBack(true); };
+        }
+      }
+    }
+    window.dispatchEvent(new Event("ab-toggle"));
     if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
   }
   function hashFor(i) { return "#/work/" + slugs(data())[i]; }
@@ -346,9 +384,37 @@
   function go(it) {
     var list = data(), i = list.findIndex(function (x) { return x.name === it.name && ((x.image && x.image.src) || "") === ((it.image && it.image.src) || ""); });
     if (i < 0) i = list.findIndex(function (x) { return x.name === it.name; }); if (i < 0) return;
+    listFrom(list[i]);
     ownPush = true; location.hash = hashFor(i);
   }
   window.__wkGo = go;
+  /* List: remember where the clicked name and the picture are, before the list goes away */
+  var lastP = [innerWidth / 2, innerHeight / 2], listName = null;
+  addEventListener("pointerdown", function (e) { lastP = [e.clientX, e.clientY]; }, true);
+  function listFrom(it) {
+    listName = null;
+    var lr = document.getElementById("ls-root"); if (!lr || getComputedStyle(lr).visibility === "hidden" || flyFrom) return;
+    var pic = null; ["ls-pv", "ls-mpv"].forEach(function (id) { var n = document.getElementById(id); if (!n || pic) return; var r = n.getBoundingClientRect(); if (r.width > 40 && r.height > 40 && +getComputedStyle(n).opacity > .2 && r.bottom > 0 && r.top < innerHeight) pic = { el: n, r: r }; });
+    var row = null, bd = 1e18, nm = String(it.name).trim().toLowerCase();
+    [].forEach.call(lr.querySelectorAll(".ls-row"), function (n) {
+      if (n.textContent.trim().toLowerCase() !== nm) return; var r = n.getBoundingClientRect(); if (!r.height || r.bottom < 0 || r.top > innerHeight) return;
+      var dd = Math.abs(r.top + r.height / 2 - lastP[1]); if (dd < bd) { bd = dd; row = n; }
+    });
+    if (row) { var rg = document.createRange(); rg.selectNodeContents(row); var tr = rg.getBoundingClientRect(); listName = { text: row.textContent.trim(), r: tr, fs: parseFloat(getComputedStyle(row).fontSize) || 40 }; }
+    if (pic && it.image && it.image.src) { flyFrom = pic.r; flyCard = pic.el; flyMode = "list"; flySrc = sm(it.image.src); }
+    else if (row) { var c = listName.r; flyFrom = { left: c.left + c.width / 2 - 2, top: c.top + c.height / 2 - 1.5, width: 4, height: 3 }; flyCard = row; flyMode = "list"; flySrc = sm((it.image && it.image.src) || ""); }
+  }
+  /* List: the clicked name travels to where the project's name stands */
+  function nameFly(nm, h1, dur) {
+    var sp = h1.querySelector("span"); if (!sp || !nm) return function () {};
+    var rg = document.createRange(); rg.selectNodeContents(sp); var rs = rg.getClientRects(), t = rs[0]; if (!t) return function () {};
+    var fs2 = parseFloat(getComputedStyle(h1).fontSize) || 120, k = fs2 / nm.fs;
+    var c = el("div", "", nm.text);
+    c.style.cssText = "position:fixed;z-index:7;left:" + nm.r.left + "px;top:" + nm.r.top + "px;height:" + nm.r.height + "px;line-height:" + nm.r.height + "px;font:400 " + nm.fs + "px/" + nm.r.height + 'px "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;color:#f2f2f2;pointer-events:none;transform-origin:0 50%;will-change:transform';
+    document.body.appendChild(c);
+    c.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (t.left - nm.r.left) + "px," + (t.top + t.height / 2 - (nm.r.top + nm.r.height / 2)) + "px,0) scale(" + k + ")" }], { duration: dur, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+    return function () { c.remove(); };
+  }
 
   /* a click on a card in Twister or Grid opens the page (a drag does not); in Grid the highlighted (lifted) project opens */
   function cardOf(t) {
