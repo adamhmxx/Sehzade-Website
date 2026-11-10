@@ -1,5 +1,5 @@
-/* Project info on hover: the name, a short description and the year of the item under the cursor. Twister: top left. Grid: right below the
-   card lifted to the centre of the screen, lined up with it. List: description and year, top left like Twister. Mouse only; hidden while scrolling or dragging (and for one second after), while the cursor is on the mode menu,
+/* Project info on hover: the name, a short description and the year of the item under the cursor. Twister: top left. Grid: centred right below the
+   card lifted to the centre of the screen, as wide as the card, no background. List: description and year, top left like Twister. Mouse only; hidden while scrolling or dragging (and for one second after), while the cursor is on the mode menu,
    while the About card is open and during the intro. */
 (function () {
   if (!matchMedia("(pointer: fine)").matches) return;
@@ -12,14 +12,14 @@
     var css = document.createElement("style");
     css.textContent = '#hv-info{position:fixed;left:40px;top:92px;max-width:min(420px,40vw);z-index:2000;pointer-events:none;color:#fff;mix-blend-mode:difference;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;font-size:16px;line-height:1.25;letter-spacing:0;opacity:0;transition:opacity .26s ease;-webkit-font-smoothing:antialiased}' +
       '#hv-info.on{opacity:1}#hv-info div{margin-bottom:8px}#hv-info div:last-child{margin-bottom:0}' +
-      /* Grid: the cards touch each other, so the three lines sit on a small dark plate, lined up with the card above it */
-      '#hv-info.gd{mix-blend-mode:normal;background:#0b0b0b;padding:10px 12px;box-sizing:border-box}' +
+      /* Grid: no plate; the three lines are centred under the lifted card and as wide as it is */
+      '#hv-info.gd{text-align:center;box-sizing:border-box}' +
       '@media (max-width:809.98px){#hv-info{left:16px;top:76px}}';
     document.head.appendChild(css);
     el = document.createElement("div"); el.id = "hv-info"; el.setAttribute("aria-hidden", "true"); document.body.appendChild(el);
   }
-  /* the selected mode by position in the menu (the names can be edited in the CMS): 0 Twister, 1 Space, 2 Grid, 3 List */
-  function mode() { var t = [].slice.call(document.querySelectorAll('[role="tab"]')), i = t.findIndex(function (x) { return x.getAttribute("aria-selected") === "true"; }); return ["twister", "space", "grid", "list"][i] || ""; }
+  /* the selected mode by position in the menu (the names can be edited in the CMS): 0 Twister, 1 Grid, 2 List */
+  function mode() { var t = [].slice.call(document.querySelectorAll('[role="tab"]')), i = t.findIndex(function (x) { return x.getAttribute("aria-selected") === "true"; }); return ["twister", "grid", "list"][i] || ""; }
   function onMenu() { var tl = document.querySelector('[role="tablist"]'); if (!tl) return false; var r = tl.getBoundingClientRect(); return mx >= r.left - 16 && mx <= r.right + 16 && my >= r.top - 16 && my <= r.bottom + 16; }
   function cards() {
     return [].filter.call(document.querySelectorAll("#main div"), function (d) { var s = d.style; return s.position === "absolute" && s.top === "50%" && s.left === "50%" && s.zIndex; });
@@ -40,7 +40,7 @@
     /* normal cards take the pointer, so the browser already knows which one is on top */
     var e = document.elementFromPoint(mx, my);
     for (var n = e; n && n !== document.body; n = n.parentElement) if (n.tagName === "DIV" && isCard(n) && n.closest("#main")) return n;
-    /* cards that ignore the pointer (Space, Twister: a Twister card is cut into slices): test them one by one and keep the one nearest to the viewer */
+    /* cards that ignore the pointer (Twister: a Twister card is cut into slices): test them one by one and keep the one nearest to the viewer */
     var best = null, bz = -1e9, list = cards();
     for (var i = 0; i < list.length; i++) {
       var c = list[i], r = c.getBoundingClientRect(); if (r.width < 20 || !inside(r, mx, my)) continue;

@@ -271,7 +271,7 @@
   function renderSite() {
     var o = site();
     function set(k) { return function (v) { S.data.site = S.data.site || {}; S.data.site[k] = v; changed(); }; }
-    function setMode(i) { return function (v) { S.data.site = S.data.site || {}; var m = savedModes().slice(); while (m.length < 4) m.push(""); m[i] = v; S.data.site.modes = m; changed(); }; }
+    function setMode(i) { return function (v) { S.data.site = S.data.site || {}; var m = savedModes().slice(); while (m.length < 3) m.push(""); m[i] = v; S.data.site.modes = m; changed(); }; }
     var c1 = el("div", { class: "cp-col6" }), c2 = el("div", { class: "cp-col6" });
     c1.append(el("div", { class: "cp-label" }, "Navigation and page"),
       field("Logo (top left)", o.logo, set("logo")), field("About menu (centre)", o.aboutLabel, set("aboutLabel")),

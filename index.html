@@ -31,7 +31,7 @@ html nav,html [role=tablist]{transition:opacity .9s ease,transform .9s cubic-bez
 html.intro-ui nav{transform:translateY(-10px)!important}
 html.intro-ui [role=tablist]{transform:translateX(-50%) translateY(12px)!important}
 </style>
-<script>/* phone sizes for the gallery modes (Space smaller so items stop overlapping) */window.__gcPh={twp:380,fsc:52,fx:40,grad:38};</script>
+<script>/* phone sizes for the gallery modes */window.__gcPh={twp:380,grad:38};</script>
 <script>if(!/nointro/.test(location.hash)){document.documentElement.classList.add("intro-on","intro-ui")}</script>
 <style id="mobile-fit">
 /* phones: the layout must follow the VISIBLE screen (dvh), not the tall one that hides the bottom behind the browser toolbar; the mode menu then always sits above the toolbar and the home bar */
@@ -145,19 +145,19 @@ if(matchMedia("(pointer:coarse)").matches){window.__twEff=8;window.__twMg=1}</sc
 	<script data-framer-appear-animation="no-preference"></script>
 	<script>typeof document<"u"&&(window.process={...window.process,env:{...window.process?.env,NODE_ENV:"production"}});</script>
 	<link rel="preload" href="fuc/assets/anton-latin.woff2" as="font" type="font/woff2" crossorigin><style>@font-face{font-family:"Anton";font-style:normal;font-weight:400;font-display:swap;src:url(fuc/assets/anton-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}</style>
-<script>window.__build="20261110b"</script>
-<script>/(^|[#&])perf\b/.test(location.hash)&&document.head.appendChild(Object.assign(document.createElement("script"),{src:"fuc/perf-probe.js?v=20261109j"}))</script>
-<script src="fuc/hover-info.js?v=20261109k" defer></script>
-<script src="fuc/mode-ui.js?v=20261109z" defer></script>
+<script>window.__build="20261110c"</script>
+<script>/(^|[#&])perf\b/.test(location.hash)&&document.head.appendChild(Object.assign(document.createElement("script"),{src:"fuc/perf-probe.js?v=20261110c"}))</script>
+<script src="fuc/hover-info.js?v=20261110c" defer></script>
+<script src="fuc/mode-ui.js?v=20261110c" defer></script>
 <script>/* every portfolio picture is decoded once, in quiet moments after the entrance, and kept decoded: a mode switch builds new picture
    elements for the cards, and an undecoded picture is blank for a few frames, which on phones swallowed the start of the morph */
 (function(){var keep=[];function go(){var a=(window.__cmsItems&&window.__cmsItems())||window.__cmsDefaults||[],q=[];a.forEach(function(it){var u=it&&it.image&&it.image.src;if(u)q.push(window.__sms?window.__sms(u):u)});q=q.filter(function(u,i){return q.indexOf(u)===i});
 (function next(){var u=q.shift();if(!u)return;var im=new Image();im.decoding="async";im.src=u;keep.push(im);(im.decode?im.decode():Promise.resolve()).catch(function(){}).then(function(){(window.requestIdleCallback||setTimeout)(next,{timeout:400})})})();window.__galDecoded=keep;}
 if(document.documentElement.classList.contains("intro-ui"))addEventListener("intro-done",function(){setTimeout(go,300)},{once:true});else addEventListener("load",function(){setTimeout(go,800)});})();</script>
-<script src="fuc/intro.js?v=20261109j" defer></script>
-<script src="fuc/linkfx.js?v=20261109j" defer></script>
-<script src="fuc/cms.js?v=20261109q" defer></script>
-<script src="fuc/liquid.js?v=20261109jb" defer></script>
+<script src="fuc/intro.js?v=20261110c" defer></script>
+<script src="fuc/linkfx.js?v=20261110c" defer></script>
+<script src="fuc/cms.js?v=20261110c" defer></script>
+<script src="fuc/liquid.js?v=20261110c" defer></script>
 <link rel="icon" href="data:,">
 <style id="site-overrides">
 html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
@@ -170,8 +170,8 @@ body *{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weig
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 #__framer-badge-container{display:none!important}
 </style>
-<script src="fuc/about-card.js?v=20261109k" defer></script>
-<link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/rolldown-runtime.Dh6celcD.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/react.D20wc1Tc.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/framer.Byg2jyrS.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/motion.B09WepHq.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/QHQXYhTjjHvyon0f_k6M-OfqjnUAbqgCLQVvwyxe1Ww.v6.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/shared-lib.Dm0hivNl.mjs"><script type="module" async data-framer-bundle="main" fetchpriority="low" src="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/script_main.C3M_euHQ.mjs"></script><div id="svg-templates" style="position: absolute; overflow: hidden; bottom: 0; left: 0; width: 0; height: 0; z-index: 0; contain: strict" aria-hidden="true">
+<script src="fuc/about-card.js?v=20261110c" defer></script>
+<link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/rolldown-runtime.Dh6celcD.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/react.D20wc1Tc.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/framer.Byg2jyrS.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/motion.B09WepHq.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/QHQXYhTjjHvyon0f_k6M-OfqjnUAbqgCLQVvwyxe1Ww.v7.mjs"><link rel="modulepreload" fetchpriority="low" href="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/shared-lib.Dm0hivNl.mjs"><script type="module" async data-framer-bundle="main" fetchpriority="low" src="fuc/sites/5APA5K3vmMIpJ2kZ6DqeNG/script_main.C3M_euHQ.mjs"></script><div id="svg-templates" style="position: absolute; overflow: hidden; bottom: 0; left: 0; width: 0; height: 0; z-index: 0; contain: strict" aria-hidden="true">
 </div>
 	<!-- Start of bodyEnd -->
     

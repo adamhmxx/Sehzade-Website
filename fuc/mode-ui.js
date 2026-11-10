@@ -1,10 +1,10 @@
 /* Two small pieces of interface that belong to the gallery modes:
    1. the List mode: every project name as one big grey line, together filling the screen from top to bottom; hovering a name turns it
       white and shows that project's picture, following the pointer;
-   2. a "(scroll)" note at the bottom right in every mode that can be scrolled (Twister, Space, Grid).
-   Modes are found by their place in the mode menu (0 Twister, 1 Space, 2 Grid, 3 List), so the names can be edited in the CMS. */
+   2. a "(scroll)" note at the bottom right in every mode that can be scrolled (Twister, Grid).
+   Modes are found by their place in the mode menu (0 Twister, 1 Grid, 2 List), so the names can be edited in the CMS. */
 (function () {
-  var root = document.documentElement, LIST = 3, built = false, box, listEl, pv, hint, rows = [], act = -1, mx = 0, my = 0, px = 0, py = 0, raf = 0, items = [], hideT = 0, touchT = 0;
+  var root = document.documentElement, LIST = 2, built = false, box, listEl, pv, hint, rows = [], act = -1, mx = 0, my = 0, px = 0, py = 0, raf = 0, items = [], hideT = 0, touchT = 0;
   var fine = matchMedia("(pointer: fine)").matches, touchUI = !fine;
 
   function tabs() { return [].slice.call(document.querySelectorAll('[role="tab"]')); }

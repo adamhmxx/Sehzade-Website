@@ -12,7 +12,7 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, fstep: 40, fnear: 400, fbl: 16, fsc: 80, fx: 44, fy: 50, ggap: 16, gstag: 15, gpar: 20 };
+  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, twr: 40, twp: 160, twsc: 105, twg: 101, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, ggap: 16, gstag: 15, gpar: 20 };
   if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
@@ -370,13 +370,6 @@
       ["lstag", "Stagger", 0, 300, 5, "ms"],
       ["#", "About popup"],
       ["pliq", "Liquid appear", 0, 120, 1, "px"],
-      ["#", "Space"],
-      ["fstep", "Depth spacing", 40, 220, 5, "%"],
-      ["fnear", "Near distance", 200, 1000, 10, "px"],
-      ["fsc", "Card size", 30, 110, 1, "%"],
-      ["fx", "Spread across", 10, 80, 1, "%"],
-      ["fy", "Spread up", 10, 80, 1, "%"],
-      ["fbl", "Depth blur", 0, 30, 1, "px"],
       ["#", "Grid"],
       ["ggap", "Gap", 0, 64, 1, "px"],
       ["gstag", "Column stagger", 0, 300, 5, "px"],
@@ -418,8 +411,6 @@
       reach: "How far from the cursor components still react.",
       ldur: "How long the letter slide on links takes.", ldist: "How far letters travel while sliding in.", lblur: "Blur on the letters during the slide.", lstag: "Delay between one letter and the next.",
       pliq: "Ripple strength on the About card text while it moves.",
-      fstep: "Distance between items along the depth of Space. Higher spreads them further apart in depth.", fnear: "How close to the screen items get before they pass you.",
-      fsc: "Size of every card in Space.", fx: "How far items spread left and right.", fy: "How far items spread up and down.", fbl: "Blur on items that are far away.",
       ggap: "Space between cards in the grid.", gstag: "Shifts every second column down to make the grid uneven.", gpar: "How much columns move at different speeds when you scroll.",
       jel: "Master strength of the wet-paint wobble of the cards under the cursor. 0 turns the whole wobble off.", jpush: "How strongly moving the cursor shoves the cards along with it, as if dragging a finger through paint.",
       jjolt: "The squashy jolt a card gets, away from the cursor, the moment the cursor arrives on it.", jbnc: "How long the wobble keeps swinging. Low settles at once, high keeps sloshing for a while.",
@@ -430,7 +421,7 @@
       asp: "How fast the gallery keeps moving by itself. It pauses while the cursor is over it or while it is dragged. 0 turns it off.", twr: "Radius of the spiral. Smaller is a tighter, rounder curve.", twn: "How many slices each card is cut into. More is smoother but heavier.",
       twg: "Gap between neighbouring cards. 100 means they touch, higher opens gaps.", twp: "How steeply the ribbon climbs each turn. Lower packs the turns closer together.", twsc: "Size of every card in Twister."
     };
-    var GALLERY = /^(asp|tw(r|p|sc|g|n)|f(step|near|bl|sc|x|y)|ggap|gstag|gpar)$/;
+    var GALLERY = /^(asp|tw(r|p|sc|g|n)|ggap|gstag|gpar)$/;
     var css = document.createElement("style");
     css.textContent =
       '#liquid-ui{position:fixed;right:var(--lm,32px);bottom:88px;z-index:2147483600;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;color:#f2f2f2;letter-spacing:.04em;-webkit-font-smoothing:antialiased}' +
@@ -479,7 +470,7 @@
     card.innerHTML = '<div class="lq-title"><span>Liquid hover</span></div>';
     var inputs = {}, pages = {}, tabs = document.createElement("div"), cur = null;
     tabs.className = "lq-tabs";
-    [["Cursor", "Cursor"], ["Link hover", "Links"], ["About popup", "Popup"], ["Intro", "Intro"], ["Space", "Space"], ["Grid", "Grid"], ["Gallery hover", "Hover"], ["Twister", "Twist"]].forEach(function (t) {
+    [["Cursor", "Cursor"], ["Link hover", "Links"], ["About popup", "Popup"], ["Intro", "Intro"], ["Grid", "Grid"], ["Gallery hover", "Hover"], ["Twister", "Twist"]].forEach(function (t) {
       var pg = document.createElement("div"); pg.className = "lq-page"; pages[t[0]] = pg;
       var tb = document.createElement("button"); tb.type = "button"; tb.textContent = t[1]; tb.dataset.page = t[0];
       tb.onclick = function () { setPage(t[0]); try { localStorage.setItem(KEY + "-tab", t[0]); } catch (e) {} };
