@@ -18,10 +18,13 @@
     s.textContent =
       /* leaving List: the names fade out quickly, before the other mode's cards fade in. Entering List: the gallery's cards fade out first
          (.ls-hide), the names only appear once they are gone, so the two are never on screen together */
-      '#ls-root{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .16s ease,visibility 0s .16s}' +
-      '#ls-root.on{opacity:1;visibility:visible;transition:opacity .4s ease .38s}' +
-      '.ls-layer{transition:opacity .35s ease .12s}' +
-      '.ls-layer.ls-hide{opacity:0!important;pointer-events:none!important;transition:opacity .3s ease}' +
+      /* no fades between the modes: the cards fly out (or in) and the names are unveiled line by line, each rising out from behind its own lower edge */
+      '#ls-root{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;visibility:hidden;transition:none}' +
+      '#ls-root.on{opacity:1;visibility:visible;transition:none}' +
+      '#ls-root .ls-row{clip-path:inset(0 0 100% 0);translate:0 70%}' +
+      '#ls-root.on .ls-row{clip-path:inset(-12% -6% -12% -6%);translate:0 0;transition:color .22s ease,clip-path .8s cubic-bezier(.22,1,.36,1) .95s,translate .8s cubic-bezier(.22,1,.36,1) .95s}' +
+      '.ls-layer{transition:none}' +
+      '.ls-layer.ls-hide{visibility:hidden;pointer-events:none!important;transition:visibility 0s 1.5s}' +
       '#ls-pv{position:fixed;left:0;top:0;background-size:cover;background-position:center;background-color:#111;opacity:0;transform:scale(.94);transition:opacity .28s ease,transform .38s cubic-bezier(.22,1,.36,1);will-change:transform,opacity;pointer-events:none;border-radius:2px}' +
       '#ls-pv.on{opacity:1;transform:scale(1)}' +
       '#ls-list{position:fixed;left:0;right:0;text-align:center;font-family:"Anton","Inter Display",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;touch-action:none;-webkit-user-select:none;user-select:none;mix-blend-mode:difference}' +

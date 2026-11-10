@@ -29,15 +29,15 @@
       /* while the picture travels (in or out) the page is only a transparent layer: no fade, no wipe. It becomes the page the moment the picture has landed */
       '#wk.air{background:transparent}#wk.air .wk-in{opacity:0!important;transition:none!important}#wk.air .wk-bar{visibility:hidden}.wk-hide{visibility:hidden!important}' +
       /* the text rises in, one piece after the other */
-      /* the text is unveiled: every block rises out from behind an invisible edge, one after the other (movement only, nothing fades) */
-      '#wk .wk-in{opacity:0;clip-path:inset(0 0 100% 0);transform:translateY(70%);transition:opacity 0s,clip-path 1s cubic-bezier(.22,1,.36,1),transform 1s cubic-bezier(.22,1,.36,1)}' +
+      /* the text arrives the way everything on this site does: it dissolves in out of a liquid ripple that calms down (see liquidIn), one block after the other */
+      '#wk .wk-in{opacity:0;transform:translateY(18px);transition:opacity .9s ease,transform 1.1s cubic-bezier(.22,1,.36,1)}' +
       /* ...and so are the pictures of the scroll: each one rises into its frame, in turn */
       '#wk .wk-it img{transition:transform 1.1s cubic-bezier(.22,1,.36,1);transition-delay:calc(var(--j,0) * .1s)}#wk.rv .wk-it img{transform:translateY(102%);transition:none}#wk.rv.fl .wk-first img{transform:none}' +
       '#wk .wk-in.wk-now{transition:none!important}html.wk-open #ls-root,html.wk-air #ls-root{transition:none!important}html.wk-open #hv-info,html.wk-air #hv-info{opacity:0!important;transition:none!important}' +
-      '#wk.on .wk-in{opacity:1;clip-path:inset(-12% -2% -12% -2%);transform:none;transition-delay:calc(var(--i,0) * .08s)}' +
+      '#wk.on .wk-in{opacity:1;transform:none;transition-delay:calc(var(--i,0) * .09s)}' +
       '#wk .wk-r.wk-in{transition:none!important;transform:none!important;clip-path:none!important}' +
       '#wk.sw .wk-in{opacity:0;transform:translateY(10px);transition-delay:0s;transition-duration:.18s}' +
-      '#wk .wk-l{position:relative;display:flex;flex-direction:column;min-height:0;padding:104px 76px 28px 32px;box-sizing:border-box}' +
+      '#wk .wk-l{position:relative;display:flex;flex-direction:column;min-height:0;padding:104px 8px 28px var(--gm);box-sizing:border-box}' +
       '#wk button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
       '#wk{outline:none}#wk button:focus{outline:none}#wk button:focus-visible{outline:1px solid #fff;outline-offset:3px}' +
       /* Back (with Prev / Next beside it), exactly where the mode menu is */
@@ -54,6 +54,10 @@
       '#wk .wk-meta dt,#wk .wk-sec h3{margin:0 0 6px;font-size:16px;line-height:1.3;font-weight:400;color:rgba(255,255,255,.6)}' +
       '#wk .wk-meta dd{margin:0;font-size:16px;line-height:1.3;color:#fff}' +
       '#wk .wk-sec{margin:0 0 22px;padding:0;border:0}' +
+      '#wk{--gm:24px;--gc:4}@media (min-width:1440px){#wk{--gm:32px;--gc:6}}@media (max-width:809.98px){#wk{--gm:16px;--gc:8}}' +
+      '#wk .wk-grid{display:grid;grid-template-columns:repeat(var(--gc),minmax(0,1fr));column-gap:16px;align-items:start}' +
+      '#wk .wk-year{grid-column:1 / span 2;display:flex;gap:16px;align-items:baseline}#wk .wk-year h3{margin:0}#wk .wk-col{grid-column:3 / -1;min-width:0}' +
+      '@media (min-width:810px) and (max-width:1439.98px){#wk .wk-year{grid-column:1 / span 1;flex-direction:row;gap:8px}#wk .wk-col{grid-column:2 / -1}}' +
       '#wk .wk-sec p{margin:0;font-size:16px;line-height:1.4;color:#fff;max-width:60ch;white-space:pre-line}' +
       '#wk .wk-visit{display:inline-block;align-self:flex-start;margin:0 0 14px;padding:0;border:0;background:none;color:#fff;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px;font-size:16px;line-height:1.3;transition:color .25s ease}' +
       '#wk .wk-visit:hover{color:rgba(255,255,255,.6)}#wk .wk-visit i{font-style:normal}' +
@@ -67,7 +71,7 @@
       /* phone: the pictures on top (endless horizontal), then the details, and the name set big at the bottom, above the Back button */
       '@media (max-width:809.98px){#wk{grid-template-columns:1fr;grid-template-rows:36dvh minmax(0,1fr)}' +
       '#wk .wk-r{order:-1;touch-action:pan-y}' +
-      '#wk .wk-l{padding:18px 16px var(--bar,104px);overflow:hidden}' +
+      '#wk .wk-l{padding:18px var(--gm) var(--bar,104px);overflow:hidden}' +
       '#wk .wk-body{margin-bottom:10px}' +
       '#wk .wk-lede{max-width:none;margin-bottom:18px}' +
       '#wk .wk-meta{margin-bottom:18px}' +
@@ -189,10 +193,15 @@
     var l = el("div", "wk-l"), body = el("div", "wk-body"), idx = 0;
     function put(node) { node.classList.add("wk-in"); node.style.setProperty("--i", idx++); return node; }
     var h1 = put(el("h1", "wk-name")); h1.setAttribute("aria-label", it.name);
-    /* every piece of information has a title (white 60%) and its text (white 100%), all 16px, in this order */
-    [["Year", it.year], ["Description", it.description], ["Client", it.client], ["Challenge", it.challenge], ["Approach", it.approach]].forEach(function (x) {
-      if (!x[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", x[0]), el("p", "", x[1])); body.appendChild(put(sec));
+    /* on the page grid (12 columns, 8 below 1440px, 16px gutters): Year is one horizontal row (title, value) in the first columns; right of it one
+       vertical frame holds Description, Client, Challenge and Approach. Titles white 60%, texts white 100%, all 16px */
+    var grid = el("div", "wk-grid");
+    if (it.year) { var yr = el("section", "wk-sec wk-year"); yr.append(el("h3", "", "Year"), el("p", "", it.year)); grid.appendChild(put(yr)); }
+    var col = el("div", "wk-col");
+    [["Description", it.description], ["Client", it.client], ["Challenge", it.challenge], ["Approach", it.approach]].forEach(function (x) {
+      if (!x[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", x[0]), el("p", "", x[1])); col.appendChild(put(sec));
     });
+    grid.appendChild(col); body.appendChild(grid);
     var visit = null;
     if (it.link) { visit = el("a", "wk-visit"); visit.href = it.link; visit.target = "_blank"; visit.rel = "noopener noreferrer"; visit.textContent = "Visit website"; }
     var r = el("div", "wk-r"); r.classList.add("wk-in"); r.style.setProperty("--i", 1);
@@ -300,6 +309,24 @@
     var me = pin = { ox: K.ox, oy: K.oy, tx: K.tx, ty: K.ty };
     requestAnimationFrame(function f() { if (pin !== me) return; var k = window.__galK && window.__galK.current; if (k) { k.ox = me.ox; k.oy = me.oy; k.tx = me.tx; k.ty = me.ty; k.vx = k.vy = 0; } requestAnimationFrame(f); });
   }
+  /* the liquid part of the text's arrival: one ripple filter over the text column, strong at first and gone after a moment */
+  var liq = null, liqTok = 0;
+  function liquidIn() {
+    var col = ov && ov.querySelector(".wk-l"); if (!col || reduce) return;
+    if (!liq) {
+      var NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"); svg.setAttribute("width", "0"); svg.setAttribute("height", "0"); svg.setAttribute("aria-hidden", "true"); svg.style.cssText = "position:absolute;width:0;height:0;pointer-events:none";
+      svg.innerHTML = '<filter id="wk-liq" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.009 0.016" numOctaves="2" seed="5" result="n"/><feOffset in="n" dx="0" dy="0" result="o"/><feDisplacementMap in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>';
+      document.body.appendChild(svg); var f = svg.firstChild; liq = { off: f.children[1], map: f.children[2] };
+    }
+    var tok = ++liqTok, t0 = 0, D = 1700, A = phone() ? 46 : 80;
+    col.style.filter = "url(#wk-liq)";
+    requestAnimationFrame(function fr(now) {
+      if (tok !== liqTok) return; if (!t0) t0 = now;
+      var k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3);
+      liq.map.setAttribute("scale", (A * (1 - e)).toFixed(2)); liq.off.setAttribute("dy", (-60 * e).toFixed(1)); liq.off.setAttribute("dx", (24 * Math.sin(k * 3)).toFixed(1));
+      if (k < 1) requestAnimationFrame(fr); else col.style.filter = "";
+    });
+  }
   var rvLand = false, rvLay = false;
   function rvTry() { if (rvLand && rvLay && ov) requestAnimationFrame(function () { requestAnimationFrame(function () { if (ov) ov.classList.remove("rv", "fl"); }); }); }
   function onScreen(r) { return r && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
@@ -313,13 +340,13 @@
     render(i, false, flyOk);
     if (was) { ov.classList.add("on"); return; }
     ov.classList.remove("sw");
-    if (!flyOk) { origin = null; window.__twFreeze = true; ov.classList.remove("air"); ov.classList.add("on"); rvLand = true; rvTry(); }
+    if (!flyOk) { origin = null; window.__twFreeze = true; ov.classList.remove("air"); ov.classList.add("on"); rvLand = true; rvTry(); liquidIn(); }
     else {
       var o = origin = { rect: ff, src: fs, mode: mode, card: card, tw: mode === "twist" && !!window.__twGLon };
       ov.classList.add("air", "on"); root.classList.add("wk-air"); window.__wkMove = true; pinOn();
       var land = function () {
         inFlight = null; window.__wkMove = false; if (!shown || origin !== o) return;
-        ov.classList.remove("air"); airOff(); if (strip) strip.release(); rvLand = true; rvTry();
+        ov.classList.remove("air"); airOff(); if (strip) strip.release(); rvLand = true; rvTry(); liquidIn();
         requestAnimationFrame(function () { requestAnimationFrame(function () { if (shown && origin === o) window.__twFreeze = true; }); });
       };
       inFlight = function () { flTok++; };

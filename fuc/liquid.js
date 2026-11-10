@@ -125,6 +125,8 @@
     var rects = [], n, card, cb;
     for (n = 0; n < galCards.length; n++) rects.push(galCards[n].isConnected ? galCards[n].getBoundingClientRect() : null);
     galR = rects; galBR = galCards.length && galCards[0].parentElement ? galCards[0].parentElement.getBoundingClientRect() : null;   /* shared with the picture layer, which runs right after */
+    /* a project page: the pictures of the endless scroll are one continuous column, so they do not wobble one by one (their seams would open and close); the melt alone carries the hover there */
+    if (galCards.length && galCards[0].classList && galCards[0].classList.contains("wk-it")) return 0;
     for (n = 0; n < galCards.length; n++) {
       card = galCards[n]; cb = rects[n]; if (!cb) continue; if (card.__wkAway) continue;
       /* a card that has become tiny or hidden (another mode) must not keep a leftover wobble style */
@@ -204,10 +206,12 @@
       if (mx > r.left && mx < r.right && my > r.top && my < r.bottom) hover = galCards[i];
       else if (mx > r.left - 90 && mx < r.right + 90 && my > r.top - 90 && my < r.bottom + 90) halo = true;
     }
-    if (hover && hover !== galHover) galPulse = 1;
+    var wkBox = !!box.closest("#wk");
+    /* in the scroll of a project page the pictures drift under a resting cursor: only a cursor that really moves onto a picture fires the opening burst */
+    if (hover && hover !== galHover && !(wkBox && sp < .03)) galPulse = 1;
     galHover = hover; galPulse *= Math.exp(-dtf / .75);
     if (c.gmelt <= .5 && c.gdis <= 1) { if (galBox) { galBox.style.filter = ""; galBox = null; galS = 0; } return 0; }
-    var target = (hover || halo) ? c.gmelt * (1 + 2.2 * galPulse + sp * .6) * (hover ? 1 : .35) : 0;
+    var target = (hover || halo) ? c.gmelt * (1 + 2.2 * galPulse + sp * .6) * (hover ? 1 : .35) * (wkBox ? .6 : 1) : 0;
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
     galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 14 : 9)));
     if (galS < 1 && target === 0 && !(c.gdis > 1 && galPulse > .02)) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
