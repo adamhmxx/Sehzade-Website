@@ -26,6 +26,7 @@
   }
   /* the image of a card: a plain <img>, or (Twister, where a card is cut into slices) the background image of a slice */
   function srcOf(card) {
+    if (card.dataset && card.dataset.src) return card.dataset.src;   /* Twister (drawn on the GPU): the card box carries its picture's address */
     var im = card.querySelector("img"); if (im) return im.currentSrc || im.src;
     var all = card.querySelectorAll("*");
     for (var i = 0; i < all.length && i < 12; i++) { var bg = all[i].style && all[i].style.backgroundImage; if (bg && bg.indexOf("url") >= 0) return bg; }

@@ -26,7 +26,7 @@ Run:  python3 server.py   ->  http://localhost:8000   (CMS: http://localhost:800
 
 ## Phones
 - Mode switches morph the cards exactly like on desktop. Phones load 720px copies of the pictures (fuc/images/sm/), the Twister uses a steeper climb (window.__gcPh in index.html).
-- The Twister uses 10 slices per card on touch devices and its items are 30% smaller (see index.html and the gallery chunk). Link hover is off on touch.
+- The Twister is drawn on the GPU (WebGL2, code at the top of the gallery chunk): one canvas, every card a single mesh bent along the spiral in the vertex shader, so the curve is smooth and a frame costs a handful of draw calls. The card boxes in the page are empty and transparent, they only take hover and click. Without WebGL2 (or after a lost context) the gallery falls back to the old DOM slices (window.__twEff / twn). Link hover is off on touch.
 - fuc/hover-info.js   Twister: name, short description and year of the picture under the mouse, top left.
 - fuc/perf-probe.js   add #perf to the address for a live frame-rate readout.
 

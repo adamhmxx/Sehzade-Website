@@ -231,7 +231,7 @@
 
   /* "(scroll)": bottom right, level with the mode menu */
   function placeHint() {
-    if (!hint) return;
+    if (!hint || !live()) return;   /* during the loader the menu is still moving, and measuring it would force layout while the page is busy */
     var tl = document.querySelector('[role="tablist"]'), m = innerWidth >= 1440 ? 32 : innerWidth >= 810 ? 24 : 16;
     if (tl) {
       var t0 = tabs()[0], r = (t0 || tl).getBoundingClientRect(), h = hint.offsetHeight || 16, phone = innerWidth < 810;

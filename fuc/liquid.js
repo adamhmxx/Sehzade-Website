@@ -188,6 +188,8 @@
   }
   function galFx(c, sp, on, now, dtf) {
     var box = galCards.length && galCards[0].isConnected ? galCards[0].parentElement : null;
+    /* Twister drawn on the GPU: its canvas sits next to the card boxes, so the melt goes on their common parent */
+    if (box && window.__twGLon && box.parentElement) box = box.parentElement;
     if (galBox && galBox !== box) { galBox.style.filter = ""; galBox = null; galS = galV = 0; }
     if (!box) return 0;
     /* which card is under the cursor: arriving on a new one fires the opening burst */
