@@ -137,7 +137,22 @@
       if (!m || !ext) { done(dataUrl); return; }
       var path = "uploads/" + Math.random().toString(16).slice(2, 10) + Date.now().toString(16) + "." + ext;
       setStatus("Uploading image…");
-      ghPut(path, m[2], "CMS: add image", true).then(function () { previews[path] = dataUrl; done(path); }).catch(function () { setStatus("Could not upload the image.", true); done(""); });
+      /* the picture goes up twice: full size for desktop, and a 720px copy in uploads/sm/ for phones (the site picks the right one) */
+      ghPut(path, m[2], "CMS: add image", true).then(function () {
+        previews[path] = dataUrl;
+        var im = new Image();
+        im.onload = function () {
+          try {
+            var w = Math.min(720, im.width), c = document.createElement("canvas"); c.width = w; c.height = Math.round(im.height * w / im.width);
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            var out = c.toDataURL(m[1] === "image/png" ? "image/png" : m[1] === "image/webp" ? "image/webp" : "image/jpeg", .8), mm = /^data:[^;]+;base64,(.*)$/.exec(out);
+            if (!mm) throw 0;
+            ghPut("uploads/sm/" + path.slice(8), mm[1], "CMS: add image (phone size)", true).then(function () { done(path); }).catch(function () { done(path); });
+          } catch (x) { done(path); }
+        };
+        im.onerror = function () { done(path); };
+        im.src = dataUrl;
+      }).catch(function () { setStatus("Could not upload the image.", true); done(""); });
       return;
     }
     if (!(API && AUTHED)) { done(dataUrl); return; }
