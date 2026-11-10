@@ -30,6 +30,7 @@
       /* the content rises in, one piece after the other, once the page has opened */
       '#wk.fx{background:rgba(11,11,11,0);transition:background-color .9s cubic-bezier(.4,0,.2,1),visibility 0s .9s}#wk.fx.on{background:#0b0b0b;clip-path:inset(0 0 0 0);transition:background-color .9s cubic-bezier(.4,0,.2,1),visibility 0s}#wk.fx.out{pointer-events:none;clip-path:inset(0 0 0 0);visibility:visible}#wk.out .wk-in{opacity:0!important;transition:opacity .4s ease!important}' +
       '.wk-melt{will-change:opacity,scale,rotate;transition:opacity 1.3s cubic-bezier(.4,0,.2,1),scale 1.4s cubic-bezier(.4,0,.2,1),rotate 1.4s cubic-bezier(.4,0,.2,1)}html.wk-open .wk-melt{opacity:0!important;scale:var(--wk-s,1.06);rotate:var(--wk-r,0deg)}' +
+      '#wk.gq,#wk.gq.on{transition:none!important}#wk.pre-g .wk-in{opacity:0!important;transition:none!important}#wk.gq .wk-in{transition:opacity .5s ease,transform .7s cubic-bezier(.22,1,.36,1)}#wk.gq.on .wk-in{transition-delay:calc(var(--i,0) * .05s)}' +
       '#wk.pre .wk-in{opacity:0!important;transition:none!important}#wk.fx .wk-in{transition:opacity 1s ease,transform 1.2s cubic-bezier(.22,1,.36,1)}#wk.fx.on .wk-in{transition-delay:calc(.15s + var(--i,0) * .1s)}' +
       '#wk .wk-in{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .8s cubic-bezier(.22,1,.36,1)}' +
       '#wk.on .wk-in{opacity:1;transform:none;transition-delay:calc(.35s + var(--i,0) * .07s)}' +
@@ -206,7 +207,7 @@
      then the project's content appears */
   /* One moving picture, animated with transforms only (translate + one uniform scale) and a clip that follows the shape of the card, so nothing is
      stretched and no layout is recomputed while it moves. "big" is where it rests in the project page, "small" is the card in the gallery. */
-  function flyBox(big, small, src, back, delay, done) {
+  function flyBox(big, small, src, back, delay, done, quick) {
     var d = el("div"), pic = new Image(); pic.src = src; pic.decoding = "async";
     d.style.cssText = "position:fixed;z-index:6;left:" + big.left + "px;top:" + big.top + "px;width:" + big.width + "px;height:" + big.height + "px;overflow:hidden;background:#0b0b0b;pointer-events:none;will-change:transform,clip-path;transform-origin:50% 50%;backface-visibility:hidden";
     pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
@@ -214,17 +215,17 @@
     var from = { transform: "translate3d(" + (small.left + small.width / 2 - cx) + "px," + (small.top + small.height / 2 - cy) + "px,0) scale(" + sc + ")",
                  clipPath: "inset(" + ((big.height - small.height / sc) / 2) + "px " + ((big.width - small.width / sc) / 2) + "px)" },
         to = { transform: "translate3d(0,0,0) scale(1)", clipPath: "inset(0px 0px)" };
-    var a = d.animate(back ? [to, from] : [from, to], { duration: 1500, delay: delay || 0, easing: "cubic-bezier(.62,0,.18,1)", fill: "both" });
-    var fin = 0, end = function () { if (fin) return; fin = 1; done && done(); var f = d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 420, easing: "ease", fill: "forwards" }); f.onfinish = function () { d.remove(); }; };
+    var a = d.animate(back ? [to, from] : [from, to], { duration: quick ? 800 : 1500, delay: delay || 0, easing: quick ? "cubic-bezier(.5,0,.15,1)" : "cubic-bezier(.62,0,.18,1)", fill: "both" });
+    var fin = 0, end = function () { if (fin) return; fin = 1; done && done(); if (quick) { d.remove(); return; } var f = d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 420, easing: "ease", fill: "forwards" }); f.onfinish = function () { d.remove(); }; };
     a.onfinish = end; setTimeout(end, 3600 + (delay || 0));
   }
-  function fly(src, from, done) {
+  function fly(src, from, done, quick) {
     var r = ov && ov.querySelector(".wk-r"); if (!r || !from || !src || !ov.animate) { done(); return; }
     var im = new Image(); im.src = src;
     var run = function () {
       var b = r.getBoundingClientRect(), pad = 12, ar = (im.naturalWidth && im.naturalHeight) ? im.naturalWidth / im.naturalHeight : 4 / 3, tw, th;
       if (phone()) { th = b.height - pad * 2; tw = th * ar; } else { tw = b.width - pad * 2; th = tw / ar; }
-      flyBox({ left: b.left + pad, top: b.top + pad, width: tw, height: th }, from, src, false, 0, done);
+      flyBox({ left: b.left + pad, top: b.top + pad, width: tw, height: th }, from, src, false, 0, done, quick);
     };
     if (im.complete) run(); else { im.onload = im.onerror = run; }
   }
@@ -240,6 +241,22 @@
       if (k < 1) requestAnimationFrame(f); else { if (to === 0) window.__twX = null; done && done(); }
     }
     requestAnimationFrame(f);
+  }
+  /* Grid: the cards that were not chosen slide out of the screen, away from the chosen one (and slide back in when the page closes) */
+  var gridOut = [];
+  function gridAway(card, rect) {
+    var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2, far = Math.max(innerWidth, innerHeight) * 1.15; gridOut = [];
+    [].forEach.call(document.querySelectorAll("#main div"), function (d) {
+      if (d === card || !(d.style && d.style.position === "absolute" && d.style.top === "50%" && d.style.left === "50%" && d.style.zIndex && d.querySelector("img"))) return;
+      var r = d.getBoundingClientRect(); if (r.width < 20) return;
+      var dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy, n = Math.hypot(dx, dy) || 1;
+      d.style.transition = "translate .8s cubic-bezier(.55,0,.75,.35)"; d.style.translate = (dx / n * far).toFixed(0) + "px " + (dy / n * far).toFixed(0) + "px"; gridOut.push(d);
+    });
+  }
+  function gridBack() {
+    var g = gridOut; gridOut = [];
+    g.forEach(function (d) { d.style.transition = "translate .9s cubic-bezier(.25,.65,.3,1)"; d.style.translate = ""; });
+    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; }); }, 1100);
   }
   /* the gallery behind the page melts away while the picture flies (and comes back when the page closes): a blur, a fade and a slow turn (Twist) or sink (Grid) */
   var origin = null, flyMode = "twist", flyCard = null, meltEl = null;
@@ -278,8 +295,13 @@
       var tw = ff && !reduce && flyMode === "twist" && !!window.__twGLon;
       origin = (ff && !reduce) ? { rect: ff, src: fs, mode: flyMode, i: i, card: flyCard, tw: tw } : null;
       window.__twFreeze = !tw;
-      if (ff && !reduce) { ov.classList.add("fx", "pre"); if (tw) twAnim(flyCard, 0, 1, 1000, 0, function () { if (shown) window.__twFreeze = true; }); else meltOn(flyMode, flyCard); }
-      requestAnimationFrame(function () { requestAnimationFrame(function () { ov.classList.add("on"); if (ff && !reduce) fly(fs, ff, function () { if (ov) ov.classList.remove("pre"); }); }); });
+      var gq = ff && !reduce && flyMode === "grid";
+      if (ff && !reduce) { ov.classList.add("fx", gq ? "pre-g" : "pre"); if (gq) ov.classList.add("gq"); if (tw) twAnim(flyCard, 0, 1, 1000, 0, function () { if (shown) window.__twFreeze = true; }); else if (!gq) meltOn(flyMode, flyCard); }
+      if (gq) gridAway(flyCard, ff);
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        if (ff && !reduce) fly(fs, ff, function () { if (ov) ov.classList.remove("pre", "pre-g"); }, gq);
+        if (gq) setTimeout(function () { if (shown && ov) ov.classList.add("on"); }, 520); else ov.classList.add("on");
+      }); });
     }
     else { ov.classList.add("on"); }
     if (!was) setTimeout(function () { if (shown) ov.focus({ preventScroll: true }); }, 60);
@@ -287,8 +309,8 @@
   function hide() {
     if (!shown) return; shown = false; cur = -1;
     var o = origin; origin = null;
-    if (o && !reduce && ov.classList.contains("fx") && ov.animate) { exitFly(o); ov.classList.remove("on", "pre"); ov.classList.add("out"); setTimeout(function () { if (!shown) ov.classList.remove("fx", "out"); }, 1100); }
-    else ov.classList.remove("on", "fx", "pre");
+    if (o && !reduce && ov.classList.contains("fx") && ov.animate) { exitFly(o); if (o.mode === "grid") setTimeout(gridBack, 350); ov.classList.remove("on", "pre", "pre-g", "gq"); ov.classList.add("out"); setTimeout(function () { if (!shown) ov.classList.remove("fx", "out"); }, 1100); }
+    else ov.classList.remove("on", "fx", "pre", "pre-g", "gq");
     window.__wkOpen = false; root.classList.remove("wk-open");
     /* the gallery is a still picture while the page flies back (no GPU drawing during the move); it comes alive again as soon as the picture has landed or the user touches it */
     if (o && o.tw && ov.classList.contains("out")) { window.__twFreeze = false; twAnim(o.card, 1, 0, 1100, 450); }
