@@ -28,8 +28,8 @@
       '#wk.on{visibility:visible;clip-path:inset(0 0 0 0);transition:clip-path .75s cubic-bezier(.76,0,.24,1),visibility 0s}' +
       'html.wk-open [role="tablist"]{opacity:0!important;pointer-events:none!important}' +
       /* the content rises in, one piece after the other, once the page has opened */
-      '#wk.fx{opacity:0;transition:opacity .9s cubic-bezier(.4,0,.2,1),visibility 0s .9s}#wk.fx.on{opacity:1;clip-path:inset(0 0 0 0);transition:opacity .9s cubic-bezier(.4,0,.2,1),visibility 0s}#wk.fx.out{pointer-events:none;clip-path:inset(0 0 0 0);visibility:visible}#wk.out .wk-in{opacity:0!important;transition:opacity .4s ease!important}' +
-      '.wk-melt{transition:filter 1.3s cubic-bezier(.4,0,.2,1),opacity 1.3s cubic-bezier(.4,0,.2,1),scale 1.4s cubic-bezier(.4,0,.2,1),rotate 1.4s cubic-bezier(.4,0,.2,1)}html.wk-open .wk-melt{filter:blur(16px)!important;opacity:0!important;scale:var(--wk-s,1.06);rotate:var(--wk-r,0deg)}' +
+      '#wk.fx{background:rgba(11,11,11,0);transition:background-color .9s cubic-bezier(.4,0,.2,1),visibility 0s .9s}#wk.fx.on{background:#0b0b0b;clip-path:inset(0 0 0 0);transition:background-color .9s cubic-bezier(.4,0,.2,1),visibility 0s}#wk.fx.out{pointer-events:none;clip-path:inset(0 0 0 0);visibility:visible}#wk.out .wk-in{opacity:0!important;transition:opacity .4s ease!important}' +
+      '.wk-melt{will-change:opacity,scale,rotate;transition:opacity 1.3s cubic-bezier(.4,0,.2,1),scale 1.4s cubic-bezier(.4,0,.2,1),rotate 1.4s cubic-bezier(.4,0,.2,1)}html.wk-open .wk-melt{opacity:0!important;scale:var(--wk-s,1.06);rotate:var(--wk-r,0deg)}' +
       '#wk.pre .wk-in{opacity:0!important;transition:none!important}#wk.fx .wk-in{transition:opacity 1s ease,transform 1.2s cubic-bezier(.22,1,.36,1)}#wk.fx.on .wk-in{transition-delay:calc(.15s + var(--i,0) * .1s)}' +
       '#wk .wk-in{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .8s cubic-bezier(.22,1,.36,1)}' +
       '#wk.on .wk-in{opacity:1;transform:none;transition-delay:calc(.35s + var(--i,0) * .07s)}' +
@@ -44,19 +44,19 @@
       '#wk .wk-bar button:hover{opacity:1}' +
       '#wk .wk-body{flex:1;min-height:0;overflow:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-bottom:22px}' +
       '#wk .wk-body::-webkit-scrollbar{display:none}' +
-      '#wk .wk-idx{margin:0 0 18px;font-size:15px;line-height:1;color:#9a9a9a;font-variant-numeric:tabular-nums}' +
-      '#wk .wk-lede{margin:0 0 24px;font-size:30px;line-height:1.05;font-weight:400;max-width:18ch;color:#fff}' +
-      '#wk .wk-meta{margin:0 0 22px;padding:0;border-top:1px solid rgba(255,255,255,.16);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}' +
-      '#wk .wk-meta div{padding:14px 0 0}' +
-      '#wk .wk-meta dt,#wk .wk-sec h3{margin:0 0 9px;font-size:12px;line-height:1;font-weight:400;color:#7d7d7d}' +
-      '#wk .wk-meta dd{margin:0;font-size:18px;line-height:1.2;color:#f2f2f2}' +
-      '#wk .wk-sec{margin:0 0 20px;padding-top:14px;border-top:1px solid rgba(255,255,255,.16)}' +
-      '#wk .wk-sec p{margin:0;font-size:17px;line-height:1.38;color:#c9c9c9;max-width:60ch;white-space:pre-line}' +
-      '#wk .wk-visit{display:inline-flex;align-items:center;gap:12px;height:48px;padding:0 22px;border:1px solid #fff;border-radius:999px;color:#fff;text-decoration:none;font-size:15px;line-height:1;transition:background .25s ease,color .25s ease}' +
-      '#wk .wk-visit:hover{background:#fff;color:#0b0b0b}' +
-      '#wk .wk-visit i{font-style:normal;font-size:15px}' +
-      '#wk .wk-name{flex:none;margin:0;font:400 100px/.9 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;padding-bottom:.04em}' +
-      '#wk .wk-name span{display:block;white-space:nowrap}' +
+      '#wk .wk-idx{margin:0 0 18px;font-size:16px;line-height:1.3;color:#fff;font-variant-numeric:tabular-nums}' +
+      '#wk .wk-lede{margin:0 0 24px;font-size:16px;line-height:1.4;font-weight:400;max-width:60ch;color:#fff}' +
+      '#wk .wk-meta{margin:0 0 22px;padding:0;border:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}' +
+      '#wk .wk-meta div{padding:0}' +
+      '#wk .wk-meta dt,#wk .wk-sec h3{margin:0 0 6px;font-size:16px;line-height:1.3;font-weight:400;color:rgba(255,255,255,.6)}' +
+      '#wk .wk-meta dd{margin:0;font-size:16px;line-height:1.3;color:#fff}' +
+      '#wk .wk-sec{margin:0 0 22px;padding:0;border:0}' +
+      '#wk .wk-sec p{margin:0;font-size:16px;line-height:1.4;color:#fff;max-width:60ch;white-space:pre-line}' +
+      '#wk .wk-visit{display:inline-block;align-self:flex-start;margin:0 0 14px;padding:0;border:0;background:none;color:#fff;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px;font-size:16px;line-height:1.3;transition:color .25s ease}' +
+      '#wk .wk-visit:hover{color:rgba(255,255,255,.6)}#wk .wk-visit i{font-style:normal}' +
+      '#wk .wk-name{flex:none;margin:0;font:400 var(--nm,140px)/.92 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;padding-bottom:.04em;overflow-wrap:anywhere}' +
+      '#wk .wk-name span{display:block;white-space:normal}' +
+      '@media (min-width:1440px){#wk{--nm:160px}}@media (min-width:810px) and (max-width:1439.98px){#wk{--nm:120px}}@media (max-width:809.98px){#wk{--nm:64px}}' +
       '#wk .wk-r{position:relative;overflow:hidden;background:#111;touch-action:none;cursor:grab}' +
       '#wk .wk-r.drag{cursor:grabbing}' +
       '#wk .wk-it{position:absolute;left:0;top:0;overflow:hidden;background:#161616;will-change:transform}' +
@@ -66,10 +66,10 @@
       '#wk .wk-r{order:-1;touch-action:pan-y}' +
       '#wk .wk-l{padding:18px 16px var(--bar,104px);overflow:hidden}' +
       '#wk .wk-body{margin-bottom:10px}' +
-      '#wk .wk-lede{font-size:26px;max-width:none;margin-bottom:18px}' +
+      '#wk .wk-lede{max-width:none;margin-bottom:18px}' +
       '#wk .wk-meta{margin-bottom:18px}' +
       '#wk .wk-sec{margin-bottom:16px}' +
-      '#wk .wk-visit{width:100%;justify-content:center;margin:4px 0 8px}}' +
+      '}' +
       '@media (prefers-reduced-motion:reduce){#wk,#wk.on{transition:none}#wk .wk-in,#wk.on .wk-in{transition:none;opacity:1;transform:none}}';
     document.head.appendChild(s);
   }
@@ -141,26 +141,8 @@
   }
 
   /* ---------- the name, as big as the column allows ---------- */
-  var cv = document.createElement("canvas").getContext("2d");
-  function fitName(h1, name, width) {
-    var words = String(name).toUpperCase().split(/\s+/).filter(Boolean), min = phone() ? 40 : 64, max = phone() ? Math.min(100, innerWidth * .26) : Math.min(220, innerHeight * .2), maxLines = phone() ? 2 : 3, size = max, lines = [name.toUpperCase()];
-    function wrapAt(fs) {
-      cv.font = fs + 'px "Anton", Impact, sans-serif';
-      var out = [], line = "";
-      for (var i = 0; i < words.length; i++) {
-        var t = line ? line + " " + words[i] : words[i];
-        if (cv.measureText(t).width <= width || !line) line = t; else { out.push(line); line = words[i]; }
-      }
-      if (line) out.push(line);
-      return out;
-    }
-    for (; size >= min; size -= 2) {
-      lines = wrapAt(size); var w = 0; lines.forEach(function (l) { w = Math.max(w, cv.measureText(l).width); });
-      if (w <= width && lines.length <= maxLines) break;
-    }
-    h1.style.fontSize = size + "px"; h1.textContent = "";
-    lines.forEach(function (l) { h1.appendChild(el("span", "", l)); });
-  }
+  /* the name: one fixed size per breakpoint (160px desktop, 120px laptop/tablet, 64px phone); a long name simply wraps onto more lines */
+  function fitName(h1, name) { h1.textContent = ""; h1.appendChild(el("span", "", String(name).toUpperCase())); }
 
   /* ---------- building the page ---------- */
   function build() {
@@ -201,32 +183,43 @@
     var meta = [["Client", it.client]].filter(function (m) { return m[1]; });
     if (meta.length) { var dl = el("dl", "wk-meta"); meta.forEach(function (m) { var d = el("div"); d.append(el("dt", "", m[0]), el("dd", "", m[1])); dl.appendChild(d); }); body.appendChild(put(dl)); }
     [["Challenge", it.challenge], ["Approach", it.approach]].forEach(function (s) { if (!s[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", s[0]), el("p", "", s[1])); body.appendChild(put(sec)); });
-    if (it.link) { var a = el("a", "wk-visit"); a.href = it.link; a.target = "_blank"; a.rel = "noopener noreferrer"; a.append(document.createTextNode("Visit website "), el("i", "", "↗")); body.appendChild(put(a)); }
+    var visit = null;
+    if (it.link) { visit = el("a", "wk-visit"); visit.href = it.link; visit.target = "_blank"; visit.rel = "noopener noreferrer"; visit.append(document.createTextNode("Visit website "), el("i", "", "\u2197")); }
     var r = el("div", "wk-r"); r.classList.add("wk-in"); r.style.setProperty("--i", 1);
-    l.append(body, h1);
+    if (visit) put(visit);
+    l.append(body); if (visit) l.append(visit); l.append(h1);
     ov.append(l, r, bar);
     placeBar(bar);
     var urls = [it.image && it.image.src].concat(it.gallery || []).filter(Boolean).map(sm);
     if (!urls.length) urls = [];
     strip = urls.length ? Strip(r, urls, !phone()) : null;
-    var fit = function () { placeBar(bar); fitName(h1, it.name, Math.max(120, (phone() ? innerWidth - 32 : l.clientWidth - 108))); };
+    var fit = function () { placeBar(bar); fitName(h1, it.name); };
     fit(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     try { window.dispatchEvent(new Event("wk-render")); } catch (e) {}
   }
   /* works -> project: the clicked picture keeps its shape and slides to where the first picture of the scroll sits, the works page fades away,
      then the project's content appears */
+  /* One moving picture, animated with transforms only (translate + one uniform scale) and a clip that follows the shape of the card, so nothing is
+     stretched and no layout is recomputed while it moves. "big" is where it rests in the project page, "small" is the card in the gallery. */
+  function flyBox(big, small, src, back, delay, done) {
+    var d = el("div"), pic = new Image(); pic.src = src; pic.decoding = "async";
+    d.style.cssText = "position:fixed;z-index:6;left:" + big.left + "px;top:" + big.top + "px;width:" + big.width + "px;height:" + big.height + "px;overflow:hidden;background:#161616;pointer-events:none;will-change:transform,clip-path;transform-origin:50% 50%;backface-visibility:hidden";
+    pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
+    var cx = big.left + big.width / 2, cy = big.top + big.height / 2, sc = Math.max(small.width / big.width, small.height / big.height);
+    var from = { transform: "translate3d(" + (small.left + small.width / 2 - cx) + "px," + (small.top + small.height / 2 - cy) + "px,0) scale(" + sc + ")",
+                 clipPath: "inset(" + ((big.height - small.height / sc) / 2) + "px " + ((big.width - small.width / sc) / 2) + "px)" },
+        to = { transform: "translate3d(0,0,0) scale(1)", clipPath: "inset(0px 0px)" };
+    var a = d.animate(back ? [to, from] : [from, to], { duration: 1500, delay: delay || 0, easing: "cubic-bezier(.62,0,.18,1)", fill: "both" });
+    var fin = 0, end = function () { if (fin) return; fin = 1; done && done(); var f = d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 420, easing: "ease", fill: "forwards" }); f.onfinish = function () { d.remove(); }; };
+    a.onfinish = end; setTimeout(end, 3600 + (delay || 0));
+  }
   function fly(src, from, done) {
     var r = ov && ov.querySelector(".wk-r"); if (!r || !from || !src || !ov.animate) { done(); return; }
     var im = new Image(); im.src = src;
     var run = function () {
       var b = r.getBoundingClientRect(), pad = 12, ar = (im.naturalWidth && im.naturalHeight) ? im.naturalWidth / im.naturalHeight : 4 / 3, tw, th;
       if (phone()) { th = b.height - pad * 2; tw = th * ar; } else { tw = b.width - pad * 2; th = tw / ar; }
-      var d = el("div"); d.style.cssText = "position:fixed;z-index:6;overflow:hidden;background:#161616;pointer-events:none;left:" + from.left + "px;top:" + from.top + "px;width:" + from.width + "px;height:" + from.height + "px";
-      var pic = new Image(); pic.src = src; pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
-      var a = d.animate([{ left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px" },
-                         { left: (b.left + pad) + "px", top: (b.top + pad) + "px", width: tw + "px", height: th + "px" }], { duration: 1400, easing: "cubic-bezier(.65,0,.15,1)", fill: "forwards" });
-      var fin = 0, end = function () { if (fin) return; fin = 1; done(); setTimeout(function () { d.remove(); }, 800); };
-      a.onfinish = end; setTimeout(end, 2600);
+      flyBox({ left: b.left + pad, top: b.top + pad, width: tw, height: th }, from, src, false, 0, done);
     };
     if (im.complete) run(); else { im.onload = im.onerror = run; }
   }
@@ -251,21 +244,16 @@
   }
   /* project -> works: the exact reverse; the picture goes back to its card while the project's content fades out and the gallery returns */
   function exitFly(o) {
-    var r = ov.querySelector(".wk-r"), it = null, first = null;
+    var r = ov.querySelector(".wk-r"), it = null;
     [].forEach.call(r ? r.querySelectorAll(".wk-it") : [], function (n) { if (it) return; var b = n.getBoundingClientRect(); if (b.width > 20 && b.right > 0 && b.left < innerWidth && b.bottom > 0 && b.top < innerHeight) it = b; });
     var to = cardFor(o) || o.rect;
-    if (!it || !to || to.bottom < 0 || to.top > innerHeight || to.right < 0 || to.left > innerWidth) { return; }
-    var d = el("div"); d.style.cssText = "position:fixed;z-index:6;overflow:hidden;background:#161616;pointer-events:none;left:" + it.left + "px;top:" + it.top + "px;width:" + it.width + "px;height:" + it.height + "px";
-    var pic = new Image(); pic.src = o.src; pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
-    var a = d.animate([{ left: it.left + "px", top: it.top + "px", width: it.width + "px", height: it.height + "px", opacity: 1 },
-                       { left: to.left + "px", top: to.top + "px", width: to.width + "px", height: to.height + "px", opacity: 1 }], { duration: 1400, delay: 350, easing: "cubic-bezier(.65,0,.15,1)", fill: "both" });
-    var fin = 0, end = function () { if (fin) return; fin = 1; d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 350, fill: "forwards" }).onfinish = function () { d.remove(); }; };
-    a.onfinish = end; setTimeout(end, 3200);
+    if (!it || !to || to.bottom < 0 || to.top > innerHeight || to.right < 0 || to.left > innerWidth) return;
+    flyBox({ left: it.left, top: it.top, width: it.width, height: it.height }, to, o.src, true, 300);
   }
   function show(i) {
     build(); var list = data(); if (i < 0 || i >= list.length) return;
     var was = shown; cur = i; shown = true; closing = 0;
-    if (!was) { lastFocus = document.activeElement; window.__wkOpen = true; root.classList.add("wk-open"); window.dispatchEvent(new Event("ab-toggle")); }
+    if (!was) { lastFocus = document.activeElement; window.__wkOpen = true; window.__twFreeze = true; root.classList.add("wk-open"); window.dispatchEvent(new Event("ab-toggle")); }
     render(i);
     if (!was) {
       ov.classList.remove("sw"); var ff = flyFrom, fs = flySrc; flyFrom = null;
@@ -281,7 +269,12 @@
     var o = origin; origin = null;
     if (o && !reduce && ov.classList.contains("fx") && ov.animate) { exitFly(o); ov.classList.remove("on", "pre"); ov.classList.add("out"); setTimeout(function () { if (!shown) ov.classList.remove("fx", "out"); }, 1100); }
     else ov.classList.remove("on", "fx", "pre");
-    window.__wkOpen = false; root.classList.remove("wk-open"); window.dispatchEvent(new Event("ab-toggle"));
+    window.__wkOpen = false; root.classList.remove("wk-open");
+    /* the gallery is a still picture while the page flies back (no GPU drawing during the move); it comes alive again as soon as the picture has landed or the user touches it */
+    if (o && ov.classList.contains("out")) {
+      var thaw = function () { window.__twFreeze = false; removeEventListener("pointerdown", thaw, true); removeEventListener("wheel", thaw, true); };
+      addEventListener("pointerdown", thaw, true); addEventListener("wheel", thaw, true); setTimeout(thaw, 2200);
+    } else window.__twFreeze = false; window.dispatchEvent(new Event("ab-toggle"));
     clearTimeout(closing); closing = setTimeout(function () { if (!shown && strip) { strip.destroy(); strip = null; } }, reduce ? 0 : 850);
     if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
   }

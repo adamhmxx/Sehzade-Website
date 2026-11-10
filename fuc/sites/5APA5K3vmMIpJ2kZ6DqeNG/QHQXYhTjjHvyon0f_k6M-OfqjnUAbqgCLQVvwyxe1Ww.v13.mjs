@@ -72,7 +72,7 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
     mount:function(e){if(e&&cv.parentNode!==e)e.appendChild(cv)},
     off:function(){if(!shown)return;shown=false;window.__twGLon=0;cv.style.display="none";if(ok){gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT)}},
     draw:function(m,poses,els){
-      if(!ok)return;
+      if(!ok||window.__twFreeze)return;
       var dpr=Math.min(window.devicePixelRatio||1,window.__lite?1.5:2),W=m.viewW,H=m.viewH;if(!(W>0&&H>0))return;
       var pw=Math.round(W*dpr),ph=Math.round(H*dpr);if(cv.width!==pw||cv.height!==ph){cv.width=pw;cv.height=ph}
       if(!shown){shown=true;window.__twGLon=1;cv.style.display="block"}
