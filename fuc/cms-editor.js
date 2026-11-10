@@ -21,9 +21,13 @@
     return fetch((GHC.api || "https://api.github.com") + path, Object.assign({}, opts, { headers: Object.assign({ Authorization: "Bearer " + GHC.token, Accept: "application/vnd.github+json" }, opts.headers || {}) }));
   }
   function b64utf8(str) { var b = new TextEncoder().encode(str), s = ""; for (var i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
+  /* GitHub's own reason for a refusal (e.g. "403 Resource not accessible by personal access token") is shown instead of a guess */
+  var ghWhy = "";
+  function ghDeny(r) { return r.json().catch(function () { return {}; }).then(function (j) { ghWhy = r.status + (j && j.message ? " " + j.message : ""); throw "auth"; }); }
+  function authMsg() { return "GitHub refused the token" + (ghWhy ? " (" + ghWhy + ")" : "") + ". In the token settings, Repository access must include this repository and Contents must be Read and write."; }
   function ghFile(path) {
     return ghApi("/repos/" + GHC.repo + "/contents/" + path + "?ref=" + encodeURIComponent(GHC.branch || "main") + "&t=" + Date.now()).then(function (r) {
-      if (r.status === 404) return null; if (r.status === 401 || r.status === 403) throw "auth"; if (!r.ok) throw r.status; return r.json();
+      if (r.status === 404) return null; if (r.status === 401 || r.status === 403) return ghDeny(r); if (!r.ok) throw r.status; return r.json();
     });
   }
   /* create or update one file in the repo (skips the commit when nothing changed) */
@@ -34,7 +38,7 @@
         var body = { message: msg, content: b64, branch: GHC.branch || "main" }; if (f && f.sha) body.sha = f.sha;
         return ghApi("/repos/" + GHC.repo + "/contents/" + path, { method: "PUT", body: JSON.stringify(body) }).then(function (r) {
           if (r.ok) return r.json(); if ((r.status === 409 || r.status === 422) && n < 2) return attempt(n + 1);
-          if (r.status === 401 || r.status === 403 || r.status === 404) throw "auth"; throw r.status;
+          if (r.status === 401 || r.status === 403 || r.status === 404) return ghDeny(r); throw r.status;
         });
       });
     }
@@ -48,7 +52,7 @@
       pushing = false; if (pushAgain) ghPush(); else setStatus("Published. Live in about a minute.");
     }).catch(function (e) {
       pushing = false;
-      if (e === "auth") { AUTHED = false; showConnect("GitHub refused the token. It may have expired or lack write access to the repo."); setStatus("Not connected", true); }
+      if (e === "auth") { AUTHED = false; showConnect(authMsg()); setStatus("Not connected", true); }
       else setStatus("Could not publish (" + e + "). Your edits are kept in this browser.", true);
     });
   }
@@ -378,7 +382,7 @@
     /* the published copy wins; if there is none yet, publish what this browser already has */
     var first = GHM ? ghFile("content.json").then(function (f) { return f && f.content ? JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(f.content.replace(/\s/g, "")), function (c) { return c.charCodeAt(0); }))) : null; })
                     : fetch("content.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; });
-    first.catch(function (e) { if (e === "auth") { AUTHED = false; showConnect("GitHub refused the token. It may have expired or lack write access to the repo."); return "stop"; } return null; }).then(function (j) {
+    first.catch(function (e) { if (e === "auth") { AUTHED = false; showConnect(authMsg()); return "stop"; } return null; }).then(function (j) {
       if (j === "stop") return;
       if (j) applyRemote(j);
       else if (S.data.items || Object.keys(S.data.about || {}).length || Object.keys(S.data.site || {}).length) { if (GHM) ghPush(); else push(); }
@@ -411,9 +415,14 @@
       GHC = { token: tok.value.trim(), repo: repo.value.trim(), branch: "main", api: GHC.api };
       ghApi("/repos/" + GHC.repo).then(function (r) { if (!r.ok) throw r.status; return r.json(); }).then(function (j) {
         if (!j.permissions || !j.permissions.push) throw "perm";
-        GHC.branch = j.default_branch || "main"; try { localStorage.setItem(GHKEY, JSON.stringify(GHC)); } catch (x) {}
-        AUTHED = true; enter();
-      }).catch(function (x) { err.textContent = x === "perm" ? "This token cannot write to that repository. Give it Contents: Read and write." : x === 401 || x === 404 ? "GitHub did not accept that token for this repository." : "Could not reach GitHub."; });
+        GHC.branch = j.default_branch || "main";
+        /* the repository can be opened with any token; reading its files needs the Contents permission, so check that here */
+        return ghApi("/repos/" + GHC.repo + "/contents/content.json?ref=" + encodeURIComponent(GHC.branch)).then(function (c) {
+          if (c.status === 401 || c.status === 403) return ghDeny(c);
+          try { localStorage.setItem(GHKEY, JSON.stringify(GHC)); } catch (x) {}
+          AUTHED = true; enter();
+        });
+      }).catch(function (x) { err.textContent = x === "auth" ? authMsg() : x === "perm" ? "This token cannot write to that repository. Give it Contents: Read and write." : x === 401 || x === 404 ? "GitHub did not accept that token for this repository." : "Could not reach GitHub."; });
     } }, [el("div", { class: "cp-label" }, "Connect GitHub to publish"), tok, repo, err,
       el("div", { class: "cp-actions" }, [el("button", { type: "submit", class: "cp-btn cp-add", style: "margin:0;width:auto" }, "Connect"), skip]),
       el("p", { class: "cp-help" }, el("a", { href: "https://github.com/settings/personal-access-tokens/new", target: "_blank", rel: "noopener", style: "color:inherit;opacity:.55;font-size:13px;text-decoration:underline" }, "Need a token? Create one (this repo, Contents: Read and write)")),
