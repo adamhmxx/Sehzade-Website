@@ -41,9 +41,9 @@
       '#wk .wk-bar button:hover{opacity:1}' +
       '#wk .wk-body{flex:1;min-height:0;overflow:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-bottom:22px}' +
       '#wk .wk-body::-webkit-scrollbar{display:none}' +
-      '#wk .wk-idx{margin:0 0 18px;font-size:13px;line-height:1;color:#7d7d7d;font-variant-numeric:tabular-nums}' +
-      '#wk .wk-lede{margin:0 0 24px;font-size:34px;line-height:1.05;font-weight:400;max-width:18ch;color:#fff}' +
-      '#wk .wk-meta{margin:0 0 22px;padding:0;border-top:1px solid rgba(255,255,255,.16);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px}' +
+      '#wk .wk-idx{margin:0 0 18px;font-size:15px;line-height:1;color:#9a9a9a;font-variant-numeric:tabular-nums}' +
+      '#wk .wk-lede{margin:0 0 24px;font-size:30px;line-height:1.05;font-weight:400;max-width:18ch;color:#fff}' +
+      '#wk .wk-meta{margin:0 0 22px;padding:0;border-top:1px solid rgba(255,255,255,.16);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}' +
       '#wk .wk-meta div{padding:14px 0 0}' +
       '#wk .wk-meta dt,#wk .wk-sec h3{margin:0 0 9px;font-size:12px;line-height:1;font-weight:400;color:#7d7d7d}' +
       '#wk .wk-meta dd{margin:0;font-size:18px;line-height:1.2;color:#f2f2f2}' +
@@ -183,16 +183,19 @@
   function render(i, keepScroll) {
     var list = data(), it = list[i]; if (!it) return;
     ov.textContent = ""; if (strip) { strip.destroy(); strip = null; }
-    var bar = el("div", "wk-bar"), back = el("button", "wk-back", "Back"), prev = el("button", "", "Prev"), next = el("button", "", "Next");
-    back.type = prev.type = next.type = "button"; back.setAttribute("aria-label", "Back to the works"); prev.setAttribute("aria-label", "Previous project"); next.setAttribute("aria-label", "Next project");
-    back.addEventListener("click", function () { close(); }); prev.addEventListener("click", function () { step(-1); }); next.addEventListener("click", function () { step(1); });
-    bar.append(prev, back, next);
+    var bar = el("div", "wk-bar"), back = el("button", "wk-back", "Back");
+    back.type = "button"; back.setAttribute("aria-label", "Back to the works");
+    back.addEventListener("click", function () { close(); });
+    bar.append(back);
     var l = el("div", "wk-l"), body = el("div", "wk-body"), idx = 0;
     function put(node) { node.classList.add("wk-in"); node.style.setProperty("--i", idx++); return node; }
     var h1 = put(el("h1", "wk-name")); h1.setAttribute("aria-label", it.name);
-    body.appendChild(put(el("p", "wk-idx", "(" + pad2(i + 1) + " / " + pad2(list.length) + ")")));
+    /* where the (03 / 12) counter used to be: the short category and the year */
+    var cat = [it.services, it.year].filter(Boolean).join("  ·  ");
+    if (cat) body.appendChild(put(el("p", "wk-idx", cat)));
+    /* the long texts (description, challenge, approach) are the body of the page */
     if (it.description) body.appendChild(put(el("p", "wk-lede", it.description)));
-    var meta = [["Client", it.client], ["Year", it.year], ["Services", it.services]].filter(function (m) { return m[1]; });
+    var meta = [["Client", it.client]].filter(function (m) { return m[1]; });
     if (meta.length) { var dl = el("dl", "wk-meta"); meta.forEach(function (m) { var d = el("div"); d.append(el("dt", "", m[0]), el("dd", "", m[1])); dl.appendChild(d); }); body.appendChild(put(dl)); }
     [["Challenge", it.challenge], ["Approach", it.approach]].forEach(function (s) { if (!s[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", s[0]), el("p", "", s[1])); body.appendChild(put(sec)); });
     if (it.link) { var a = el("a", "wk-visit"); a.href = it.link; a.target = "_blank"; a.rel = "noopener noreferrer"; a.append(document.createTextNode("Visit website "), el("i", "", "↗")); body.appendChild(put(a)); }
@@ -207,12 +210,25 @@
     fit(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     try { window.dispatchEvent(new Event("wk-render")); } catch (e) {}
   }
+  /* works -> project: the picture that was clicked flies into the picture pane while the page opens, like the switch between modes */
+  function fly(src, from) {
+    if (reduce || !from || !src || !ov || !ov.animate) return;
+    var r = ov.querySelector(".wk-r"); if (!r) return; var to = r.getBoundingClientRect(); if (!to.width) return;
+    var d = el("div"); d.style.cssText = "position:fixed;z-index:6;left:0;top:0;overflow:hidden;background:#161616;pointer-events:none;will-change:transform,clip-path;transform-origin:0 0";
+    var im = new Image(); im.src = src; im.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(im);
+    d.style.width = to.width + "px"; d.style.height = to.height + "px"; document.body.appendChild(d);
+    var sx = from.width / to.width, sy = from.height / to.height;
+    var a = d.animate([{ transform: "translate(" + from.left + "px," + from.top + "px) scale(" + sx + "," + sy + ")", filter: "blur(0px)" },
+                       { transform: "translate(" + to.left + "px," + to.top + "px) scale(1,1)", filter: "blur(0px)" }], { duration: 820, easing: "cubic-bezier(.76,0,.24,1)", fill: "forwards" });
+    a.onfinish = function () { d.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" }).onfinish = function () { d.remove(); }; };
+    setTimeout(function () { if (d.parentNode) d.remove(); }, 2000);
+  }
   function show(i) {
     build(); var list = data(); if (i < 0 || i >= list.length) return;
     var was = shown; cur = i; shown = true; closing = 0;
     if (!was) { lastFocus = document.activeElement; window.__wkOpen = true; root.classList.add("wk-open"); window.dispatchEvent(new Event("ab-toggle")); }
     render(i);
-    if (!was) { ov.classList.remove("sw"); requestAnimationFrame(function () { requestAnimationFrame(function () { ov.classList.add("on"); }); }); }
+    if (!was) { ov.classList.remove("sw"); requestAnimationFrame(function () { requestAnimationFrame(function () { ov.classList.add("on"); if (flyFrom) { fly(flySrc, flyFrom); flyFrom = null; } }); }); }
     else { ov.classList.add("on"); }
     if (!was) setTimeout(function () { if (shown) ov.focus({ preventScroll: true }); }, 60);
   }
@@ -243,6 +259,7 @@
     if (i >= 0) show(i); else { hide(); history.replaceState(null, "", location.pathname + location.search); }
   }
   /* page -> address */
+  var flyFrom = null, flySrc = "";
   function go(it) {
     var list = data(), i = list.findIndex(function (x) { return x.name === it.name && ((x.image && x.image.src) || "") === ((it.image && it.image.src) || ""); });
     if (i < 0) i = list.findIndex(function (x) { return x.name === it.name; }); if (i < 0) return;
@@ -261,6 +278,13 @@
     if (shown || !e.target || !e.target.closest) return;
     if (e.target.closest("#ls-root,[role='tablist'],nav,#wk")) return;
     var c = cardOf(e.target);
+    if (!c) {   /* any card under the pointer, by its box (Grid / Twister layers can sit above the card) */
+      var hit = null, hz = -1; [].forEach.call(document.querySelectorAll("#main div"), function (d) {
+        if (!(d.style && d.style.position === "absolute" && d.style.top === "50%" && d.style.left === "50%" && d.style.zIndex && d.querySelector("img"))) return;
+        var r = d.getBoundingClientRect(), z = parseFloat(d.style.zIndex) || 0;
+        if (r.width > 20 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom && z >= hz) { hit = d; hz = z; } });
+      c = hit;
+    }
     if (!c) {   /* Grid: the card lifted to the centre is drawn by the gallery above the others, so the click lands on its layer, not on the card box */
       var all = document.querySelectorAll("#main div");
       for (var k = 0; k < all.length && !c; k++) { var d = all[k], z = d.style && parseFloat(d.style.zIndex);
@@ -271,6 +295,7 @@
     var im = c.querySelector("img"), f = fname(c.dataset.src || (im && (im.currentSrc || im.src)) || ""), list = data(), it = null;
     for (var i = 0; i < list.length; i++) if (list[i].image && fname(list[i].image.src) === f) { it = list[i]; break; }
     if (!it) return;
+    flyFrom = c.getBoundingClientRect(); flySrc = (im && (im.currentSrc || im.src)) || c.dataset.src || "";
     e.preventDefault(); e.stopPropagation(); go(it);
   }, true);
 
