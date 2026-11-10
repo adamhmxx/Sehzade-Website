@@ -184,14 +184,10 @@
     var l = el("div", "wk-l"), body = el("div", "wk-body"), idx = 0;
     function put(node) { node.classList.add("wk-in"); node.style.setProperty("--i", idx++); return node; }
     var h1 = put(el("h1", "wk-name")); h1.setAttribute("aria-label", it.name);
-    /* where the (03 / 12) counter used to be: the short category and the year */
-    var cat = it.year || "";
-    if (cat) body.appendChild(put(el("p", "wk-idx", cat)));
-    /* the long texts (description, challenge, approach) are the body of the page */
-    if (it.description) body.appendChild(put(el("p", "wk-lede", it.description)));
-    var meta = [["Client", it.client]].filter(function (m) { return m[1]; });
-    if (meta.length) { var dl = el("dl", "wk-meta"); meta.forEach(function (m) { var d = el("div"); d.append(el("dt", "", m[0]), el("dd", "", m[1])); dl.appendChild(d); }); body.appendChild(put(dl)); }
-    [["Challenge", it.challenge], ["Approach", it.approach]].forEach(function (s) { if (!s[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", s[0]), el("p", "", s[1])); body.appendChild(put(sec)); });
+    /* every piece of information has a title (white 60%) and its text (white 100%), all 16px, in this order */
+    [["Year", it.year], ["Description", it.description], ["Client", it.client], ["Challenge", it.challenge], ["Approach", it.approach]].forEach(function (x) {
+      if (!x[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", x[0]), el("p", "", x[1])); body.appendChild(put(sec));
+    });
     var visit = null;
     if (it.link) { visit = el("a", "wk-visit"); visit.href = it.link; visit.target = "_blank"; visit.rel = "noopener noreferrer"; visit.append(document.createTextNode("Visit website "), el("i", "", "\u2197")); }
     var r = el("div", "wk-r"); r.classList.add("wk-in"); r.style.setProperty("--i", 1);
