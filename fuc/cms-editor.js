@@ -195,6 +195,39 @@
     });
   }
 
+  /* the pictures of a project's detail page: several images, in order; the cover image is always the first one on the page */
+  function galleryBox(it) {
+    var box = el("div", { class: "cp-gal" }), grid = el("div", { class: "cp-galg" }), file = el("input", { type: "file", accept: "image/*", multiple: "multiple", style: "display:none" });
+    it.gallery = Array.isArray(it.gallery) ? it.gallery : [];
+    function draw() {
+      grid.textContent = "";
+      it.gallery.forEach(function (src, i) {
+        var t = el("div", { class: "cp-gi", style: "background-image:" + bg(src) });
+        var bar = el("span", { class: "cp-gib" });
+        bar.append(
+          el("button", { type: "button", class: "cp-mini", title: "Move earlier", onclick: function () { if (i > 0) { it.gallery.splice(i - 1, 0, it.gallery.splice(i, 1)[0]); changed(true); draw(); } } }, "←"),
+          el("button", { type: "button", class: "cp-mini", title: "Move later", onclick: function () { if (i < it.gallery.length - 1) { it.gallery.splice(i + 1, 0, it.gallery.splice(i, 1)[0]); changed(true); draw(); } } }, "→"),
+          el("button", { type: "button", class: "cp-mini cp-del", title: "Remove", onclick: function () { it.gallery.splice(i, 1); changed(true); draw(); } }, "✕"));
+        t.appendChild(bar); grid.appendChild(t);
+      });
+      if (!it.gallery.length) grid.appendChild(el("p", { class: "cp-hint" }, "No extra pictures yet. The detail page then shows the cover image on its own."));
+    }
+    file.addEventListener("change", function () {
+      var files = [].slice.call(file.files || []).filter(function (f) { return /^image\//.test(f.type); }), n = 0;
+      (function next() {
+        if (n >= files.length) { file.value = ""; return; }
+        setStatus("Processing image " + (n + 1) + " of " + files.length + "…");
+        compress(files[n++], function (out) {
+          if (!out) { next(); return; }
+          uploadImage(out, function (url) { if (url) { it.gallery.push(url); changed(true); draw(); } next(); });
+        });
+      })();
+    });
+    box.append(el("div", { class: "cp-label", style: "margin-top:6px" }, "Detail gallery"), grid,
+      el("div", { class: "cp-actions" }, [el("button", { type: "button", class: "cp-btn", onclick: function () { file.click(); } }, "Add images"), file]));
+    draw(); return box;
+  }
+
   function renderPortfolio() {
     seedItems();
     var list = S.data.items;
@@ -245,6 +278,11 @@
           field("Year", it.year, function (v) { it.year = v; if (rowEl) rowEl.querySelector(".cp-year").textContent = v; changed(); })
         ]),
         field("Link (optional)", it.link, function (v) { it.link = v; changed(); }, { placeholder: "https://…" }),
+        el("div", { class: "cp-label", style: "margin-top:18px" }, "Detail page"),
+        field("Client", it.client, function (v) { it.client = v; changed(); }),
+        field("Challenge", it.challenge, function (v) { it.challenge = v; changed(); }, { area: 1, rows: 4 }),
+        field("Approach", it.approach, function (v) { it.approach = v; changed(); }, { area: 1, rows: 4 }),
+        galleryBox(it),
         el("p", { class: "cp-hint" }, "Tip: 4:3 images fit the cards best. Drop image files anywhere on this page to add them as new projects. Images are resized to 1500px" + (API || GHM ? "." : " and stored in this browser."))
       );
     } else right.appendChild(el("p", { class: "cp-hint" }, "Select a project to edit it."));
@@ -352,6 +390,10 @@
     '#cp .cp-row:hover{background:rgba(242,242,242,.05)}',
     '#cp .cp-row.on{border-color:#f2f2f2;background:rgba(242,242,242,.08)}',
     '#cp .cp-thumb{flex:none;width:48px;height:36px;border-radius:6px;background:#222 center/cover}',
+    '#cp .cp-galg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin:8px 0 10px}',
+    '#cp .cp-gi{position:relative;aspect-ratio:4/3;border-radius:8px;background:#222 center/cover}',
+    '#cp .cp-gib{position:absolute;left:4px;right:4px;bottom:4px;display:flex;gap:4px;justify-content:flex-end}',
+    '#cp .cp-gib .cp-mini{background:rgba(11,11,11,.7)}',
     '#cp .cp-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '#cp .cp-year{color:rgba(242,242,242,.5);font-size:12px}',
     '#cp .cp-bar{display:flex;gap:4px}',

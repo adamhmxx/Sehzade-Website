@@ -190,7 +190,7 @@
     mPlace();
   }
 
-  function openLink(i) { var it = items[i]; if (it && it.link) { try { window.open(it.link, "_blank", "noopener"); } catch (e) {} } }
+  function openLink(i) { var it = items[i]; if (!it) return; if (window.__wkGo) { window.__wkGo(it); return; } if (it.link) { try { window.open(it.link, "_blank", "noopener"); } catch (e) {} } }
 
   /* one big line per project, together exactly as tall as the free space between the navbar and the mode menu */
   function layout() {

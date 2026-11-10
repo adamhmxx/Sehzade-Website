@@ -48,6 +48,7 @@
     if (!data || !data.items) return null;
     return data.items.map(function (it) {
       return { name: it.name || "", description: it.description || "", services: it.services || "", year: it.year || "", link: it.link || "",
+               client: it.client || "", challenge: it.challenge || "", approach: it.approach || "", gallery: Array.isArray(it.gallery) ? it.gallery.filter(Boolean) : [],
                image: it.src ? { src: it.src, srcSet: it.srcSet || undefined, alt: it.name || "" } : undefined };
     });
   };
