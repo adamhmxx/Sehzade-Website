@@ -57,9 +57,9 @@
       '#wk .wk-name{flex:none;margin:0;font:400 var(--nm,140px)/.92 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;padding-bottom:.04em;overflow-wrap:anywhere}' +
       '#wk .wk-name span{display:block;white-space:normal}' +
       '@media (min-width:1440px){#wk{--nm:160px}}@media (min-width:810px) and (max-width:1439.98px){#wk{--nm:120px}}@media (max-width:809.98px){#wk{--nm:64px}}' +
-      '#wk .wk-r{position:relative;overflow:hidden;background:#111;touch-action:none;cursor:grab}' +
+      '#wk .wk-r{position:relative;overflow:hidden;background:#0b0b0b;touch-action:none;cursor:grab}' +
       '#wk .wk-r.drag{cursor:grabbing}' +
-      '#wk .wk-it{position:absolute;left:0;top:0;overflow:hidden;background:#161616;will-change:transform}' +
+      '#wk .wk-it{position:absolute;left:0;top:0;overflow:hidden;background:#0b0b0b;will-change:transform}' +
       '#wk .wk-it img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none;user-select:none}' +
       /* phone: the pictures on top (endless horizontal), then the details, and the name set big at the bottom, above the Back button */
       '@media (max-width:809.98px){#wk{grid-template-columns:1fr;grid-template-rows:36dvh minmax(0,1fr)}' +
@@ -158,7 +158,16 @@
   }
   /* the Back button takes the place of the mode menu (same spot, same type size, same gap) */
   function placeBar(bar) {
-    var tl = document.querySelector('[role="tablist"]'), tab = tl && tl.querySelector('[role="tab"]'), r = tl && tl.getBoundingClientRect();
+    var tl = document.querySelector('[role="tablist"]'), tab = tl && tl.querySelector('[role="tab"]'), r;
+    /* the gallery melts with a scale and a turn: measure the menu as if it did not (it sits inside the melting layer), or Back would land lower than the menu */
+    if (tl && meltEl && meltEl.contains(tl)) {
+      var ps = meltEl.style.scale, pr = meltEl.style.rotate, pt = meltEl.style.transition;
+      meltEl.style.transition = "none"; meltEl.style.scale = "1"; meltEl.style.rotate = "0deg";
+      var sv = root.classList.contains("wk-open"); if (sv) root.classList.remove("wk-open");
+      r = tl.getBoundingClientRect();
+      if (sv) root.classList.add("wk-open");
+      meltEl.style.scale = ps; meltEl.style.rotate = pr; meltEl.style.transition = pt;
+    } else r = tl && tl.getBoundingClientRect();
     if (!r || !r.width) { bar.style.left = "50%"; bar.style.top = (innerHeight - 56) + "px"; bar.style.transform = "translate(-50%,-50%)"; return; }
     bar.style.left = (r.left + r.width / 2) + "px"; bar.style.top = (r.top + r.height / 2) + "px"; bar.style.transform = "translate(-50%,-50%)";
     var cs = tab ? getComputedStyle(tab) : null; bar.style.setProperty("--f", (cs ? parseFloat(cs.fontSize) || 16 : 16) + "px");
@@ -203,7 +212,7 @@
      stretched and no layout is recomputed while it moves. "big" is where it rests in the project page, "small" is the card in the gallery. */
   function flyBox(big, small, src, back, delay, done) {
     var d = el("div"), pic = new Image(); pic.src = src; pic.decoding = "async";
-    d.style.cssText = "position:fixed;z-index:6;left:" + big.left + "px;top:" + big.top + "px;width:" + big.width + "px;height:" + big.height + "px;overflow:hidden;background:#161616;pointer-events:none;will-change:transform,clip-path;transform-origin:50% 50%;backface-visibility:hidden";
+    d.style.cssText = "position:fixed;z-index:6;left:" + big.left + "px;top:" + big.top + "px;width:" + big.width + "px;height:" + big.height + "px;overflow:hidden;background:#0b0b0b;pointer-events:none;will-change:transform,clip-path;transform-origin:50% 50%;backface-visibility:hidden";
     pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
     var cx = big.left + big.width / 2, cy = big.top + big.height / 2, sc = Math.max(small.width / big.width, small.height / big.height);
     var from = { transform: "translate3d(" + (small.left + small.width / 2 - cx) + "px," + (small.top + small.height / 2 - cy) + "px,0) scale(" + sc + ")",
