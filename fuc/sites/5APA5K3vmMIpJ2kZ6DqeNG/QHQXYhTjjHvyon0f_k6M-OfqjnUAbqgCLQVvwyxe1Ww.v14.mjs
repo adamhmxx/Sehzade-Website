@@ -83,9 +83,14 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
       gl.uniform2f(U.uCard,bw,bh);gl.uniform4f(U.uBend,sc,R,bt,0);gl.uniform3f(U.uVP,W/2,H/2,P);
       for(i=0;i<poses.length;i++){
         u=poses[i];el=els[i];if(!u||!el||u.op<=.004)continue;
+        var X=window.__twX,sa=1,my0=u.y,mr0=u.ry;
+        if(X){var xe=X.p<.5?4*X.p*X.p*X.p:1-Math.pow(-2*X.p+2,3)/2;
+          if(el===X.sel)sa=1-Math.min(1,X.p*4);
+          else{var xd=u.y<0?-1:1;u.y+=xd*xe*H*.95;u.ry+=xd*xe*80;sa=1-xe*xe}
+          if(sa<=.003){u.y=my0;u.ry=mr0;continue}}
         compose(u,F32,el,bw,bh);gl.uniformMatrix4fv(U.uF,false,F32);
         var tx=el.dataset.src?getTex(el.dataset.src):null;
-        if(tx){gl.bindTexture(gl.TEXTURE_2D,tx);gl.uniform1f(U.uHas,1)}else{gl.uniform1f(U.uHas,0);window.__twGLmiss++}gl.uniform1f(U.uA,Math.min(1,u.op));gl.drawArrays(gl.TRIANGLE_STRIP,0,(NX+1)*2);
+        if(tx){gl.bindTexture(gl.TEXTURE_2D,tx);gl.uniform1f(U.uHas,1)}else{gl.uniform1f(U.uHas,0);window.__twGLmiss++}gl.uniform1f(U.uA,Math.min(1,u.op)*sa);gl.drawArrays(gl.TRIANGLE_STRIP,0,(NX+1)*2);u.y=my0;u.ry=mr0;
       }
     }
   };

@@ -228,6 +228,19 @@
     };
     if (im.complete) run(); else { im.onload = im.onerror = run; }
   }
+  /* Twist: the cards that were not chosen turn and sink away (up or down, by where they are) and come back the same way; the chosen card is the moving picture */
+  var twTok = 0;
+  function twAnim(card, from, to, dur, delay, done) {
+    var tok = ++twTok, t0 = 0;
+    window.__twX = { p: from, sel: card };
+    function f(now) {
+      if (tok !== twTok) return;
+      if (!t0) t0 = now + delay;
+      var k = Math.max(0, Math.min(1, (now - t0) / dur)); window.__twX.p = from + (to - from) * k;
+      if (k < 1) requestAnimationFrame(f); else { if (to === 0) window.__twX = null; done && done(); }
+    }
+    requestAnimationFrame(f);
+  }
   /* the gallery behind the page melts away while the picture flies (and comes back when the page closes): a blur, a fade and a slow turn (Twist) or sink (Grid) */
   var origin = null, flyMode = "twist", flyCard = null, meltEl = null;
   function meltOn(mode, card) {
@@ -258,12 +271,14 @@
   function show(i) {
     build(); var list = data(); if (i < 0 || i >= list.length) return;
     var was = shown; cur = i; shown = true; closing = 0;
-    if (!was) { lastFocus = document.activeElement; window.__wkOpen = true; window.__twFreeze = true; root.classList.add("wk-open"); window.dispatchEvent(new Event("ab-toggle")); }
+    if (!was) { lastFocus = document.activeElement; window.__wkOpen = true; root.classList.add("wk-open"); window.dispatchEvent(new Event("ab-toggle")); }
     render(i);
     if (!was) {
       ov.classList.remove("sw"); var ff = flyFrom, fs = flySrc; flyFrom = null;
-      origin = (ff && !reduce) ? { rect: ff, src: fs, mode: flyMode, i: i } : null;
-      if (ff && !reduce) { ov.classList.add("fx", "pre"); meltOn(flyMode, flyCard); }
+      var tw = ff && !reduce && flyMode === "twist" && !!window.__twGLon;
+      origin = (ff && !reduce) ? { rect: ff, src: fs, mode: flyMode, i: i, card: flyCard, tw: tw } : null;
+      window.__twFreeze = !tw;
+      if (ff && !reduce) { ov.classList.add("fx", "pre"); if (tw) twAnim(flyCard, 0, 1, 1000, 0, function () { if (shown) window.__twFreeze = true; }); else meltOn(flyMode, flyCard); }
       requestAnimationFrame(function () { requestAnimationFrame(function () { ov.classList.add("on"); if (ff && !reduce) fly(fs, ff, function () { if (ov) ov.classList.remove("pre"); }); }); });
     }
     else { ov.classList.add("on"); }
@@ -276,7 +291,8 @@
     else ov.classList.remove("on", "fx", "pre");
     window.__wkOpen = false; root.classList.remove("wk-open");
     /* the gallery is a still picture while the page flies back (no GPU drawing during the move); it comes alive again as soon as the picture has landed or the user touches it */
-    if (o && ov.classList.contains("out")) {
+    if (o && o.tw && ov.classList.contains("out")) { window.__twFreeze = false; twAnim(o.card, 1, 0, 1100, 450); }
+    else if (o && ov.classList.contains("out")) {
       var thaw = function () { window.__twFreeze = false; removeEventListener("pointerdown", thaw, true); removeEventListener("wheel", thaw, true); };
       addEventListener("pointerdown", thaw, true); addEventListener("wheel", thaw, true); setTimeout(thaw, 2200);
     } else window.__twFreeze = false; window.dispatchEvent(new Event("ab-toggle"));
