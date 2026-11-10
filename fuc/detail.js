@@ -245,18 +245,19 @@
   /* Grid: the cards that were not chosen slide out of the screen, away from the chosen one (and slide back in when the page closes) */
   var gridOut = [];
   function gridAway(card, rect) {
-    var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2, far = Math.max(innerWidth, innerHeight) * 1.15; gridOut = [];
+    var H = innerHeight; gridOut = []; window.__wkMove = true;
     [].forEach.call(document.querySelectorAll("#main div"), function (d) {
       if (d === card || !(d.style && d.style.position === "absolute" && d.style.top === "50%" && d.style.left === "50%" && d.style.zIndex && d.querySelector("img"))) return;
       var r = d.getBoundingClientRect(); if (r.width < 20) return;
-      var dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy, n = Math.hypot(dx, dy) || 1;
-      d.style.transition = "translate .8s cubic-bezier(.55,0,.75,.35)"; d.style.translate = (dx / n * far).toFixed(0) + "px " + (dy / n * far).toFixed(0) + "px"; gridOut.push(d);
+      var up = (r.top + r.height / 2) < H / 2, dist = H * 1.05, ease = "cubic-bezier(.65,0,.35,1)";
+      d.style.transition = "translate 1s " + ease + ",rotate 1s " + ease + ",scale 1s " + ease;
+      d.style.translate = "0px " + (up ? -dist : dist).toFixed(0) + "px"; d.style.rotate = (up ? -14 : 14) + "deg"; d.style.scale = ".8"; gridOut.push(d);
     });
   }
   function gridBack() {
-    var g = gridOut; gridOut = [];
-    g.forEach(function (d) { d.style.transition = "translate .9s cubic-bezier(.25,.65,.3,1)"; d.style.translate = ""; });
-    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; }); }, 1100);
+    var g = gridOut, ease; gridOut = []; ease = "cubic-bezier(.65,0,.35,1)";
+    g.forEach(function (d) { d.style.transition = "translate 1.1s " + ease + ",rotate 1.1s " + ease + ",scale 1.1s " + ease; d.style.translate = ""; d.style.rotate = ""; d.style.scale = ""; });
+    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; }); window.__wkMove = false; }, 1300);
   }
   /* the gallery behind the page melts away while the picture flies (and comes back when the page closes): a blur, a fade and a slow turn (Twist) or sink (Grid) */
   var origin = null, flyMode = "twist", flyCard = null, meltEl = null;
@@ -295,9 +296,8 @@
       var tw = ff && !reduce && flyMode === "twist" && !!window.__twGLon;
       origin = (ff && !reduce) ? { rect: ff, src: fs, mode: flyMode, i: i, card: flyCard, tw: tw } : null;
       window.__twFreeze = !tw;
-      var gq = ff && !reduce && flyMode === "grid";
-      if (ff && !reduce) { ov.classList.add("fx", gq ? "pre-g" : "pre"); if (gq) ov.classList.add("gq"); if (tw) twAnim(flyCard, 0, 1, 1000, 0, function () { if (shown) window.__twFreeze = true; }); else if (!gq) meltOn(flyMode, flyCard); }
-      if (gq) gridAway(flyCard, ff);
+      var gq = false, gr = ff && !reduce && flyMode === "grid";   /* Grid works exactly like Twist now */
+      if (ff && !reduce) { ov.classList.add("fx", gq ? "pre-g" : "pre"); if (gq) ov.classList.add("gq"); if (tw) twAnim(flyCard, 0, 1, 1000, 0, function () { if (shown) window.__twFreeze = true; }); else if (gr) gridAway(flyCard, ff); else meltOn(flyMode, flyCard); }
       requestAnimationFrame(function () { requestAnimationFrame(function () {
         if (ff && !reduce) fly(fs, ff, function () { if (ov) ov.classList.remove("pre", "pre-g"); }, gq);
         if (gq) setTimeout(function () { if (shown && ov) ov.classList.add("on"); }, 520); else ov.classList.add("on");
@@ -309,7 +309,7 @@
   function hide() {
     if (!shown) return; shown = false; cur = -1;
     var o = origin; origin = null;
-    if (o && !reduce && ov.classList.contains("fx") && ov.animate) { exitFly(o); if (o.mode === "grid") setTimeout(gridBack, 350); ov.classList.remove("on", "pre", "pre-g", "gq"); ov.classList.add("out"); setTimeout(function () { if (!shown) ov.classList.remove("fx", "out"); }, 1100); }
+    if (o && !reduce && ov.classList.contains("fx") && ov.animate) { exitFly(o); if (o.mode === "grid") setTimeout(gridBack, 450); ov.classList.remove("on", "pre", "pre-g", "gq"); ov.classList.add("out"); setTimeout(function () { if (!shown) ov.classList.remove("fx", "out"); }, 1100); }
     else ov.classList.remove("on", "fx", "pre", "pre-g", "gq");
     window.__wkOpen = false; root.classList.remove("wk-open");
     /* the gallery is a still picture while the page flies back (no GPU drawing during the move); it comes alive again as soon as the picture has landed or the user touches it */
