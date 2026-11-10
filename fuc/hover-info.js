@@ -79,7 +79,7 @@
   function run() {
     pend = false; lastRun = performance.now();
     var m = mode(), root = document.documentElement;
-    if (window.__abOpen || root.classList.contains("intro-on") || root.classList.contains("intro-ui") || (m !== "twister" && m !== "grid" && m !== "list") || onMenu()) return show(null);
+    if (window.__abOpen || window.__wkOpen || root.classList.contains("intro-on") || root.classList.contains("intro-ui") || (m !== "twister" && m !== "grid" && m !== "list") || onMenu()) return show(null);
     /* List: the description and the year of the name under the pointer, in the Twister corner (the name itself is the big line) */
     if (m === "list") { var li = window.__lsActive && window.__lsActive(); return show(li && (li.description || li.year) ? { name: "", description: li.description, year: li.year } : null, null); }
     if (down || window.__hoverLock()) return show(null);

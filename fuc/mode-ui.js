@@ -244,7 +244,7 @@
   function sync() {
     if (!tabs().length) return;
     build();
-    var i = idx(), ok = live() && !window.__abOpen;
+    var i = idx(), ok = live() && !window.__abOpen && !window.__wkOpen;
     box.classList.toggle("on", i === LIST && ok);
     var nv = document.querySelector("nav"); if (nv && nv.parentElement) nv.parentElement.classList.add("ls-navw");
     root.classList.toggle("ls-on", touchUI && i === LIST && ok);

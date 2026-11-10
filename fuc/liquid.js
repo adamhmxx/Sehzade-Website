@@ -86,7 +86,7 @@
 
   /* ---------- components: blur only ---------- */
   var states = new Map(), els = [], galCards = [], lastScan = 0;
-  var SEL = ABOUT ? "h1,p,a[href],.abx-top span,.abx-name span" : "nav a,nav span,[role=tab]";
+  var SEL = ABOUT ? "h1,p,a[href],.abx-top span,.abx-name span" : "nav a,nav span,[role=tab],#wk .wk-name span,#wk .wk-lede,#wk .wk-idx,#wk .wk-meta dt,#wk .wk-meta dd,#wk .wk-sec h3,#wk .wk-sec p,#wk .wk-visit,#wk .wk-bar button";
   function scan(now) {
     if (now - lastScan < 800) return;
     lastScan = now;
@@ -94,7 +94,7 @@
     if (!ABOUT) {
       /* the browser's own selector engine finds the gallery cards and the project caption (a loop over every div of the page, run twice a second, was far heavier).
          A Twister card is built from many 3D slices: a filter on it (or on one slice) flattens or tears the ribbon, so cards only wobble and never get a per-card filter */
-      tw = [].slice.call(document.querySelectorAll('div[style*="position: absolute"][style*="top: 50%"][style*="left: 50%"][style*="z-index"]'));
+      tw = [].slice.call(document.querySelectorAll(document.querySelector("#wk.on") ? "#wk .wk-it" : 'div[style*="position: absolute"][style*="top: 50%"][style*="left: 50%"][style*="z-index"]'));   /* a project page: its pictures are the cards */
       [].forEach.call(document.querySelectorAll('div[style*="z-index: 7000"]'), function (d) { [].forEach.call(d.children, function (c) { list.push(c); }); });   /* project caption */
     }
     /* forget components React has removed, together with their filters */
@@ -189,7 +189,7 @@
   function galFx(c, sp, on, now, dtf) {
     var box = galCards.length && galCards[0].isConnected ? galCards[0].parentElement : null;
     /* Twister drawn on the GPU: its canvas sits next to the card boxes, so the melt goes on their common parent */
-    if (box && window.__twGLon && box.parentElement) box = box.parentElement;
+    if (box && window.__twGLon && !box.closest("#wk") && box.parentElement) box = box.parentElement;
     if (galBox && galBox !== box) { galBox.style.filter = ""; galBox = null; galS = galV = 0; }
     if (!box) return 0;
     /* which card is under the cursor: arriving on a new one fires the opening burst */
@@ -305,6 +305,7 @@
     if (inside || active || idle < 40) requestAnimationFrame(step); else run = false;
   }
   function kick() { if (!run) { run = true; requestAnimationFrame(step); } }
+  addEventListener("wk-render", function () { lastScan = 0; kick(); });
 
   function start() {
     if (!ENABLED) { if (TOP) lazyPanel(); return; }
