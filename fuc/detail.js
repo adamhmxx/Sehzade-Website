@@ -28,8 +28,8 @@
       '#wk.on{visibility:visible;clip-path:inset(0 0 0 0);transition:clip-path .75s cubic-bezier(.76,0,.24,1),visibility 0s}' +
       'html.wk-open [role="tablist"]{opacity:0!important;pointer-events:none!important}' +
       /* the content rises in, one piece after the other, once the page has opened */
-      '#wk.fx{opacity:0}#wk.fx.on{opacity:1;clip-path:inset(0 0 0 0);transition:opacity .45s ease,visibility 0s}' +
-      '#wk.pre .wk-in{opacity:0!important;transition:none!important}' +
+      '#wk.fx{opacity:0}#wk.fx.on{opacity:1;clip-path:inset(0 0 0 0);transition:opacity .9s cubic-bezier(.4,0,.2,1),visibility 0s}' +
+      '#wk.pre .wk-in{opacity:0!important;transition:none!important}#wk.fx .wk-in{transition:opacity 1s ease,transform 1.2s cubic-bezier(.22,1,.36,1)}#wk.fx.on .wk-in{transition-delay:calc(.15s + var(--i,0) * .1s)}' +
       '#wk .wk-in{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .8s cubic-bezier(.22,1,.36,1)}' +
       '#wk.on .wk-in{opacity:1;transform:none;transition-delay:calc(.35s + var(--i,0) * .07s)}' +
       '#wk.sw .wk-in{opacity:0;transform:translateY(10px);transition-delay:0s;transition-duration:.18s}' +
@@ -223,9 +223,9 @@
       var d = el("div"); d.style.cssText = "position:fixed;z-index:6;overflow:hidden;background:#161616;pointer-events:none;left:" + from.left + "px;top:" + from.top + "px;width:" + from.width + "px;height:" + from.height + "px";
       var pic = new Image(); pic.src = src; pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
       var a = d.animate([{ left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px" },
-                         { left: (b.left + pad) + "px", top: (b.top + pad) + "px", width: tw + "px", height: th + "px" }], { duration: 650, easing: "cubic-bezier(.76,0,.24,1)", fill: "forwards" });
-      var fin = 0, end = function () { if (fin) return; fin = 1; done(); setTimeout(function () { d.remove(); }, 450); };
-      a.onfinish = end; setTimeout(end, 1500);
+                         { left: (b.left + pad) + "px", top: (b.top + pad) + "px", width: tw + "px", height: th + "px" }], { duration: 1250, easing: "cubic-bezier(.65,0,.15,1)", fill: "forwards" });
+      var fin = 0, end = function () { if (fin) return; fin = 1; done(); setTimeout(function () { d.remove(); }, 800); };
+      a.onfinish = end; setTimeout(end, 2600);
     };
     if (im.complete) run(); else { im.onload = im.onerror = run; }
   }
