@@ -274,7 +274,6 @@
         field("Name", it.name, function (v) { it.name = v; if (rowEl) rowEl.querySelector(".cp-name").textContent = v || "Untitled"; changed(); }),
         field("Description", it.description, function (v) { it.description = v; changed(); }, { area: 1, rows: 3 }),
         el("div", { class: "cp-two" }, [
-          field("Category", it.services, function (v) { it.services = v; changed(); }),
           field("Year", it.year, function (v) { it.year = v; if (rowEl) rowEl.querySelector(".cp-year").textContent = v; changed(); })
         ]),
         field("Link (optional)", it.link, function (v) { it.link = v; changed(); }, { placeholder: "https://…" }),

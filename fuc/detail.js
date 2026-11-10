@@ -193,7 +193,7 @@
     function put(node) { node.classList.add("wk-in"); node.style.setProperty("--i", idx++); return node; }
     var h1 = put(el("h1", "wk-name")); h1.setAttribute("aria-label", it.name);
     /* where the (03 / 12) counter used to be: the short category and the year */
-    var cat = [it.services, it.year].filter(Boolean).join("  ·  ");
+    var cat = it.year || "";
     if (cat) body.appendChild(put(el("p", "wk-idx", cat)));
     /* the long texts (description, challenge, approach) are the body of the page */
     if (it.description) body.appendChild(put(el("p", "wk-lede", it.description)));
