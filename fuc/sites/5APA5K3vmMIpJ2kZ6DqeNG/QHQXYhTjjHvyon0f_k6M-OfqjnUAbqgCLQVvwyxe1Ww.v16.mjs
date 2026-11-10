@@ -90,8 +90,9 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
         gl.uniform1f(U.uA,Math.min(1,u.op));gl.drawArrays(gl.TRIANGLE_STRIP,0,(NX+1)*2);
       }
       for(i=0;i<poses.length;i++){
-        u=poses[i];el=els[i];if(!u||!el||u.op<=.004)continue;
+        u=poses[i];el=els[i];if(!u||!el)continue;
         if(X&&el===X.sel){selI=i;continue}
+        if(u.op<=.004)continue;
         my0=u.y;mr0=u.ry;
         if(X&&X.a>0){var xd=u.y<0?-1:1;u.y+=xd*X.a*H*1.35;u.ry+=xd*X.a*110;if(Math.abs(u.y)>H*1.3){u.y=my0;u.ry=mr0;continue}}
         compose(u,F32,el,bw,bh);gl.uniformMatrix4fv(U.uF,false,F32);card1();u.y=my0;u.ry=mr0;

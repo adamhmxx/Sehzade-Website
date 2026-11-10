@@ -189,7 +189,7 @@
       if (!x[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", x[0]), el("p", "", x[1])); body.appendChild(put(sec));
     });
     var visit = null;
-    if (it.link) { visit = el("a", "wk-visit"); visit.href = it.link; visit.target = "_blank"; visit.rel = "noopener noreferrer"; visit.append(document.createTextNode("Visit website "), el("i", "", "\u2197")); }
+    if (it.link) { visit = el("a", "wk-visit"); visit.href = it.link; visit.target = "_blank"; visit.rel = "noopener noreferrer"; visit.textContent = "Visit website"; }
     var r = el("div", "wk-r"); r.classList.add("wk-in"); r.style.setProperty("--i", 1);
     if (visit) put(visit);
     l.append(body); if (visit) l.append(visit); l.append(h1);
@@ -288,6 +288,13 @@
     gridOut.forEach(function (d, k) { d.style.translate = saved[k][1]; d.style.rotate = saved[k][2]; void d.offsetWidth; d.style.transition = saved[k][0]; });
     return best;
   }
+  /* the gallery stands still from the click until the picture is back home (on a phone the Twist turns by itself, and the card must return to the very spot it left) */
+  var pin = null;
+  function pinOn() {
+    var K = window.__galK && window.__galK.current; if (!K) return;
+    var me = pin = { ox: K.ox, oy: K.oy, tx: K.tx, ty: K.ty };
+    requestAnimationFrame(function f() { if (pin !== me) return; var k = window.__galK && window.__galK.current; if (k) { k.ox = me.ox; k.oy = me.oy; k.tx = me.tx; k.ty = me.ty; k.vx = k.vy = 0; } requestAnimationFrame(f); });
+  }
   function onScreen(r) { return r && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
   function show(i) {
     build(); var list = data(); if (i < 0 || i >= list.length) return;
@@ -301,7 +308,7 @@
     if (!flyOk) { origin = null; window.__twFreeze = true; ov.classList.remove("air"); ov.classList.add("on"); }
     else {
       var o = origin = { rect: ff, src: fs, mode: mode, card: card, tw: mode === "twist" && !!window.__twGLon };
-      ov.classList.add("air", "on"); root.classList.add("wk-air"); window.__wkMove = true;
+      ov.classList.add("air", "on"); root.classList.add("wk-air"); window.__wkMove = true; pinOn();
       var land = function () {
         inFlight = null; window.__wkMove = false; if (!shown || origin !== o) return;
         ov.classList.remove("air"); airOff(); if (strip) strip.release();
@@ -333,7 +340,7 @@
     var o = origin; origin = null;
     window.__wkOpen = false; root.classList.remove("wk-open");
     var gone = function () {
-      inFlight = null; window.__wkMove = false; if (shown) return;
+      inFlight = null; window.__wkMove = false; pin = null; if (shown) return;
       ov.classList.remove("on", "air"); airOff(); if (strip) { strip.destroy(); strip = null; }
     };
     if (inFlight) { inFlight(); o = null; window.__twX = null; }   /* Back while the picture was still on its way in: everything snaps home */
@@ -357,7 +364,7 @@
       }
     }
     window.dispatchEvent(new Event("ab-toggle"));
-    if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+    if (lastFocus && lastFocus.focus && !(lastFocus.closest && lastFocus.closest('[role="tablist"]'))) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
   }
   function hashFor(i) { return "#/work/" + slugs(data())[i]; }
   function step(d) {
@@ -450,7 +457,8 @@
 
   function start() {
     addEventListener("hashchange", route);
-    addEventListener("popstate", route);
+    /* the site's own router must not see our Back / Forward steps: it re-renders the gallery on them, which reshuffles the Grid under the returning picture */
+    addEventListener("popstate", function (e) { if (shown || /^#\/work\//.test(location.hash)) e.stopImmediatePropagation(); route(); }, true);
     addEventListener("cms-change", function () { if (shown) { var list = data(); if (cur >= list.length) hide(); else render(cur); } });
     /* a shared address opens its page as soon as the loader is gone */
     var t = setInterval(function () { if (live() && window.__cmsItems) { clearInterval(t); route(); } }, 250);
