@@ -29,10 +29,13 @@
       /* while the picture travels (in or out) the page is only a transparent layer: no fade, no wipe. It becomes the page the moment the picture has landed */
       '#wk.air{background:transparent}#wk.air .wk-in{opacity:0!important;transition:none!important}#wk.air .wk-bar{visibility:hidden}.wk-hide{visibility:hidden!important}' +
       /* the text rises in, one piece after the other */
-      '#wk .wk-in{opacity:0;transform:translateY(22px);transition:opacity 0s,transform .8s cubic-bezier(.22,1,.36,1)}' +
+      /* the text is unveiled: every block rises out from behind an invisible edge, one after the other (movement only, nothing fades) */
+      '#wk .wk-in{opacity:0;clip-path:inset(0 0 100% 0);transform:translateY(70%);transition:opacity 0s,clip-path 1s cubic-bezier(.22,1,.36,1),transform 1s cubic-bezier(.22,1,.36,1)}' +
+      /* ...and so are the pictures of the scroll: each one rises into its frame, in turn */
+      '#wk .wk-it img{transition:transform 1.1s cubic-bezier(.22,1,.36,1);transition-delay:calc(var(--j,0) * .1s)}#wk.rv .wk-it img{transform:translateY(102%);transition:none}#wk.rv.fl .wk-first img{transform:none}' +
       '#wk .wk-in.wk-now{transition:none!important}html.wk-open #ls-root,html.wk-air #ls-root{transition:none!important}html.wk-open #hv-info,html.wk-air #hv-info{opacity:0!important;transition:none!important}' +
-      '#wk.on .wk-in{opacity:1;transform:none;transition-delay:calc(var(--i,0) * .07s)}' +
-      '#wk .wk-r.wk-in{transition:none!important;transform:none!important}' +
+      '#wk.on .wk-in{opacity:1;clip-path:inset(-12% -2% -12% -2%);transform:none;transition-delay:calc(var(--i,0) * .08s)}' +
+      '#wk .wk-r.wk-in{transition:none!important;transform:none!important;clip-path:none!important}' +
       '#wk.sw .wk-in{opacity:0;transform:translateY(10px);transition-delay:0s;transition-duration:.18s}' +
       '#wk .wk-l{position:relative;display:flex;flex-direction:column;min-height:0;padding:104px 76px 28px 32px;box-sizing:border-box}' +
       '#wk button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
@@ -75,7 +78,7 @@
   }
 
   /* ---------- the endless scroll of pictures ---------- */
-  function Strip(box, urls, vertical, held) {
+  function Strip(box, urls, vertical, held, onFirst) {
     var GAP = 12, PAD = 12, slots = [], C = 0, maxS = 0, view = 0, pos = 0, tgt = 0, vel = 0, drag = null, raf = 0, last = 0, idle = 0, alive = true, metrics = [];
     var imgs = urls.map(function (u) { var im = new Image(); im.decoding = "async"; im.src = u; return im; });
     var ready = Promise.all(imgs.map(function (im) { return im.decode ? im.decode().catch(function () {}) : new Promise(function (r) { im.onload = im.onerror = r; }); }));
@@ -89,12 +92,13 @@
       var copies = Math.max(1, Math.ceil((view + maxS * 2 + GAP) / L)); C = copies * L;
       box.textContent = ""; slots = [];
       for (var c = 0; c < copies; c++) { var o = c * L; for (var i = 0; i < imgs.length; i++) {
-        var d = document.createElement("div"); d.className = "wk-it"; var im = new Image(); im.decoding = "async"; im.alt = ""; im.draggable = false; im.src = imgs[i].src; d.appendChild(im);
+        var d = document.createElement("div"); d.className = "wk-it" + (c === 0 && i === 0 ? " wk-first" : ""); d.style.setProperty("--j", Math.min(6, c * imgs.length + i)); var im = new Image(); im.decoding = "async"; im.alt = ""; im.draggable = false; im.src = imgs[i].src; d.appendChild(im);
         if (vertical) { d.style.left = PAD + "px"; d.style.width = (W - PAD * 2) + "px"; d.style.height = metrics[i] + "px"; }
         else { d.style.top = PAD + "px"; d.style.height = (H - PAD * 2) + "px"; d.style.width = metrics[i] + "px"; }
         box.appendChild(d); slots.push({ el: d, off: o, size: metrics[i] }); o += metrics[i] + GAP; } }
       place(); kick();
       try { window.dispatchEvent(new Event("wk-render")); } catch (e) {}   /* the hover effect learns the new pictures at once */
+      if (onFirst) { var of = onFirst; onFirst = null; of(); }
     }
     function place() {
       for (var s = 0; s < slots.length; s++) {
@@ -198,7 +202,7 @@
     placeBar(bar);
     var urls = [it.image && it.image.src].concat(it.gallery || []).filter(Boolean).map(sm);
     if (!urls.length) urls = [];
-    strip = urls.length ? Strip(r, urls, !phone(), !!hold) : null;
+    strip = urls.length ? Strip(r, urls, !phone(), !!hold, function () { rvLay = true; rvTry(); }) : null;
     var fit = function () { placeBar(bar); fitName(h1, it.name); };
     fit(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     try { window.dispatchEvent(new Event("wk-render")); } catch (e) {}
@@ -296,6 +300,8 @@
     var me = pin = { ox: K.ox, oy: K.oy, tx: K.tx, ty: K.ty };
     requestAnimationFrame(function f() { if (pin !== me) return; var k = window.__galK && window.__galK.current; if (k) { k.ox = me.ox; k.oy = me.oy; k.tx = me.tx; k.ty = me.ty; k.vx = k.vy = 0; } requestAnimationFrame(f); });
   }
+  var rvLand = false, rvLay = false;
+  function rvTry() { if (rvLand && rvLay && ov) requestAnimationFrame(function () { requestAnimationFrame(function () { if (ov) ov.classList.remove("rv", "fl"); }); }); }
   function onScreen(r) { return r && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
   function show(i) {
     build(); var list = data(); if (i < 0 || i >= list.length) return;
@@ -303,16 +309,17 @@
     if (!was) { lastFocus = document.activeElement; window.__wkOpen = true; root.classList.add("wk-open"); window.dispatchEvent(new Event("ab-toggle")); }
     var ff = flyFrom, fs = flySrc, card = flyCard, mode = flyMode; flyFrom = null;
     var flyOk = !was && ff && fs && !reduce && card && ov.animate;
+    if (!was) { rvLand = rvLay = false; ov.classList.add("rv"); ov.classList.toggle("fl", !!flyOk); setTimeout(function () { if (ov) ov.classList.remove("rv", "fl"); }, 4000); }
     render(i, false, flyOk);
     if (was) { ov.classList.add("on"); return; }
     ov.classList.remove("sw");
-    if (!flyOk) { origin = null; window.__twFreeze = true; ov.classList.remove("air"); ov.classList.add("on"); }
+    if (!flyOk) { origin = null; window.__twFreeze = true; ov.classList.remove("air"); ov.classList.add("on"); rvLand = true; rvTry(); }
     else {
       var o = origin = { rect: ff, src: fs, mode: mode, card: card, tw: mode === "twist" && !!window.__twGLon };
       ov.classList.add("air", "on"); root.classList.add("wk-air"); window.__wkMove = true; pinOn();
       var land = function () {
         inFlight = null; window.__wkMove = false; if (!shown || origin !== o) return;
-        ov.classList.remove("air"); airOff(); if (strip) strip.release();
+        ov.classList.remove("air"); airOff(); if (strip) strip.release(); rvLand = true; rvTry();
         requestAnimationFrame(function () { requestAnimationFrame(function () { if (shown && origin === o) window.__twFreeze = true; }); });
       };
       inFlight = function () { flTok++; };
