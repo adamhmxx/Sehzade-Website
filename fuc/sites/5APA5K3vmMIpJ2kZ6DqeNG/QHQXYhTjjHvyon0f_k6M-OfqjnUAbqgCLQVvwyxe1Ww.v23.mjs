@@ -134,11 +134,11 @@ if(p<.42){if(ph!==void 0&&f0){let an=ph*(1-u),Rt=geo.R/Math.max(.002,1-u),hx=u>.
 d.x=hx+(sx-hx)*w2;d.y=f0.y*(1-u);d.z=hz*(1-w2)+d.z*w2;d.ry=an*57.2958;d.rx=0;d.rz=0;d.sc=f0.sc+(gs-f0.sc)*w2}else{d.x=sx;d.y=0;d.sc=gs}}
 else{d.x=sx+(gx-sx)*tC;d.y=gy*tB;d.sc=gs}}
 T.length=a.length;G.draw(i,T,le.current,p<.42?u:1,BW.twister);bx&&bx.style.opacity!==`0`&&(bx.style.opacity=`0`)}
-else if(tw2||to2){let p=j(s.progress),ez=function(v){v=j(v);return v<.5?4*v*v*v:1-Math.pow(-2*v+2,3)/2},A=p<.5,k=A?ez(p/.5):1-ez((p-.5)/.5),T=window.__twTmp||(window.__twTmp=[]),H2=i.viewH,src=A?s.from:i.mode,far=H2*(src===`twister`?1.45:1.2);
+else if(tw2||to2){let p=j(s.progress),ez=function(v){v=j(v);return v<.5?4*v*v*v:1-Math.pow(-2*v+2,3)/2},A=p<.5,k=A?ez(p/.5):1-ez((p-.5)/.5),T=window.__twTmp||(window.__twTmp=[]),H2=i.viewH,src=A?s.from:i.mode,far=H2*(src===`twister`?1.45:1.2),one=tw2&&i.mode===`list`?-1:to2&&s.from===`list`?1:0;/* to the List the whole ribbon rises out through the top; back from the List it comes up from below */one&&(far=H2*2.5);
 for(let q=0;q<a.length;q++){let d=T[q]||(T[q]={x:0,y:0,z:0,rx:0,ry:0,rz:0,sc:1,op:0,bl:0,bd:0,gs:0}),f0;
 if(A){f0=o[q];if(!f0){d.op=0;continue}d.x=f0.x;d.y=f0.y;d.z=f0.z;d.rx=f0.rx;d.ry=f0.ry;d.rz=f0.rz;d.sc=f0.sc;d.op=f0.op>.5?1:0}
 else{lt(q,e,t,n,r,i,d);d.op=d.op>.5?1:0}
-if(d.op)d.y+=(d.y<0?-1:1)*k*far}
+if(d.op)d.y+=(one||(d.y<0?-1:1))*k*far}
 T.length=a.length;
 G.draw(i,T,le.current,src===`twister`?0:1,BW[src]||i.bw);
 let hide=tw2||A;bx&&(hide?bx.style.opacity!==`0`&&(bx.style.opacity=`0`):bx.style.opacity&&(bx.style.opacity=``))}
