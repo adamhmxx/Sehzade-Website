@@ -29,6 +29,7 @@
       'html.lr-hold #ls-root{opacity:1;visibility:visible}html.lr-hold #ls-root .ls-row{clip-path:none!important;translate:0 0!important;opacity:1!important;transition:none!important}' +
       /* List -> Twist: the names scatter to the left and the right, all at once, before the list goes */
       'html.lr-out #ls-root{opacity:1;visibility:visible}html.lr-out #ls-root .ls-row{pointer-events:none;transition:translate .85s cubic-bezier(.6,0,.85,.4),opacity .6s ease .2s}html.lr-out #ls-pv,html.lr-out #ls-mpv{opacity:0!important}' +
+      (function () { var o = ""; for (var k = 1; k <= 40; k++) o += "html.lr-seq #ls-root .ls-row:nth-child(" + k + "){transition-delay:" + (k * .05).toFixed(2) + "s," + (k * .05 + .15).toFixed(2) + "s}"; return o; })() +
       /* from the Grid the names arrive one after the other, top to bottom, alternately from the left and the right (the grid's rows have left the same way) */
       'html.g2l{--ld:.55s}' + (function () { var o = ""; for (var k = 1; k <= 40; k++) o += "html.g2l #ls-root.on .ls-row:nth-child(" + k + "){transition-delay:0s,calc(var(--ld) + " + (k * .06).toFixed(2) + "s),calc(var(--ld) + " + (k * .06).toFixed(2) + "s)}"; return o; })() +
       '.ls-layer{transition:none}' +
@@ -277,12 +278,16 @@
     var i = idx(), ok = live() && !window.__abOpen && !window.__wkOpen;
     /* Grid -> List has its own change: the grid sinks into the black page while the names come in from the left and the right, all at once, out of a liquid ripple */
     if (i !== sync.prev) {
-      var g2l = sync.prev === 1 && i === LIST, t2l = sync.prev === 0 && i === LIST, l2t = sync.prev === LIST && i === 0;
-      root.classList.toggle("g2l", g2l); root.classList.toggle("t2l", t2l); clearTimeout(sync.o); root.classList.remove("lr-out");
+      var g2l = sync.prev === 1 && i === LIST, t2l = sync.prev === 0 && i === LIST, l2t = sync.prev === LIST && i === 0, l2g = sync.prev === LIST && i === 1;
+      root.classList.toggle("g2l", g2l); root.classList.toggle("t2l", t2l); clearTimeout(sync.o); root.classList.remove("lr-out", "lr-seq");
       if (g2l) liquidRows(0, false); if (t2l) liquidRows(700, false);
       if (l2t) {   /* two steps, so the names start from their places and then leave */
         root.classList.add("lr-hold"); void box.offsetWidth; root.classList.add("lr-out"); root.classList.remove("lr-hold"); liquidRows(0, true);
         sync.o = setTimeout(function () { root.classList.remove("lr-out"); }, 950);
+      }
+      if (l2g) {   /* the names leave line by line, top to bottom, alternately to the left and the right; the grid waits for them */
+        root.classList.add("lr-hold"); void box.offsetWidth; root.classList.add("lr-out", "lr-seq"); root.classList.remove("lr-hold");
+        sync.o = setTimeout(function () { root.classList.remove("lr-out", "lr-seq"); }, 1500);
       }
       sync.prev = i;
     }
