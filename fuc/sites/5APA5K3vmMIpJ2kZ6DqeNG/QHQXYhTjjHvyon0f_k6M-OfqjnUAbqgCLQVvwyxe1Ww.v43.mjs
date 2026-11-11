@@ -183,10 +183,10 @@ if(p<.52){if(ph!==void 0&&f0){let an=ph*(1-u),Rt=geo.R/Math.max(.002,1-u),hx=u>.
 /* the ribbon straightens and levels in one go into a horizontal band of touching cards; only then do the gaps open */SH[q]=shv;let sxB=st.x0+(st.bn[q]||0)*i.stepX;let s1=f0.sc*(1-w2*(1-i.cardW/i.stepX));d.x=hx+(sxB-geo.R*ph)*u;d.y=f0.y*(1-lv);d.z=hz*(1-u)+d.z*u;d.ry=an*57.2958;d.rx=0;d.rz=0;d.sc=s1+(gs-s1)*u}else{d.x=sx;d.y=0;d.sc=gs;if(u<1&&Math.abs(sx)<i.viewW*.5+i.bw)d.op=0}}
 else{d.x=sx+(gx-sx)*tC;d.y=yf*tB+(gy-yf)*tD;d.sc=gs;d.rw&&Math.abs(gx)>i.viewW*.5+i.stepX&&(d.op=0)}}
 T.length=a.length;G.draw(i,T,le.current,p<.52?u:1,BW.twister);bx&&bx.style.opacity!==`0`&&(bx.style.opacity=`0`)}
-else if(tw2||to2){let p=j(s.progress),ez=function(v){v=j(v);return v<.5?4*v*v*v:1-Math.pow(-2*v+2,3)/2},A=p<.5,k=A?ez(p/.5):1-ez((p-.5)/.5),T=window.__twTmp||(window.__twTmp=[]),H2=i.viewH,src=A?s.from:i.mode,far=H2*(src===`twister`?1.45:1.2),one=tw2&&i.mode===`list`?-1:to2&&s.from===`list`?1:0;/* to the List the whole ribbon rises out through the top; back from the List it comes up from below */one&&(far=H2*2.5);
+else if(tw2||to2){let p=j(s.progress),ez=function(v){v=j(v);return v<.5?4*v*v*v:1-Math.pow(-2*v+2,3)/2},TL=tw2&&i.mode===`list`,LT=to2&&s.from===`list`,A=(p<.5||TL)&&!LT,k=TL?ez(p/.86):LT?Math.pow(1-j((p-.12)/.88),3):A?ez(p/.5):1-ez((p-.5)/.5),T=window.__twTmp||(window.__twTmp=[]),H2=i.viewH,src=A?s.from:i.mode,far=H2*(src===`twister`?1.45:1.2),one=tw2&&i.mode===`list`?-1:to2&&s.from===`list`?1:0;/* to the List the whole ribbon rises out through the top; back from the List it comes up from below */one&&(far=H2*2.5);/* Twist -> List: the whole ribbon rises slowly out through the top; the list only comes once it has gone *//* List -> Twist: like the opening of the site, the ribbon comes up from below in one long, settling rise while it turns half a turn into place */LT&&(s.__lt||(s.__lt=1,s.duration=Math.max(s.duration,4.2)));TL&&(s.__tl||(s.__tl=1,s.duration=Math.max(s.duration,4),window.__tlDone=0),p>=.86&&(window.__tlDone=1));
 for(let q=0;q<a.length;q++){let d=T[q]||(T[q]={x:0,y:0,z:0,rx:0,ry:0,rz:0,sc:1,op:0,bl:0,bd:0,gs:0}),f0;
 if(A){f0=o[q];if(!f0){d.op=0;continue}d.x=f0.x;d.y=f0.y;d.z=f0.z;d.rx=f0.rx;d.ry=f0.ry;d.rz=f0.rz;d.sc=f0.sc;d.op=f0.op>.5?1:0}
-else{lt(q,e,t,n,r,i,d);d.op=d.op>.5?1:0}
+else{lt(q,LT?e+Math.PI*window.__twR(i)*k:e,t,n,r,i,d);d.op=d.op>.5?1:0}
 if(d.op)d.y+=(one||(d.y<0?-1:1))*k*far}
 T.length=a.length;
 G.draw(i,T,le.current,src===`twister`?0:1,BW[src]||i.bw);

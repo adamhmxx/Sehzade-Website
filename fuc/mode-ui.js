@@ -25,7 +25,7 @@
       '#ls-root.on .ls-row{clip-path:inset(-12% -6% -12% -6%);translate:0 0;transition:color .22s ease,clip-path .8s cubic-bezier(.22,1,.36,1) .95s,translate .8s cubic-bezier(.22,1,.36,1) .95s}' +
       /* into the List from the Grid or the Twist: the names come in from the left and the right, all at once (--ld waits for the ribbon to have left) */
       'html.g2l #ls-root .ls-row,html.t2l #ls-root .ls-row,html.lr-out #ls-root .ls-row{clip-path:none;translate:-46vw 0;opacity:0}html.g2l #ls-root .ls-row:nth-child(even),html.t2l #ls-root .ls-row:nth-child(even),html.lr-out #ls-root .ls-row:nth-child(even){translate:46vw 0}' +
-      'html.g2l #ls-root.on .ls-row,html.t2l #ls-root.on .ls-row{clip-path:none;translate:0 0;opacity:1;transition:color .22s ease,translate 1.2s cubic-bezier(.22,1,.36,1) var(--ld,.2s),opacity .7s ease var(--ld,.2s)}html.t2l{--ld:.7s}' +
+      'html.g2l #ls-root.on .ls-row,html.t2l #ls-root.on .ls-row{clip-path:none;translate:0 0;opacity:1;transition:color .22s ease,translate 1.2s cubic-bezier(.22,1,.36,1) var(--ld,.2s),opacity .7s ease var(--ld,.2s)}html.t2l{--ld:.1s}html.t2l .ls-layer.ls-hide{transition:visibility 0s 8s}' +
       'html.lr-hold #ls-root{opacity:1;visibility:visible}html.lr-hold #ls-root .ls-row{clip-path:none!important;translate:0 0!important;opacity:1!important;transition:none!important}' +
       /* List -> Twist: the names scatter to the left and the right, all at once, before the list goes */
       'html.lr-out #ls-root{opacity:1;visibility:visible}html.lr-out #ls-root .ls-row{pointer-events:none;transition:translate .85s cubic-bezier(.6,0,.85,.4),opacity .6s ease .2s}html.lr-out #ls-pv,html.lr-out #ls-mpv{opacity:0!important}' +
@@ -280,7 +280,7 @@
     if (i !== sync.prev) {
       var g2l = sync.prev === 1 && i === LIST, t2l = sync.prev === 0 && i === LIST, l2t = sync.prev === LIST && i === 0, l2g = sync.prev === LIST && i === 1;
       root.classList.toggle("g2l", g2l); root.classList.toggle("t2l", t2l); clearTimeout(sync.o); root.classList.remove("lr-out", "lr-seq");
-      sync.g = g2l; if (g2l) window.__glDone = 0; else root.classList.remove("lr-wait"); if (t2l) liquidRows(700, false); sync.stage = g2l || t2l;   /* the names must first stand in their starting places (off to the sides, unseen) before they are sent in */
+      sync.g = g2l ? "__glDone" : t2l ? "__tlDone" : ""; if (sync.g) window[sync.g] = 0; else root.classList.remove("lr-wait"); sync.stage = g2l || t2l;   /* the names must first stand in their starting places (off to the sides, unseen) before they are sent in */
       if (l2t) {   /* two steps, so the names start from their places and then leave */
         root.classList.add("lr-hold"); void box.offsetWidth; root.classList.add("lr-out"); root.classList.remove("lr-hold"); liquidRows(0, true);
         sync.o = setTimeout(function () { root.classList.remove("lr-out"); }, 950);
@@ -301,7 +301,7 @@
       sync.stage = 0; sync.lock = performance.now() + 7000;
       var go = function () { root.classList.remove("lr-wait"); box.classList.remove("on"); void box.offsetWidth; box.classList.add("on"); sync.lock = performance.now() + 3200; if (sync.g) liquidRows(0, false); };
       /* from the Grid: the names wait, unseen, until the last card has really left the screen (measured, not timed), so the two are never on screen together */
-      if (sync.g) { root.classList.add("lr-wait"); var n = 0, iv = setInterval(function () { if (window.__glDone || ++n > 100 || idx() !== LIST) { clearInterval(iv); if (idx() === LIST) go(); else root.classList.remove("lr-wait"); } }, 50); }
+      if (sync.g) { root.classList.add("lr-wait"); var n = 0, iv = setInterval(function () { if (window[sync.g] || ++n > 140 || idx() !== LIST) { clearInterval(iv); if (idx() === LIST) go(); else root.classList.remove("lr-wait"); } }, 50); }
       else go();
     } }   /* (while the names are on their way in, the list is not rebuilt: new rows would simply pop up in place) */   /* the list has just been rebuilt: its names first stand off to the sides, then they are sent in */
     placeHint(); clearTimeout(sync.t); sync.t = setTimeout(placeHint, 1100);
