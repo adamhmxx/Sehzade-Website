@@ -172,7 +172,7 @@
        picture is eaten away in patches of a second, slower noise, so it breaks up and sinks into the dark background. Both are strongest right when the
        cursor arrives and calm down to a gentle ripple. */
     f.innerHTML =
-      '<feTurbulence type="fractalNoise" baseFrequency="0.0075 0.012" numOctaves="1" seed="3" result="n"/>' +
+      '<feTurbulence type="fractalNoise" baseFrequency="0.0048 0.0072" numOctaves="1" seed="3" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="no"/>' +
       '<feColorMatrix in="no" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1" result="n1"/>' +
       '<feFlood flood-color="#000" flood-opacity="1" result="black"/>' +
@@ -215,21 +215,21 @@
     /* in the scroll of a project page the pictures drift under a resting cursor: only a cursor that really moves onto a picture fires the opening burst */
     if (hover && hover !== galHover && !(wkBox && sp < .03)) galPulse = 1;
     galHover = hover; galPulse *= Math.exp(-dtf / 1.1);
-    if (c.gmelt <= .5 && c.gdis <= 1) { if (galBox) { galBox.style.filter = ""; galBox = null; galS = 0; } return 0; }
+    if (c.gmelt <= .5) { if (galBox) { galBox.style.filter = ""; galBox = null; galS = 0; } return 0; }
     /* Twist: the ribbon must stay calm under the cursor (a strong, flowing melt read as the whole ribbon trembling up and down), so the melt is gentler there and its noise barely drifts */
     /* one recipe everywhere (Twist, Grid, project page): the same strength, the same soft opening swell and the same slow drift, so the hover feels the same on every page */
-    var target = (hover || halo) ? c.gmelt * .6 * (1 + 1.1 * galPulse + sp * .35) * (hover ? 1 : .35) : 0;
+    var target = (hover || halo) ? c.gmelt * .72 * (1 + 1.1 * galPulse + sp * .35) * (hover ? 1 : .35) : 0;
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
     galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 6.5 : 4)));   /* it swells in and settles slowly, like liquid, instead of snapping */
-    if (galS < 1 && target === 0 && !(c.gdis > 1 && galPulse > .02)) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
+    if (galS < 1 && target === 0) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
     var g = galFilter(), br = galBR || box.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100;
     /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
     if (box.style.filter !== "url(#lq-gal)") box.style.filter = "url(#lq-gal)"; galBox = box;
     g.map.setAttribute("scale", galS.toFixed(2)); 
     /* how much of the picture dissolves: a lot at the arrival burst, a light veil while the cursor rests */
-    var lvl = ((c.gdis / 100) * Math.min(1, galPulse + (hover ? .2 : .05))).toFixed(3);
+    var lvl = "0";   /* no dissolve: the picture is never eaten into black patches, the hover is a smooth liquid distortion only */
     [0, 1, 2].forEach(function (i) { g.sl.parentNode.children[i].setAttribute("slope", lvl); });
-    g.turb.setAttribute("baseFrequency", (.0075 * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.012 * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
+    g.turb.setAttribute("baseFrequency", (.0048 * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.0072 * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
     var fl = 16, fs_ = 2.2; g.off.setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
     g.turb2.setAttribute("baseFrequency", (.0055 * c.gnz / 100 * (1 + .1 * Math.cos(now / 1900))).toFixed(5) + " " + (.009 * c.gnz / 100 * (1 + .1 * Math.sin(now / 2300))).toFixed(5));
     g.off2.setAttribute("dx", (Math.cos(now / 1200) * 45).toFixed(1)); g.off2.setAttribute("dy", (Math.sin(now / 1500) * 45).toFixed(1));
@@ -248,7 +248,7 @@
     f.setAttribute("id", id); f.setAttribute("x", "-30%"); f.setAttribute("y", "-60%"); f.setAttribute("width", "160%"); f.setAttribute("height", "220%");
     f.setAttribute("color-interpolation-filters", "sRGB");
     /* wavelength follows the size of the element, so small text ripples as clearly as a large card */
-    var fq = Math.max(ABOUT ? .0025 : .004, Math.min(.05, (ABOUT ? 1.7 : 3.2) / Math.max(60, Math.max(b.width, b.height))));   /* About: longer, softer waves (big text on a flat card looked torn with the short ones) */
+    var fq = Math.max(ABOUT ? .0025 : .004, Math.min(.05, (ABOUT ? 1.7 : 2.3) / Math.max(60, Math.max(b.width, b.height))));   /* About: longer, softer waves (big text on a flat card looked torn with the short ones) */
     f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="' + fq.toFixed(4) + ' ' + (fq * 1.5).toFixed(4) + '" numOctaves="1" seed="' + (fid % 7 + 2) + '" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="o"/>' +
       '<feDisplacementMap in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G" result="w"/>' +
@@ -291,7 +291,7 @@
       if (f > .2 && !st.hot) { st.hot = 1; st.pulse = 1; } else if (f < .06) st.hot = 0;
       st.pulse = (st.pulse || 0) * Math.exp(-dtf / .75);
       spring(st, "b", f * c.blur * (.55 + sp * .9) / vs / ks, .09, .82);
-      spring(st, "d", f * c.distort * (.6 + sp * .5 + 1.1 * st.pulse) / vs / ks, .08, .84);
+      spring(st, "d", f * c.distort * 1.2 * (.6 + sp * .5 + 1.1 * st.pulse) / vs / ks, .08, .84);
       var warp = st.d > .15;
       if (warp || st.b > .03) {
         active++; st.set = 1;
@@ -301,7 +301,7 @@
           /* never more than about a third of the element\'s own height: small text (14-20px) broke into overlapping, clipped glyphs when the arrival burst pushed it by 10+ px */
           if (!st.fs) st.fs = parseFloat(getComputedStyle(tgt).fontSize) || 16;
           /* ...and for text, never more than about 25% of the font size: lines of a paragraph (a few px apart) otherwise slide over each other and print twice */
-          st.warp.map.setAttribute("scale", Math.min(st.d * st.warp.k, Math.max(2, b.height * .34), Math.max(2, st.fs * .25)).toFixed(2));
+          st.warp.map.setAttribute("scale", Math.min(st.d * st.warp.k, Math.max(2, b.height * .41), Math.max(2, st.fs * .3)).toFixed(2));
           /* the noise flows on its own clock, like the loading screen. It flows by morphing (a slow change of its frequency) plus a small sway that stays
              inside the filter margin: sliding the whole noise field by hundreds of pixels left an empty strip in it, which showed up as a hard tear
              through the text (lines cut and printed twice) */
