@@ -128,6 +128,8 @@
     galR = rects; galBR = galCards.length && galCards[0].parentElement ? galCards[0].parentElement.getBoundingClientRect() : null;   /* shared with the picture layer, which runs right after */
     /* a project page: the pictures of the endless scroll are one continuous column, so they do not wobble one by one (their seams would open and close); the melt alone carries the hover there */
     if (galCards.length && galCards[0].classList && galCards[0].classList.contains("wk-it")) return 0;
+    /* Twist: the cards form one unbroken ribbon, edge to edge. A wobble of single cards would open thin gaps between neighbours, so the ribbon is left whole and the melt alone carries the hover */
+    if (window.__twGLon && !ABOUT) { for (n = 0; n < galCards.length; n++) { card = galCards[n]; if (card.__jl && card.__jl.set) { card.style.translate = card.style.scale = card.style.rotate = ""; card.__jl = null; } } return 0; }
     for (n = 0; n < galCards.length; n++) {
       card = galCards[n]; cb = rects[n]; if (!cb) continue; if (card.__wkAway) continue;
       /* a card that has become tiny or hidden (another mode) must not keep a leftover wobble style */

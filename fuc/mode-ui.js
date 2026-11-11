@@ -23,6 +23,10 @@
       '#ls-root.on{opacity:1;visibility:visible;transition:none}' +
       '#ls-root .ls-row{clip-path:inset(0 0 100% 0);translate:0 70%}' +
       '#ls-root.on .ls-row{clip-path:inset(-12% -6% -12% -6%);translate:0 0;transition:color .22s ease,clip-path .8s cubic-bezier(.22,1,.36,1) .95s,translate .8s cubic-bezier(.22,1,.36,1) .95s}' +
+      'html.g2l #ls-root .ls-row{clip-path:none;translate:-46vw 0;opacity:0}html.g2l #ls-root .ls-row:nth-child(even){translate:46vw 0}' +
+      'html.g2l #ls-root.on .ls-row{clip-path:none;translate:0 0;opacity:1;transition:color .22s ease,translate 1.2s cubic-bezier(.22,1,.36,1) .2s,opacity .7s ease .2s}' +
+      'html.g2l .ls-layer{transition:opacity .75s ease,scale 1s cubic-bezier(.4,0,.2,1),filter .75s ease}' +
+      'html.g2l .ls-layer.ls-hide{opacity:0!important;scale:.93;filter:blur(12px);visibility:hidden;transition:opacity .75s ease,scale 1s cubic-bezier(.4,0,.2,1),filter .75s ease,visibility 0s 1s}' +
       '.ls-layer{transition:none}' +
       '.ls-layer.ls-hide{visibility:hidden;pointer-events:none!important;transition:visibility 0s 1.5s}' +
       '#ls-pv{position:fixed;left:0;top:0;background-size:cover;background-position:center;background-color:#111;opacity:0;transform:scale(.94);transition:opacity .28s ease,transform .38s cubic-bezier(.22,1,.36,1);will-change:transform,opacity;pointer-events:none;border-radius:2px}' +
@@ -83,6 +87,23 @@
     var n = card;
     while (n.parentElement && n.parentElement !== main && !n.parentElement.contains(tl) && !(nav && n.parentElement.contains(nav))) n = n.parentElement;
     return (layer = n);
+  }
+  var lqR = null, lqTok = 0;
+  function liquidRows() {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!lqR) {
+      var NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"); svg.setAttribute("width", "0"); svg.setAttribute("height", "0"); svg.setAttribute("aria-hidden", "true"); svg.style.cssText = "position:absolute;width:0;height:0;pointer-events:none";
+      svg.innerHTML = '<filter id="ls-liq" x="-20%" y="-5%" width="140%" height="110%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.006 0.014" numOctaves="2" seed="7" result="n"/><feOffset in="n" dx="0" dy="0" result="o"/><feDisplacementMap in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter>';
+      document.body.appendChild(svg); lqR = { off: svg.firstChild.children[1], map: svg.firstChild.children[2] };
+    }
+    var tok = ++lqTok, t0 = 0, D = 1700, els = [document.getElementById("ls-list"), document.getElementById("ls-scroll")].filter(Boolean);
+    els.forEach(function (e) { e.style.filter = "url(#ls-liq)"; });
+    requestAnimationFrame(function fr(now) {
+      if (tok !== lqTok) return; if (!t0) t0 = now;
+      var k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3);
+      lqR.map.setAttribute("scale", (90 * (1 - e)).toFixed(2)); lqR.off.setAttribute("dy", (-50 * e).toFixed(1));
+      if (k < 1) requestAnimationFrame(fr); else els.forEach(function (x) { x.style.filter = ""; });
+    });
   }
   function cardsHidden(on) {
     var l = cardLayer(); if (l) { l.classList.add("ls-layer"); l.classList.toggle("ls-hide", on); }
@@ -249,6 +270,8 @@
     if (!tabs().length) return;
     build();
     var i = idx(), ok = live() && !window.__abOpen && !window.__wkOpen;
+    /* Grid -> List has its own change: the grid sinks into the black page while the names come in from the left and the right, all at once, out of a liquid ripple */
+    if (i !== sync.prev) { var g2l = sync.prev === 1 && i === LIST; root.classList.toggle("g2l", g2l); if (g2l) liquidRows(); sync.prev = i; }
     box.classList.toggle("on", i === LIST && ok);
     var nv = document.querySelector("nav"); if (nv && nv.parentElement) nv.parentElement.classList.add("ls-navw");
     root.classList.toggle("ls-on", touchUI && i === LIST && ok);
