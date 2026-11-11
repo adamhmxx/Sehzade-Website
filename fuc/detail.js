@@ -69,14 +69,16 @@
       '#wk .wk-it{position:absolute;left:0;top:0;overflow:hidden;background:#0b0b0b;will-change:transform}' +
       '#wk .wk-it img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none;user-select:none}' +
       /* phone: the pictures on top (endless horizontal), then the details, and the name set big at the bottom, above the Back button */
-      '@media (max-width:809.98px){#wk{grid-template-columns:1fr;grid-template-rows:36dvh minmax(0,1fr)}' +
-      '#wk .wk-r{order:-1;touch-action:pan-y}' +
-      '#wk .wk-l{padding:18px var(--gm) var(--bar,104px);overflow:hidden}' +
-      '#wk .wk-body{margin-bottom:10px}' +
-      '#wk .wk-lede{max-width:none;margin-bottom:18px}' +
-      '#wk .wk-meta{margin-bottom:18px}' +
-      '#wk .wk-sec{margin-bottom:16px}' +
-      '}' +
+      /* phone, on the 8-column grid: the short facts in one row on top, the endless picture scroll in the middle, the long texts below it, then the link and the name; Back sits bottom right */
+      '@media (max-width:809.98px){#wk{grid-template-columns:repeat(8,minmax(0,1fr));column-gap:16px;grid-template-rows:auto 30dvh minmax(0,1fr) auto auto;padding:72px 16px var(--bar,104px);box-sizing:border-box}' +
+      '#wk .wk-l,#wk .wk-body,#wk .wk-grid,#wk .wk-col{display:contents}' +
+      '#wk .wk-year{grid-row:1;grid-column:1 / span 2;display:block}#wk .wk-year h3{margin:0 0 6px}' +
+      '#wk .wk-short{grid-row:1;grid-column:3 / -1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);column-gap:16px;align-items:start}' +
+      '#wk .wk-sec{margin-bottom:14px}' +
+      '#wk .wk-r{grid-row:2;grid-column:1 / -1;margin:0 -16px;touch-action:pan-y}' +
+      '#wk .wk-long{grid-row:3;grid-column:1 / -1;min-height:0;overflow:auto;scrollbar-width:none;padding-top:14px}#wk .wk-long::-webkit-scrollbar{display:none}' +
+      '#wk .wk-visit{grid-row:4;grid-column:1 / -1;justify-self:start;margin:6px 0 8px}' +
+      '#wk .wk-name{grid-row:5;grid-column:1 / -1}}' +
       '@media (prefers-reduced-motion:reduce){#wk,#wk.on{transition:none}#wk .wk-in,#wk.on .wk-in{transition:none;opacity:1;transform:none}}';
     document.head.appendChild(s);
   }
@@ -178,7 +180,8 @@
       meltEl.style.scale = ps; meltEl.style.rotate = pr; meltEl.style.transition = pt;
     } else r = tl && tl.getBoundingClientRect();
     if (!r || !r.width) { bar.style.left = "50%"; bar.style.top = (innerHeight - 56) + "px"; bar.style.transform = "translate(-50%,-50%)"; return; }
-    bar.style.left = (r.left + r.width / 2) + "px"; bar.style.top = (r.top + r.height / 2) + "px"; bar.style.transform = "translate(-50%,-50%)";
+    if (phone()) { bar.style.left = "auto"; bar.style.right = "16px"; bar.style.top = (r.top + r.height / 2) + "px"; bar.style.transform = "translate(0,-50%)"; }   /* phone: Back in the bottom right corner, at the height of the mode menu */
+    else { bar.style.right = ""; bar.style.left = (r.left + r.width / 2) + "px"; bar.style.top = (r.top + r.height / 2) + "px"; bar.style.transform = "translate(-50%,-50%)"; }
     var cs = tab ? getComputedStyle(tab) : null; bar.style.setProperty("--f", (cs ? parseFloat(cs.fontSize) || 16 : 16) + "px");
     var g = parseFloat(getComputedStyle(tl).columnGap || getComputedStyle(tl).gap); bar.style.setProperty("--g", (isNaN(g) ? 16 : g) + "px");
     if (ov) ov.style.setProperty("--bar", Math.max(80, innerHeight - r.top + 14) + "px");
@@ -198,9 +201,12 @@
     var grid = el("div", "wk-grid");
     if (it.year) { var yr = el("section", "wk-sec wk-year"); yr.append(el("h3", "", "Year"), el("p", "", it.year)); grid.appendChild(put(yr)); }
     var col = el("div", "wk-col");
-    [["Description", it.description], ["Client", it.client], ["Challenge", it.challenge], ["Approach", it.approach]].forEach(function (x) {
-      if (!x[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", x[0]), el("p", "", x[1])); col.appendChild(put(sec));
+    /* two groups: the short facts and the long texts (a phone shows the short ones in a row above the pictures and the long ones below them) */
+    var gShort = el("div", "wk-short"), gLong = el("div", "wk-long");
+    [["Description", it.description, gShort], ["Client", it.client, gShort], ["Challenge", it.challenge, gLong], ["Approach", it.approach, gLong]].forEach(function (x) {
+      if (!x[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", x[0]), el("p", "", x[1])); x[2].appendChild(put(sec));
     });
+    col.append(gShort, gLong);
     grid.appendChild(col); body.appendChild(grid);
     var visit = null;
     if (it.link) { visit = el("a", "wk-visit"); visit.href = it.link; visit.target = "_blank"; visit.rel = "noopener noreferrer"; visit.textContent = "Visit website"; }

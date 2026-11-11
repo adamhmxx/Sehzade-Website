@@ -144,7 +144,8 @@
   var needKey = "", needVal = 0, needBusy = false;
   function frameFit() {
     /* desktop: the page is always laid out at one fixed width (DW) and the whole page is scaled to the card, so on any screen size the text, line breaks and alignment are the same (a real-width iframe switched Framer breakpoints and re-flowed) */
-    var desk = !touchy && innerWidth >= 810, DW = desk ? 564 : 390, base = desk ? W / DW : Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, key = W.toFixed(1) + ":" + H.toFixed(1) + ":" + contentVer;
+    var desk = !touchy && innerWidth >= 810, DW = desk ? 564 : 390, base = desk ? W / DW : Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, key = W.toFixed(1) + ":" + contentVer;   /* not the height: a phone toolbar sliding in or out must not re-measure (the text flashed through two sizes each time) */
+    var pend = key !== needKey || frameFit.chk !== key;
     var k = base;
     if (key === needKey) { if (needVal > avail / base + 1) k = Math.max(.55, avail / needVal); }
     else if (!needBusy) {
@@ -152,19 +153,21 @@
       needBusy = true;
       frame.style.cssText = base !== 1 ? "flex:none;width:" + DW + "px;height:" + H / base + "px;transform:scale(" + base + ");transform-origin:0 0" : "";
       requestAnimationFrame(function () { requestAnimationFrame(function () {
-        needBusy = false; var v = needH(); if (!v) { setTimeout(layout, 800); return; }
+        needBusy = false; var v = needH(); if (!v) { frame.style.visibility = ""; setTimeout(layout, 800); return; }
         needVal = v; needKey = key; layout();
       }); });
     }
     var fw = W / k, sig_ = k.toFixed(3) + ":" + fw.toFixed(1);
     frame.style.cssText = k !== 1 || base !== 1 ? "flex:none;width:" + fw + "px;height:" + H / k + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
+    /* while the fit is still being measured the text is not shown, so it never appears in one size and then jumps to another */
+    frame.style.visibility = pend ? "hidden" : "";
     pushPage(k);
     /* the page is measured at the phone width, but shown at the card's own width, where wrapped rows can break differently: check once at the
        final width and shrink a little more if the content would run under the name */
     if (key === needKey && frameFit.chk !== key) {
       frameFit.chk = key;
       requestAnimationFrame(function () { requestAnimationFrame(function () {
-        var v2 = needH(); if (v2 && v2 > avail / k + 1 && v2 > needVal) { needVal = v2; layout(); }
+        var v2 = needH(); if (v2 && v2 > avail / k + 1 && v2 > needVal) { needVal = v2; layout(); } else frame.style.visibility = "";
       }); });
     }
     if (sig_ !== frameFit.key) { frameFit.key = sig_; scheduleFit(400); }
