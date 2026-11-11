@@ -56,8 +56,8 @@
       '#wk .wk-sec{margin:0 0 22px;padding:0;border:0}' +
       '#wk{--gm:24px;--gc:4}@media (min-width:1440px){#wk{--gm:32px;--gc:6}}@media (max-width:809.98px){#wk{--gm:16px;--gc:8}}' +
       '#wk .wk-grid{display:grid;grid-template-columns:repeat(var(--gc),minmax(0,1fr));column-gap:16px;align-items:start}' +
-      '#wk .wk-year{grid-column:1 / span 2;display:flex;gap:16px;align-items:baseline}#wk .wk-year h3{margin:0}#wk .wk-col{grid-column:3 / -1;min-width:0}' +
-      '@media (min-width:810px) and (max-width:1439.98px){#wk .wk-year{grid-column:1 / span 1;flex-direction:row;gap:8px}#wk .wk-col{grid-column:2 / -1}}' +
+      '#wk .wk-year{grid-column:1 / span 2}#wk .wk-col{grid-column:3 / -1;min-width:0}' +
+      '@media (min-width:810px) and (max-width:1439.98px){#wk .wk-year{grid-column:1 / span 1}#wk .wk-col{grid-column:2 / -1}}' +
       '#wk .wk-sec p{margin:0;font-size:16px;line-height:1.4;color:#fff;max-width:60ch;white-space:pre-line}' +
       '#wk .wk-visit{display:inline-block;align-self:flex-start;margin:0 0 14px;padding:0;border:0;background:none;color:#fff;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px;font-size:16px;line-height:1.3;transition:color .25s ease}' +
       '#wk .wk-visit:hover{color:rgba(255,255,255,.6)}#wk .wk-visit i{font-style:normal}' +
@@ -72,7 +72,7 @@
       /* phone, on the 8-column grid: the short facts in one row on top, the endless picture scroll in the middle, the long texts below it, then the link and the name; Back sits bottom right */
       '@media (max-width:809.98px){#wk{grid-template-columns:repeat(8,minmax(0,1fr));column-gap:16px;grid-template-rows:auto 30dvh minmax(0,1fr) auto auto;padding:72px 16px var(--bar,104px);box-sizing:border-box}' +
       '#wk .wk-l,#wk .wk-body,#wk .wk-grid,#wk .wk-col{display:contents}' +
-      '#wk .wk-year{grid-row:1;grid-column:1 / span 2;display:block}#wk .wk-year h3{margin:0 0 6px}' +
+      '#wk .wk-year{grid-row:1;grid-column:1 / span 2}' +
       '#wk .wk-short{grid-row:1;grid-column:3 / -1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);column-gap:16px;align-items:start}' +
       '#wk .wk-sec{margin-bottom:14px}' +
       '#wk .wk-r{grid-row:2;grid-column:1 / -1;margin:0 -16px;touch-action:pan-y}' +
