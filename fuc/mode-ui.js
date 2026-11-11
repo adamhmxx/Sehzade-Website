@@ -29,8 +29,8 @@
       'html.lr-hold #ls-root{opacity:1;visibility:visible}html.lr-hold #ls-root .ls-row{clip-path:none!important;translate:0 0!important;opacity:1!important;transition:none!important}' +
       /* List -> Twist: the names scatter to the left and the right, all at once, before the list goes */
       'html.lr-out #ls-root{opacity:1;visibility:visible}html.lr-out #ls-root .ls-row{pointer-events:none;transition:translate .85s cubic-bezier(.6,0,.85,.4),opacity .6s ease .2s}html.lr-out #ls-pv,html.lr-out #ls-mpv{opacity:0!important}' +
-      'html.g2l .ls-layer{transition:opacity .75s ease,scale 1s cubic-bezier(.4,0,.2,1),filter .75s ease}' +
-      'html.g2l .ls-layer.ls-hide{opacity:0!important;scale:.93;filter:blur(12px);visibility:hidden;transition:opacity .75s ease,scale 1s cubic-bezier(.4,0,.2,1),filter .75s ease,visibility 0s 1s}' +
+      /* from the Grid the names arrive one after the other, top to bottom, alternately from the left and the right (the grid's rows have left the same way) */
+      'html.g2l{--ld:.55s}' + (function () { var o = ""; for (var k = 1; k <= 40; k++) o += "html.g2l #ls-root.on .ls-row:nth-child(" + k + "){transition-delay:0s,calc(var(--ld) + " + (k * .06).toFixed(2) + "s),calc(var(--ld) + " + (k * .06).toFixed(2) + "s)}"; return o; })() +
       '.ls-layer{transition:none}' +
       '.ls-layer.ls-hide{visibility:hidden;pointer-events:none!important;transition:visibility 0s 1.5s}' +
       '#ls-pv{position:fixed;left:0;top:0;background-size:cover;background-position:center;background-color:#111;opacity:0;transform:scale(.94);transition:opacity .28s ease,transform .38s cubic-bezier(.22,1,.36,1);will-change:transform,opacity;pointer-events:none;border-radius:2px}' +

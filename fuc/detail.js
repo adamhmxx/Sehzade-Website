@@ -30,6 +30,7 @@
       '#wk.air{background:transparent}#wk.air .wk-in{opacity:0!important;transition:none!important}#wk.air .wk-bar{visibility:hidden}.wk-hide{visibility:hidden!important}' +
       /* the text rises in, one piece after the other */
       /* the text arrives the way everything on this site does: it dissolves in out of a liquid ripple that calms down (see liquidIn), one block after the other */
+      '#wk.lout .wk-in:not(.wk-r):not(.wk-name){opacity:0!important;transition:none!important}#wk.lout .wk-bar{visibility:hidden}' +
       '#wk .wk-in{opacity:0;transform:translateY(18px);transition:opacity .9s ease,transform 1.1s cubic-bezier(.22,1,.36,1)}' +
       /* ...and so are the pictures of the scroll: each one rises into its frame, in turn */
       '#wk .wk-it img{transition:transform 1.1s cubic-bezier(.22,1,.36,1);transition-delay:calc(var(--j,0) * .1s)}#wk.rv .wk-it img{transform:translateY(102%);transition:none}#wk.rv.fl .wk-first img{transform:none}' +
@@ -339,6 +340,30 @@
   }
   var rvLand = false, rvLay = false;
   function rvTry() { if (rvLand && rvLay && ov) requestAnimationFrame(function () { requestAnimationFrame(function () { if (ov) ov.classList.remove("rv", "fl"); }); }); }
+  /* project -> List: the picture scroll slides away to the right, then the project's name flies back to its line in the list */
+  function listBack(gone) {
+    var h1 = ov.querySelector(".wk-name"), sp = h1 && h1.querySelector("span"), r = ov.querySelector(".wk-r"), name = sp ? sp.textContent.trim().toLowerCase() : "", dead = false, clone = null, row = null;
+    ov.classList.add("lout"); root.classList.add("lr-hold");
+    inFlight = function () { dead = true; if (clone) clone.remove(); if (row) row.style.visibility = ""; };
+    if (r) r.animate([{ transform: "translateX(0)" }, { transform: "translateX(106%)" }], { duration: 650, easing: "cubic-bezier(.6,0,.85,.35)", fill: "forwards" });
+    setTimeout(function () {
+      if (dead || shown) return;
+      var best = 1e18, cy = listName ? listName.r.top + listName.r.height / 2 : innerHeight / 2;
+      [].forEach.call(document.querySelectorAll("#ls-root .ls-row"), function (n) {
+        if (n.textContent.trim().toLowerCase() !== name) return; var b = n.getBoundingClientRect(); if (!b.height || b.bottom < 0 || b.top > innerHeight) return;
+        var dd = Math.abs(b.top + b.height / 2 - cy); if (dd < best) { best = dd; row = n; }
+      });
+      if (!row || !sp) { gone(); return; }
+      var sb = sp.getBoundingClientRect(), fs2 = parseFloat(getComputedStyle(h1).fontSize) || 120, rg = document.createRange(); rg.selectNodeContents(row);
+      var tr = rg.getBoundingClientRect(), k2 = (parseFloat(getComputedStyle(row).fontSize) || 40) / fs2;
+      clone = el("div", "", sp.textContent);
+      clone.style.cssText = "position:fixed;z-index:4;left:" + sb.left + "px;top:" + sb.top + "px;width:" + (sb.width + 1) + "px;font:400 " + fs2 + 'px/.92 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;color:#f2f2f2;overflow-wrap:anywhere;pointer-events:none;transform-origin:0 0;will-change:transform';
+      document.body.appendChild(clone); h1.style.visibility = "hidden"; row.style.visibility = "hidden"; ov.classList.add("air");
+      var a = clone.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (tr.left - sb.left) + "px," + (tr.top + tr.height / 2 - clone.offsetHeight * k2 / 2 - sb.top) + "px,0) scale(" + k2 + ")" }], { duration: 900, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+      var fin = 0, end = function () { if (fin || dead) return; fin = 1; row.style.visibility = ""; clone.remove(); clone = null; gone(); };
+      a.onfinish = end; setTimeout(end, 1500);
+    }, 650);
+  }
   function onScreen(r) { return r && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
   function show(i) {
     build(); var list = data(); if (i < 0 || i >= list.length) return;
@@ -386,12 +411,14 @@
     window.__wkOpen = false; root.classList.remove("wk-open");
     var gone = function () {
       inFlight = null; window.__wkMove = false; pin = null; if (shown) return;
-      ov.classList.remove("on", "air"); airOff(); if (strip) { strip.destroy(); strip = null; }
+      ov.classList.remove("on", "air", "lout"); root.classList.remove("lr-hold"); airOff(); if (strip) { strip.destroy(); strip = null; }
     };
     if (inFlight) { inFlight(); o = null; window.__twX = null; }   /* Back while the picture was still on its way in: everything snaps home */
-    if (o && o.mode === "list") o = null;   /* List: Back simply returns to the list */
+    var lb = o && o.mode === "list" && !reduce && !!ov.animate;
+    if (lb) listBack(gone);
+    if (o && o.mode === "list") o = null;
     var slot = o ? slotRect(o.src) : null;
-    if (!o || !slot) { if (o && !o.tw) { o.card.classList.remove("wk-hide"); gridBack(true); } window.__twX = null; window.__twFreeze = false; gone(); }
+    if (!o || !slot) { if (o && !o.tw) { o.card.classList.remove("wk-hide"); gridBack(true); } window.__twX = null; window.__twFreeze = false; if (!lb) gone(); }
     else {
       ov.classList.add("air"); root.classList.add("wk-air"); window.__wkMove = true;
       if (o.tw && window.__twGLon && o.card.isConnected) {
@@ -460,11 +487,21 @@
   function nameFly(nm, h1, dur) {
     var sp = h1.querySelector("span"); if (!sp || !nm) return function () {};
     var rg = document.createRange(); rg.selectNodeContents(sp); var rs = rg.getClientRects(), t = rs[0]; if (!t) return function () {};
-    var fs2 = parseFloat(getComputedStyle(h1).fontSize) || 120, k = fs2 / nm.fs;
-    var c = el("div", "", nm.text);
-    c.style.cssText = "position:fixed;z-index:4;left:" + nm.r.left + "px;top:" + nm.r.top + "px;height:" + nm.r.height + "px;line-height:" + nm.r.height + "px;font:400 " + nm.fs + "px/" + nm.r.height + 'px "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;color:#f2f2f2;pointer-events:none;transform-origin:0 50%;will-change:transform';
-    document.body.appendChild(c);
-    c.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (t.left - nm.r.left) + "px," + (t.top + t.height / 2 - (nm.r.top + nm.r.height / 2)) + "px,0) scale(" + k + ")" }], { duration: dur, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+    var fs2 = parseFloat(getComputedStyle(h1).fontSize) || 120, k = fs2 / nm.fs, tops = {}, c = el("div", "", nm.text);
+    [].forEach.call(rs, function (r) { tops[Math.round(r.top)] = 1; });
+    var base = "position:fixed;z-index:4;font-family:\"Anton\",\"Inter Display\",Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;color:#f2f2f2;pointer-events:none;will-change:transform;";
+    if (Object.keys(tops).length > 1) {
+      /* a name that takes two lines on the project page first breaks into those lines where it stands, and only then travels */
+      var sb = sp.getBoundingClientRect();
+      c.style.cssText = base + "left:" + nm.r.left + "px;top:0;width:" + (sb.width / k + 1) + "px;font-size:" + nm.fs + "px;line-height:.92;white-space:normal;overflow-wrap:anywhere;transform-origin:0 0";
+      document.body.appendChild(c);
+      var top = nm.r.top + nm.r.height / 2 - c.offsetHeight / 2; c.style.top = top + "px";
+      c.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (sb.left - nm.r.left) + "px," + (sb.top - top) + "px,0) scale(" + k + ")" }], { duration: dur, delay: 320, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+    } else {
+      c.style.cssText = base + "left:" + nm.r.left + "px;top:" + nm.r.top + "px;height:" + nm.r.height + "px;font-size:" + nm.fs + "px;line-height:" + nm.r.height + "px;white-space:nowrap;transform-origin:0 50%";
+      document.body.appendChild(c);
+      c.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (t.left - nm.r.left) + "px," + (t.top + t.height / 2 - (nm.r.top + nm.r.height / 2)) + "px,0) scale(" + k + ")" }], { duration: dur, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+    }
     return function () { c.remove(); };
   }
 
