@@ -265,7 +265,8 @@
   /* Grid: one moving picture (transform + a clip that follows the card's shape, so nothing is stretched) */
   function flyBox(big, small, src, back, delay, dur, done) {
     var d = el("div"), pic = new Image(); pic.src = src; pic.decoding = "async";
-    d.style.cssText = "position:fixed;z-index:6;left:" + big.left + "px;top:" + big.top + "px;width:" + big.width + "px;height:" + big.height + "px;overflow:hidden;background:#0b0b0b;pointer-events:none;will-change:transform,clip-path;transform-origin:50% 50%;backface-visibility:hidden";
+    /* same layer as the project page (below the navbar) for the whole flight, so the navbar is over the picture from the start and nothing changes when it lands */
+    d.style.cssText = "position:fixed;z-index:4;left:" + big.left + "px;top:" + big.top + "px;width:" + big.width + "px;height:" + big.height + "px;overflow:hidden;background:#0b0b0b;pointer-events:none;will-change:transform,clip-path;transform-origin:50% 50%;backface-visibility:hidden";
     pic.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"; d.appendChild(pic); document.body.appendChild(d);
     var cx = big.left + big.width / 2, cy = big.top + big.height / 2, sc = Math.max(small.width / big.width, small.height / big.height);
     var from = { transform: "translate3d(" + (small.left + small.width / 2 - cx) + "px," + (small.top + small.height / 2 - cy) + "px,0) scale(" + sc + ")",
@@ -458,7 +459,7 @@
     var rg = document.createRange(); rg.selectNodeContents(sp); var rs = rg.getClientRects(), t = rs[0]; if (!t) return function () {};
     var fs2 = parseFloat(getComputedStyle(h1).fontSize) || 120, k = fs2 / nm.fs;
     var c = el("div", "", nm.text);
-    c.style.cssText = "position:fixed;z-index:7;left:" + nm.r.left + "px;top:" + nm.r.top + "px;height:" + nm.r.height + "px;line-height:" + nm.r.height + "px;font:400 " + nm.fs + "px/" + nm.r.height + 'px "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;color:#f2f2f2;pointer-events:none;transform-origin:0 50%;will-change:transform';
+    c.style.cssText = "position:fixed;z-index:4;left:" + nm.r.left + "px;top:" + nm.r.top + "px;height:" + nm.r.height + "px;line-height:" + nm.r.height + "px;font:400 " + nm.fs + "px/" + nm.r.height + 'px "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap;color:#f2f2f2;pointer-events:none;transform-origin:0 50%;will-change:transform';
     document.body.appendChild(c);
     c.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (t.left - nm.r.left) + "px," + (t.top + t.height / 2 - (nm.r.top + nm.r.height / 2)) + "px,0) scale(" + k + ")" }], { duration: dur, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
     return function () { c.remove(); };
