@@ -87,7 +87,7 @@
 
   /* ---------- components: blur only ---------- */
   var states = new Map(), els = [], galCards = [], lastScan = 0;
-  var SEL = ABOUT ? "h1,p,a[href],.abx-top span,.abx-name span" : "nav a,nav span,[role=tab],#wk .wk-name span,#wk .wk-lede,#wk .wk-idx,#wk .wk-meta dt,#wk .wk-meta dd,#wk .wk-sec h3,#wk .wk-sec p,#wk .wk-visit,#wk .wk-bar button";
+  var SEL = ABOUT ? "h1,p,a[href],.abx-top span,.abx-name span" : "nav a,nav span,[role=tab],#wk .wk-name span,#wk .wk-lede,#wk .wk-idx,#wk .wk-meta dt,#wk .wk-meta dd,#wk .wk-sec h3,#wk .wk-sec p,#wk .wk-visit,#wk .wk-bar button,#ls-list .ls-row";
   function scan(now) {
     if (now - lastScan < 800) return;
     lastScan = now;

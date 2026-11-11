@@ -31,7 +31,7 @@
       'html.lr-out #ls-root{opacity:1;visibility:visible}html.lr-out #ls-root .ls-row{pointer-events:none;transition:translate .85s cubic-bezier(.6,0,.85,.4),opacity .6s ease .2s}html.lr-out #ls-pv,html.lr-out #ls-mpv{opacity:0!important}' +
       (function () { var o = ""; for (var k = 1; k <= 40; k++) o += "html.lr-seq #ls-root .ls-row:nth-child(" + k + "){transition-delay:" + (k * .05).toFixed(2) + "s," + (k * .05 + .15).toFixed(2) + "s}"; return o; })() +
       /* from the Grid the names arrive one after the other, top to bottom, alternately from the left and the right (the grid's rows have left the same way) */
-      'html.g2l{--ld:.55s}' + (function () { var o = ""; for (var k = 1; k <= 40; k++) o += "html.g2l #ls-root.on .ls-row:nth-child(" + k + "){transition-delay:0s,calc(var(--ld) + " + (k * .06).toFixed(2) + "s),calc(var(--ld) + " + (k * .06).toFixed(2) + "s)}"; return o; })() +
+      'html.g2l{--ld:1.35s}' + (function () { var o = ""; for (var k = 1; k <= 40; k++) o += "html.g2l #ls-root.on .ls-row:nth-last-child(" + k + "){transition-delay:0s,calc(var(--ld) + " + (k * .05).toFixed(2) + "s),calc(var(--ld) + " + (k * .05).toFixed(2) + "s)}"; return o; })() +
       '.ls-layer{transition:none}' +
       '.ls-layer.ls-hide{visibility:hidden;pointer-events:none!important;transition:visibility 0s 1.5s}' +
       '#ls-pv{position:fixed;left:0;top:0;background-size:cover;background-position:center;background-color:#111;opacity:0;transform:scale(.94);transition:opacity .28s ease,transform .38s cubic-bezier(.22,1,.36,1);will-change:transform,opacity;pointer-events:none;border-radius:2px}' +
@@ -280,7 +280,7 @@
     if (i !== sync.prev) {
       var g2l = sync.prev === 1 && i === LIST, t2l = sync.prev === 0 && i === LIST, l2t = sync.prev === LIST && i === 0, l2g = sync.prev === LIST && i === 1;
       root.classList.toggle("g2l", g2l); root.classList.toggle("t2l", t2l); clearTimeout(sync.o); root.classList.remove("lr-out", "lr-seq");
-      if (g2l) liquidRows(0, false); if (t2l) liquidRows(700, false);
+      if (g2l) liquidRows(1350, false); if (t2l) liquidRows(700, false); sync.stage = g2l || t2l;   /* the names must first stand in their starting places (off to the sides, unseen) before they are sent in */
       if (l2t) {   /* two steps, so the names start from their places and then leave */
         root.classList.add("lr-hold"); void box.offsetWidth; root.classList.add("lr-out"); root.classList.remove("lr-hold"); liquidRows(0, true);
         sync.o = setTimeout(function () { root.classList.remove("lr-out"); }, 950);
@@ -289,6 +289,7 @@
         root.classList.add("lr-hold"); void box.offsetWidth; root.classList.add("lr-out", "lr-seq"); root.classList.remove("lr-hold");
         sync.o = setTimeout(function () { root.classList.remove("lr-out", "lr-seq"); }, 1500);
       }
+      if (!(g2l || t2l)) sync.lock = 0;
       sync.prev = i;
     }
     box.classList.toggle("on", i === LIST && ok);
@@ -296,7 +297,7 @@
     root.classList.toggle("ls-on", touchUI && i === LIST && ok);
     cardsHidden(i === LIST && live());
     if (i !== LIST) { clearTimeout(hideT); deactivate(); told(); }
-    else { layout(); }
+    else if (!(sync.lock > performance.now())) { layout(); if (sync.stage && ok) { sync.stage = 0; sync.lock = performance.now() + 3200; box.classList.remove("on"); void box.offsetWidth; box.classList.add("on"); } }   /* (while the names are on their way in, the list is not rebuilt: new rows would simply pop up in place) */   /* the list has just been rebuilt: its names first stand off to the sides, then they are sent in */
     placeHint(); clearTimeout(sync.t); sync.t = setTimeout(placeHint, 1100);
     hint.classList.toggle("on", ok && i >= 0 && i < LIST);
   }
