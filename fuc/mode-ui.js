@@ -238,9 +238,10 @@
     var tl = document.querySelector('[role="tablist"]'), m = innerWidth >= 1440 ? 32 : innerWidth >= 810 ? 24 : 16;
     if (tl) {
       var t0 = tabs()[0], r = (t0 || tl).getBoundingClientRect(), h = hint.offsetHeight || 16, phone = innerWidth < 810;
+      /* the same type size as the mode menu, on every screen */
+      hint.style.fontSize = ((t0 && parseFloat(getComputedStyle(t0).fontSize)) || 16) + "px"; h = hint.offsetHeight || 16;
       hint.style.right = m + "px"; hint.style.left = "auto";
       hint.style.top = Math.round(r.top + (r.height - h) / 2) + "px";
-      hint.style.fontSize = phone ? "13px" : "16px";
     }
   }
 
