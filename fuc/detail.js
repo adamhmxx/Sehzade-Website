@@ -66,6 +66,7 @@
       '@media (min-width:1440px){#wk{--nm:160px}}@media (min-width:810px) and (max-width:1439.98px){#wk{--nm:120px}}@media (max-width:809.98px){#wk{--nm:64px}}' +
       '#wk .wk-r{position:relative;overflow:hidden;background:#0b0b0b;touch-action:none;cursor:grab}' +
       '#wk .wk-r.drag{cursor:grabbing}' +
+      '#wk .wk-rs{position:absolute;inset:-90px;pointer-events:none}#wk .wk-ro{position:absolute;left:90px;top:90px;width:0;height:0}' +
       '#wk .wk-it{position:absolute;left:0;top:0;overflow:hidden;background:#0b0b0b;will-change:transform}' +
       '#wk .wk-it img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none;user-select:none}' +
       /* phone: the pictures on top (endless horizontal), then the details, and the name set big at the bottom, above the Back button */
@@ -85,7 +86,7 @@
 
   /* ---------- the endless scroll of pictures ---------- */
   function Strip(box, urls, vertical, held, onFirst) {
-    var GAP = 12, PAD = 12, slots = [], C = 0, maxS = 0, view = 0, pos = 0, tgt = 0, vel = 0, drag = null, raf = 0, last = 0, idle = 0, alive = true, metrics = [];
+    var org = null, GAP = 12, PAD = 12, slots = [], C = 0, maxS = 0, view = 0, pos = 0, tgt = 0, vel = 0, drag = null, raf = 0, last = 0, idle = 0, alive = true, metrics = [];
     var imgs = urls.map(function (u) { var im = new Image(); im.decoding = "async"; im.src = u; return im; });
     var ready = Promise.all(imgs.map(function (im) { return im.decode ? im.decode().catch(function () {}) : new Promise(function (r) { im.onload = im.onerror = r; }); }));
     function wrapv(v, t) { return ((v % t) + t) % t; }
@@ -96,12 +97,14 @@
       metrics = imgs.map(function (im) { var r = (im.naturalWidth && im.naturalHeight) ? im.naturalWidth / im.naturalHeight : 4 / 3; return vertical ? Math.round((W - PAD * 2) / r) : Math.round((H - PAD * 2) * r); });
       var L = 0; maxS = 0; metrics.forEach(function (s) { L += s + GAP; maxS = Math.max(maxS, s); });
       var copies = Math.max(1, Math.ceil((view + maxS * 2 + GAP) / L)); C = copies * L;
-      box.textContent = ""; slots = [];
+      /* the pictures live in a layer that reaches 90px beyond the pane on every side (the pane clips it): the hover's melt works on that layer, so its own edges are out of sight and nothing tears along the pane's border */
+      if (!org) { var wrap = document.createElement("div"); wrap.className = "wk-rs"; org = document.createElement("div"); org.className = "wk-ro"; wrap.appendChild(org); box.appendChild(wrap); }
+      org.textContent = ""; slots = [];
       for (var c = 0; c < copies; c++) { var o = c * L; for (var i = 0; i < imgs.length; i++) {
         var d = document.createElement("div"); d.className = "wk-it" + (c === 0 && i === 0 ? " wk-first" : ""); d.style.setProperty("--j", Math.min(6, c * imgs.length + i)); var im = new Image(); im.decoding = "async"; im.alt = ""; im.draggable = false; im.src = imgs[i].src; d.appendChild(im);
         if (vertical) { d.style.left = PAD + "px"; d.style.width = (W - PAD * 2) + "px"; d.style.height = metrics[i] + "px"; }
         else { d.style.top = PAD + "px"; d.style.height = (H - PAD * 2) + "px"; d.style.width = metrics[i] + "px"; }
-        box.appendChild(d); slots.push({ el: d, off: o, size: metrics[i] }); o += metrics[i] + GAP; } }
+        org.appendChild(d); slots.push({ el: d, off: o, size: metrics[i] }); o += metrics[i] + GAP; } }
       place(); kick();
       try { window.dispatchEvent(new Event("wk-render")); } catch (e) {}   /* the hover effect learns the new pictures at once */
       if (onFirst) { var of = onFirst; onFirst = null; of(); }

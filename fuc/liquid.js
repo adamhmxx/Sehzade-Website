@@ -199,6 +199,7 @@
     var box = galCards.length && galCards[0].isConnected ? galCards[0].parentElement : null;
     /* Twister drawn on the GPU: its canvas sits next to the card boxes, so the melt goes on their common parent */
     if (box && window.__twGLon && !box.closest("#wk") && box.parentElement) box = box.parentElement;
+    if (box && box.closest(".wk-rs")) box = box.closest(".wk-rs");   /* a project page: the oversized picture layer */
     if (galBox && galBox !== box) { galBox.style.filter = ""; galBox = null; galS = galV = 0; }
     if (!box) return 0;
     /* which card is under the cursor: arriving on a new one fires the opening burst */
@@ -214,19 +215,21 @@
     if (hover && hover !== galHover && !(wkBox && sp < .03)) galPulse = 1;
     galHover = hover; galPulse *= Math.exp(-dtf / .75);
     if (c.gmelt <= .5 && c.gdis <= 1) { if (galBox) { galBox.style.filter = ""; galBox = null; galS = 0; } return 0; }
-    var target = (hover || halo) ? c.gmelt * (1 + 2.2 * galPulse + sp * .6) * (hover ? 1 : .35) * (wkBox ? .6 : 1) : 0;
+    /* Twist: the ribbon must stay calm under the cursor (a strong, flowing melt read as the whole ribbon trembling up and down), so the melt is gentler there and its noise barely drifts */
+    var twBox = !!window.__twGLon && !wkBox;
+    var target = (hover || halo) ? c.gmelt * (1 + (twBox ? .8 : 2.2) * galPulse + sp * (twBox ? .25 : .6)) * (hover ? 1 : .35) * (wkBox ? .6 : twBox ? .5 : 1) : 0;
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
     galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 14 : 9)));
     if (galS < 1 && target === 0 && !(c.gdis > 1 && galPulse > .02)) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
     var g = galFilter(), br = galBR || box.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100;
     /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
     if (box.style.filter !== "url(#lq-gal)") box.style.filter = "url(#lq-gal)"; galBox = box;
-    g.map.setAttribute("scale", galS.toFixed(2)); var inWk = !!box.closest("#wk"); if (g.wk !== inWk) { g.wk = inWk; g.fin.setAttribute("in2", inWk ? "SourceGraphic" : "nil"); }
+    g.map.setAttribute("scale", galS.toFixed(2)); 
     /* how much of the picture dissolves: a lot at the arrival burst, a light veil while the cursor rests */
     var lvl = ((c.gdis / 100) * Math.min(1, galPulse + (hover ? .2 : .05))).toFixed(3);
     [0, 1, 2].forEach(function (i) { g.sl.parentNode.children[i].setAttribute("slope", lvl); });
     g.turb.setAttribute("baseFrequency", (.0075 * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.012 * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
-    g.off.setAttribute("dx", (Math.sin(now / 900) * 40).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / 1100) * 40).toFixed(1));
+    var fl = twBox ? 10 : 40, fs_ = twBox ? 2.6 : 1; g.off.setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
     g.turb2.setAttribute("baseFrequency", (.0055 * c.gnz / 100 * (1 + .1 * Math.cos(now / 1900))).toFixed(5) + " " + (.009 * c.gnz / 100 * (1 + .1 * Math.sin(now / 2300))).toFixed(5));
     g.off2.setAttribute("dx", (Math.cos(now / 1200) * 45).toFixed(1)); g.off2.setAttribute("dy", (Math.sin(now / 1500) * 45).toFixed(1));
     g.img.setAttribute("x", (mx - br.left - R).toFixed(1)); g.img.setAttribute("y", (my - br.top - R).toFixed(1)); g.img.setAttribute("width", (R * 2).toFixed(1)); g.img.setAttribute("height", (R * 2).toFixed(1));
