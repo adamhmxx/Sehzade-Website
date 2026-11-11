@@ -144,14 +144,14 @@ let C=i.count,sc=i.scaleMode*window.__twS(),w=i.bw*sc,R=window.__twR(i),bt=windo
 qT>=C&&(qT-=L);qT<0&&(qT+=L);let K0=k.current;K0.ox=K0.tx=(qT-(C-1)/2)*R*dh;K0.vx=0;
 gt=s.__gt={row:row,sx0:o[q0].x,gsc:o[q0].sc*BW.grid/i.bw,R:R,dh:dh,kph:.998/(R*Math.tan(bt)),wait:1};s.duration=Math.max(s.duration,5.5)}}
 gt.bad&&(gt=null)}
-if(gt){let T=window.__twTmp||(window.__twTmp=[]),ez=function(v){v=j(v);return v*v*v*(v*(6*v-15)+10)},pr=1-j(s.progress),u=ez(pr/.23),w2=ez((pr-.23)/.13),tB=ez((pr-.36)/.2),tC=ez((pr-.56)/.28),tD=ez((pr-.84)/.16),RW=window.__gTotX,SY=window.__gStepY,kg=BW.grid/i.bw;
+if(gt){let T=window.__twTmp||(window.__twTmp=[]),ez=function(v){v=j(v);return v*v*v*(v*(6*v-15)+10)},pr=1-j(s.progress),u=ez(pr/.26),w2=ez((pr-.26)/.1),lv=ez((u-.55)/.45),tB=ez((pr-.36)/.2),tC=ez((pr-.56)/.28),tD=ez((pr-.84)/.16),RW=window.__gTotX,SY=window.__gStepY,kg=BW.grid/i.bw;
 if(gt.wait||pr>=.36){gt.wait&&(gt.wait=0,tB=tC=tD=1);
 for(let q=0;q<a.length;q++){let d=T[q]||(T[q]=mk0()),f0=o[q];if(!f0||f0.op<=.5){d.op=0;continue}let rw=gt.row[q]||0,sx=f0.x-rw*RW,yf=rw*SY;
 d.op=1;d.x=sx+(f0.x-sx)*tC;d.y=yf*tB+(f0.y-yf)*tD;d.z=f0.z;d.rx=d.ry=d.rz=0;d.sc=f0.sc*kg}
 T.length=a.length;G.draw(i,T,le.current,1)}
 else{for(let q=0;q<a.length;q++){let d=T[q]||(T[q]=mk0());lt(q,e,t,n,r,i,d);if(d.op<=.5){d.op=0;continue}d.op=1;
 let ph=-d.y*gt.kph,an=ph*(1-u),Rt=gt.R/Math.max(.002,1-u),hx=u>.998?gt.R*ph:Rt*Math.sin(an),hz=Rt*(Math.cos(an)-1)+gt.R*.5*(1-u),sxT=gt.sx0+ph/gt.dh*window.__gStepX;
-d.x=hx+(sxT-hx)*w2;d.y=d.y*(1-w2);d.z=hz*(1-w2);d.ry=an*57.2958;d.rx=0;d.rz=0;d.sc=d.sc+(gt.gsc-d.sc)*w2}
+d.x=hx+(sxT-hx)*w2;d.y=d.y*(1-lv);d.z=hz*(1-w2);d.ry=an*57.2958;d.rx=0;d.rz=0;d.sc=d.sc+(gt.gsc-d.sc)*w2}
 T.length=a.length;G.draw(i,T,le.current,u)}
 bx&&bx.style.opacity&&(bx.style.opacity=``)}
 else if(tw2&&i.mode===`grid`&&window.__twGeo&&BW.twister&&!s.seeded){/* the grid has not taken its place yet: one more frame of the resting ribbon */G.draw(i,o,le.current,0,BW.twister);bx&&bx.style.opacity!==`0`&&(bx.style.opacity=`0`)}
@@ -167,12 +167,12 @@ st=s.__tg={ph:ph,rowOf:rowOf}}
 /* the ribbon first uncoils at its own pitch into a straight, slanted band (no turn is ever pressed onto another), then the band levels out to horizontal.
    The band is cut into rows that step to their heights as flat rows, slide sideways into their columns, and only then do the columns take their staggered heights:
    at every moment the cards keep at least the grid's own gap from each other */
-let p=j(s.progress),u=ez(p/.23),w2=ez((p-.23)/.13),tB=ez((p-.36)/.2),tC=ez((p-.56)/.28),tD=ez((p-.84)/.16),kb=i.bw/BW.twister,cb={};
+let p=j(s.progress),u=ez(p/.26),w2=ez((p-.26)/.1),lv=ez((u-.55)/.45),tB=ez((p-.36)/.2),tC=ez((p-.56)/.28),tD=ez((p-.84)/.16),kb=i.bw/BW.twister,cb={};
 for(let q=0;q<a.length;q++){let d=T[q]||(T[q]=mk());lt(q,e,t,n,r,i,d);if(d.op<=.5){d.op=0;continue}d.op=1;d.gx=d.x;d.gy=d.y;d.rw=st.rowOf[i.slots[q]===void 0?q:i.slots[q]]||0;d.rw===0&&(cb[Math.round(d.x/i.stepX)]=d.y)}
 for(let q=0;q<a.length;q++){let d=T[q];if(!d.op)continue;
 let gx=d.gx,gy=d.gy,sx=gx-d.rw*RW,gs=d.sc*kb,f0=o[q],ph=st.ph[q],sg=cb[Math.round(gx/i.stepX)]||0,yf=d.rw*i.stepY;
 if(p<.36){if(ph!==void 0&&f0){let an=ph*(1-u),Rt=geo.R/Math.max(.002,1-u),hx=u>.998?geo.R*ph:Rt*Math.sin(an),hz=Rt*(Math.cos(an)-1)+geo.R*.5*(1-u);
-d.x=hx+(sx-hx)*w2;d.y=f0.y*(1-w2);d.z=hz*(1-w2)+d.z*w2;d.ry=an*57.2958;d.rx=0;d.rz=0;d.sc=f0.sc+(gs-f0.sc)*w2}else{d.x=sx;d.y=0;d.sc=gs;if(w2<1&&Math.abs(sx)<i.viewW*.5+i.bw)d.op=0}}
+/* the ribbon straightens and levels in one go into a horizontal band of touching cards; only then do the gaps open */d.x=hx+(sx-hx)*w2;d.y=f0.y*(1-lv);d.z=hz*(1-w2)+d.z*w2;d.ry=an*57.2958;d.rx=0;d.rz=0;d.sc=f0.sc+(gs-f0.sc)*w2}else{d.x=sx;d.y=0;d.sc=gs;if(w2<1&&Math.abs(sx)<i.viewW*.5+i.bw)d.op=0}}
 else{d.x=sx+(gx-sx)*tC;d.y=yf*tB+(gy-yf)*tD;d.sc=gs}}
 T.length=a.length;G.draw(i,T,le.current,p<.36?u:1,BW.twister);bx&&bx.style.opacity!==`0`&&(bx.style.opacity=`0`)}
 else if(tw2||to2){let p=j(s.progress),ez=function(v){v=j(v);return v<.5?4*v*v*v:1-Math.pow(-2*v+2,3)/2},A=p<.5,k=A?ez(p/.5):1-ez((p-.5)/.5),T=window.__twTmp||(window.__twTmp=[]),H2=i.viewH,src=A?s.from:i.mode,far=H2*(src===`twister`?1.45:1.2),one=tw2&&i.mode===`list`?-1:to2&&s.from===`list`?1:0;/* to the List the whole ribbon rises out through the top; back from the List it comes up from below */one&&(far=H2*2.5);
