@@ -119,17 +119,24 @@ let tw2=mo&&s.from===`twister`&&(i.mode===`grid`||i.mode===`list`),to2=mo&&i.mod
 
 /* the grid's seats are handed out so that, read along its rows, the cards follow each other in their own order (the order they have on the ribbon):
    that is what lets the ribbon be cut into rows, and the rows be joined into a ribbon again, without two cards ever having to swap places */
-let mk0=function(){return{x:0,y:0,z:0,rx:0,ry:0,rz:0,sc:1,op:0,bl:0,bd:0,gs:0}},seatG=function(V){let pre=[],cl={},rowOf={},seats=[],oth=[],inV={};
-for(let q=0;q<a.length;q++){let d=mk0();lt(q,e,t,n,r,i,d);if(d.op<=.5)continue;let se=i.slots[q]===void 0?q:i.slots[q],ck=Math.round(d.x/i.stepX);(cl[ck]||(cl[ck]=[])).push({se:se,y:d.y});pre.push([q,se,d.x])}
-Object.keys(cl).forEach(function(ck){let L=cl[ck].sort(function(m,z){return m.y-z.y}),zi=0;for(let z=0;z<L.length;z++)Math.abs(L[z].y)<Math.abs(L[zi].y)&&(zi=z);for(let z=0;z<L.length;z++)rowOf[L[z].se]=z-zi});
-for(let z=0;z<V.length;z++)inV[V[z]]=1;
-for(let z=0;z<pre.length;z++){seats.push({seat:pre[z][1],sx:pre[z][2]-rowOf[pre[z][1]]*i.totalX});inV[pre[z][0]]||oth.push(pre[z][0])}
-V=V.filter(function(q){for(let z=0;z<pre.length;z++)if(pre[z][0]===q)return!0;return!1});
-seats.sort(function(m,z){return m.sx-z.sx});let m0=0;for(let z=0;z<seats.length;z++)Math.abs(seats[z].sx)<Math.abs(seats[m0].sx)&&(m0=z);
-let b0=Math.max(0,Math.min(seats.length-V.length,m0-(V.length>>1))),N=a.length,vl=V.length?V[V.length-1]:-1,nA=seats.length-b0-V.length;
-oth.sort(function(m,z){return((m-vl-1)%N+N)%N-((z-vl-1)%N+N)%N});let seq=oth.slice(nA).concat(V,oth.slice(0,nA));
-for(let z=0;z<seats.length&&z<seq.length;z++)i.slots[seq[z]]=seats[z].seat;return rowOf};
-if(s.active&&i.mode===`grid`&&s.from===`list`&&s.seeded&&!s.__ord){s.__ord=1;seatG([])}
+let mk0=function(){return{x:0,y:0,z:0,rx:0,ry:0,rz:0,sc:1,op:0,bl:0,bd:0,gs:0}},seatG=function(V,v0){let pre=[],cl={},rowOf={},colOf={},L=K.length||1,used={},want=[],left=[],bn={};
+for(let q=0;q<a.length;q++){let d=mk0();lt(q,e,t,n,r,i,d);if(d.op<=.5)continue;let se=i.slots[q]===void 0?q:i.slots[q],ck=Math.round(d.x/i.stepX);(cl[ck]||(cl[ck]=[])).push({se:se,y:d.y});colOf[se]=ck;pre.push([q,se,d.x])}
+Object.keys(cl).forEach(function(ck){let C=cl[ck].sort(function(m,z){return m.y-z.y}),zi=0;for(let z=0;z<C.length;z++)Math.abs(C[z].y)<Math.abs(C[zi].y)&&(zi=z);for(let z=0;z<C.length;z++)rowOf[C[z].se]=z-zi});
+/* WHICH picture sits where: along a row the pictures follow each other in order, and every row starts S pictures further on. S is chosen so that the two
+   places that show the same picture are as far apart as the screen allows (best case: never on screen together; otherwise only thin slices of both) */
+let S=1,best=1e18,cw=i.cardW,chh=i.cardW*.75;for(let s2=1;s2<L;s2++){let worst=0;for(let dc=-7;dc<=7;dc++)for(let dr=-5;dr<=5;dr++){if(!dc&&!dr||((dc+s2*dr)%L+L)%L)continue;
+let vx=Math.min(i.viewW,i.viewW-(Math.abs(dc)*i.stepX-cw)),vy=Math.min(i.viewH,i.viewH-(Math.abs(dr)*i.stepY-chh));vx>0&&vy>0&&(worst=Math.max(worst,vx*vy))}worst<best&&(best=worst,S=s2)}
+window.__gridS=[S,Math.round(best)];
+let R0=pre.filter(function(z){return rowOf[z[1]]===0}).sort(function(m,z){return m[2]-z[2]}),m0=0;for(let z=0;z<R0.length;z++)Math.abs(R0[z][2])<Math.abs(R0[m0][2])&&(m0=z);
+V=V||[];v0=v0||0;let ok=function(q){for(let z=0;z<pre.length;z++)if(pre[z][0]===q)return!0;return!1},base=V.length&&R0.length?V[v0]%L:0,ck0=R0.length?colOf[R0[m0][1]]:0,taken={},span=Math.ceil(i.viewW/2/i.stepX)+1;
+/* the cards of the ribbon that are on screen take the middle row, in their own order: that row IS the ribbon when the two modes change into each other */
+for(let z=0;z<V.length;z++){bn[V[z]]=z-v0;let m=m0+z-v0;if(m>=0&&m<R0.length&&ok(V[z])&&Math.abs(z-v0)<=span){i.slots[V[z]]=R0[m][1];used[V[z]]=1;taken[R0[m][1]]=1}}
+for(let z=0;z<pre.length;z++){let se=pre[z][1];taken[se]||want.push({se:se,res:(((base+colOf[se]-ck0+S*rowOf[se])%L)+L)%L,pr:Math.abs(colOf[se]-ck0)+Math.abs(rowOf[se])})}
+want.sort(function(m,z){return m.pr-z.pr});
+for(let z=0;z<want.length;z++){let got=-1;for(let y=0;y<pre.length;y++){let q=pre[y][0];if(!used[q]&&q%L===want[z].res){got=q;break}}got<0?left.push(want[z]):(used[got]=1,i.slots[got]=want[z].se)}
+for(let z=0;z<left.length;z++)for(let y=0;y<pre.length;y++){let q=pre[y][0];if(!used[q]){used[q]=1;i.slots[q]=left[z].se;break}}
+window.__gridLeft=left.length;return{rowOf:rowOf,bn:bn,x0:R0.length?R0[m0][2]:0}};
+if(s.active&&i.mode===`grid`&&s.from===`list`&&s.seeded&&!s.__ord){s.__ord=1;seatG([],0)}
 /* Grid -> Twist, the same film backwards: the columns drop their stagger, the rows slide apart into a staircase and settle into one straight horizontal band,
    and the band then tilts and coils into the ribbon. (Only when the middle row reads in order across the screen; otherwise the curtain change below is used.) */
 let gt=null;if(to2&&s.from===`grid`&&BW.grid&&window.__gStepX&&window.__twGLok){gt=s.__gt;if(!gt){gt=s.__gt={bad:1};
@@ -162,8 +169,8 @@ let geo=window.__twGeo,ez=function(v){v=j(v);return v*v*v*(v*(6*v-15)+10)},T=win
 if(!st){s.duration=Math.max(s.duration,8);let kph=.998/(geo.R*Math.tan(geo.bt));
 /* the rows of the grid, by seat (the columns of the grid are staggered in height, so a card's height alone does not tell its row) */
 let V=[],ph={};for(let q=0;q<a.length;q++)o[q]&&o[q].op>.5&&V.push({q:q,ph:-o[q].y*kph});V.sort(function(m,z){return m.ph-z.ph});
-let rowOf=seatG(V.map(function(z){return z.q}));for(let z=0;z<V.length;z++)ph[V[z].q]=V[z].ph;
-st=s.__tg={ph:ph,rowOf:rowOf}}
+let vc=0;for(let z=0;z<V.length;z++)Math.abs(V[z].ph)<Math.abs(V[vc].ph)&&(vc=z);let sg=seatG(V.map(function(z){return z.q}),vc);for(let z=0;z<V.length;z++)ph[V[z].q]=V[z].ph;
+st=s.__tg={ph:ph,rowOf:sg.rowOf,bn:sg.bn,x0:sg.x0}}
 /* the ribbon first uncoils at its own pitch into a straight, slanted band (no turn is ever pressed onto another), then the band levels out to horizontal.
    The band is cut into rows that step to their heights as flat rows, slide sideways into their columns, and only then do the columns take their staggered heights:
    at every moment the cards keep at least the grid's own gap from each other */
@@ -172,7 +179,7 @@ for(let q=0;q<a.length;q++){let d=T[q]||(T[q]=mk());lt(q,e,t,n,r,i,d);if(d.op<=.
 for(let q=0;q<a.length;q++){let d=T[q];if(!d.op)continue;
 let gx=d.gx,gy=d.gy,sx=gx-d.rw*RW,gs=d.sc*kb,f0=o[q],ph=st.ph[q],sg=cb[Math.round(gx/i.stepX)]||0,yf=d.rw*i.stepY;
 if(p<.42){if(ph!==void 0&&f0){let an=ph*(1-u),Rt=geo.R/Math.max(.002,1-u),hx=u>.998?geo.R*ph:Rt*Math.sin(an),hz=Rt*(Math.cos(an)-1)+geo.R*.5*(1-u);
-/* the ribbon straightens and levels in one go into a horizontal band of touching cards; only then do the gaps open */d.x=hx+(sx-hx)*w2;d.y=f0.y*(1-lv);d.z=hz*(1-w2)+d.z*w2;d.ry=an*57.2958;d.rx=0;d.rz=0;d.sc=f0.sc+(gs-f0.sc)*w2}else{d.x=sx;d.y=0;d.sc=gs;if(w2<1&&Math.abs(sx)<i.viewW*.5+i.bw)d.op=0}}
+/* the ribbon straightens and levels in one go into a horizontal band of touching cards; only then do the gaps open */let sxB=st.x0+(st.bn[q]||0)*i.stepX;d.x=hx+(sxB-hx)*w2;d.y=f0.y*(1-lv);d.z=hz*(1-w2)+d.z*w2;d.ry=an*57.2958;d.rx=0;d.rz=0;d.sc=f0.sc+(gs-f0.sc)*w2}else{d.x=sx;d.y=0;d.sc=gs;if(w2<1&&Math.abs(sx)<i.viewW*.5+i.bw)d.op=0}}
 else{d.x=sx+(gx-sx)*tC;d.y=yf*tB+(gy-yf)*tD;d.sc=gs}}
 T.length=a.length;G.draw(i,T,le.current,p<.42?u:1,BW.twister);bx&&bx.style.opacity!==`0`&&(bx.style.opacity=`0`)}
 else if(tw2||to2){let p=j(s.progress),ez=function(v){v=j(v);return v<.5?4*v*v*v:1-Math.pow(-2*v+2,3)/2},A=p<.5,k=A?ez(p/.5):1-ez((p-.5)/.5),T=window.__twTmp||(window.__twTmp=[]),H2=i.viewH,src=A?s.from:i.mode,far=H2*(src===`twister`?1.45:1.2),one=tw2&&i.mode===`list`?-1:to2&&s.from===`list`?1:0;/* to the List the whole ribbon rises out through the top; back from the List it comes up from below */one&&(far=H2*2.5);
