@@ -119,8 +119,8 @@ let tw2=mo&&s.from===`twister`&&(i.mode===`grid`||i.mode===`list`),to2=mo&&i.mod
 if(tw2&&i.mode===`grid`&&window.__twGeo&&BW.twister){
 /* Twist -> Grid: the ribbon uncoils into one straight horizontal band (its cards keep their order), the band is then cut into the rows of the grid, which
    first step up and down to their heights (a staircase, nothing touching) and then slide sideways into place. */
-let geo=window.__twGeo,ez=function(v){v=j(v);return v<.5?4*v*v*v:1-Math.pow(-2*v+2,3)/2},T=window.__twTmp||(window.__twTmp=[]),RW=i.totalX,row=function(y){return Math.round(y/i.stepY)},mk=function(){return{x:0,y:0,z:0,rx:0,ry:0,rz:0,sc:1,op:0,bl:0,bd:0,gs:0}},st=s.__tg;
-if(!st){s.duration=Math.max(s.duration,2.6);let kph=.998/(geo.R*Math.tan(geo.bt)),seats=[],V=[],oth=[];
+let geo=window.__twGeo,ez=function(v){v=j(v);return v*v*v*(v*(6*v-15)+10)},T=window.__twTmp||(window.__twTmp=[]),RW=i.totalX,row=function(y){return Math.round(y/i.stepY)},mk=function(){return{x:0,y:0,z:0,rx:0,ry:0,rz:0,sc:1,op:0,bl:0,bd:0,gs:0}},st=s.__tg;
+if(!st){s.duration=Math.max(s.duration,4);let kph=.998/(geo.R*Math.tan(geo.bt)),seats=[],V=[],oth=[];
 for(let q=0;q<a.length;q++){let d=mk();lt(q,e,t,n,r,i,d);if(d.op<=.5)continue;seats.push({seat:i.slots[q]===void 0?q:i.slots[q],sx:d.x-row(d.y)*RW});o[q]&&o[q].op>.5?V.push({q:q,ph:-o[q].y*kph}):oth.push(q)}
 seats.sort(function(m,z){return m.sx-z.sx});V.sort(function(m,z){return m.ph-z.ph});
 let m0=0,v0=0;for(let z=0;z<seats.length;z++)Math.abs(seats[z].sx)<Math.abs(seats[m0].sx)&&(m0=z);for(let z=0;z<V.length;z++)Math.abs(V[z].ph)<Math.abs(V[v0].ph)&&(v0=z);
