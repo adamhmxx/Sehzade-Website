@@ -149,10 +149,10 @@ for(let z=0;z+1<mid.length;z++){if(Math.max(Math.abs(o[mid[z]].x),Math.abs(o[mid
 if(okk){let q0=mid[0];for(let z=0;z<mid.length;z++)Math.abs(o[mid[z]].x)<Math.abs(o[q0].x)&&(q0=mid[z]);
 let C=i.count,sc=i.scaleMode*window.__twS(),w=i.bw*sc,R=window.__twR(i),bt=window.__twG(i.viewW,i.cardW).bt,dh=w*Math.cos(bt)/R*(window.__gc(`twg`,100)/100)*.998,qT=q0%L+L*Math.round(((C-1)/2-q0%L)/L);
 qT>=C&&(qT-=L);qT<0&&(qT+=L);let K0=k.current;K0.ox=K0.tx=(qT-(C-1)/2)*R*dh;K0.vx=0;
-gt=s.__gt={row:row,sx0:o[q0].x,gsc:o[q0].sc*BW.grid/i.bw,R:R,dh:dh,kph:.998/(R*Math.tan(bt)),bt:bt,wait:1};s.duration=Math.max(s.duration,8)}}
+gt=s.__gt={row:row,sx0:o[q0].x,gsc:o[q0].sc*BW.grid/i.bw,R:R,dh:dh,kph:.998/(R*Math.tan(bt)),bt:bt,wait:1};s.duration=Math.max(s.duration,6.5)}}
 gt.bad&&(gt=null)}
-if(gt){let T=window.__twTmp||(window.__twTmp=[]),ez=function(v){v=j(v);return v*v*v*(v*(6*v-15)+10)},pr=1-j(s.progress),u=ez(pr/.3),w2=ez((pr-.3)/.12),lv=ez((u-.55)/.45),tB=ez((pr-.42)/.2),tC=ez((pr-.62)/.26),tD=ez((pr-.88)/.12),RW=window.__gTotX,SY=window.__gStepY,kg=BW.grid/i.bw;
-if(gt.wait||pr>=.42){gt.wait&&(gt.wait=0,tB=tC=tD=1);
+if(gt){let T=window.__twTmp||(window.__twTmp=[]),ez=function(v){v=j(v);return v*v*v*(v*(6*v-15)+10)},pr=1-j(s.progress),u=ez(pr/.37),w2=ez((pr-.37)/.15),lv=ez((u-.55)/.45),tB=1,tC=ez((pr-.3)/.55),tD=ez((pr-.85)/.15),RW=window.__gTotX,SY=window.__gStepY,kg=BW.grid/i.bw;
+if(gt.wait||pr>=.52){gt.wait&&(gt.wait=0,tB=tC=tD=1);
 for(let q=0;q<a.length;q++){let d=T[q]||(T[q]=mk0()),f0=o[q];if(!f0||f0.op<=.5){d.op=0;continue}let rw=gt.row[q]||0,sx=f0.x-rw*RW,yf=rw*SY;
 d.op=1;d.x=sx+(f0.x-sx)*tC;d.y=yf*tB+(f0.y-yf)*tD;d.z=f0.z;d.rx=d.ry=d.rz=0;d.sc=f0.sc*kg}
 T.length=a.length;G.draw(i,T,le.current,1)}
@@ -166,7 +166,7 @@ else if(tw2&&i.mode===`grid`&&window.__twGeo&&BW.twister){
 /* Twist -> Grid: the ribbon uncoils into one straight horizontal band (its cards keep their order), the band is then cut into the rows of the grid, which
    first step up and down to their heights (a staircase, nothing touching) and then slide sideways into place. */
 let geo=window.__twGeo,ez=function(v){v=j(v);return v*v*v*(v*(6*v-15)+10)},T=window.__twTmp||(window.__twTmp=[]),RW=i.totalX,row=function(y){return Math.round(y/i.stepY)},mk=function(){return{x:0,y:0,z:0,rx:0,ry:0,rz:0,sc:1,op:0,bl:0,bd:0,gs:0}},st=s.__tg;
-if(!st){s.duration=Math.max(s.duration,8);let kph=.998/(geo.R*Math.tan(geo.bt));
+if(!st){s.duration=Math.max(s.duration,6.5);let kph=.998/(geo.R*Math.tan(geo.bt));
 /* the rows of the grid, by seat (the columns of the grid are staggered in height, so a card's height alone does not tell its row) */
 let V=[],ph={};for(let q=0;q<a.length;q++)o[q]&&o[q].op>.5&&V.push({q:q,ph:-o[q].y*kph});V.sort(function(m,z){return m.ph-z.ph});
 let vc=0;for(let z=0;z<V.length;z++)Math.abs(V[z].ph)<Math.abs(V[vc].ph)&&(vc=z);let sg=seatG(V.map(function(z){return z.q}),vc);for(let z=0;z<V.length;z++)ph[V[z].q]=V[z].ph;
@@ -174,15 +174,15 @@ st=s.__tg={ph:ph,rowOf:sg.rowOf,bn:sg.bn,x0:sg.x0}}
 /* the ribbon first uncoils at its own pitch into a straight, slanted band (no turn is ever pressed onto another), then the band levels out to horizontal.
    The band is cut into rows that step to their heights as flat rows, slide sideways into their columns, and only then do the columns take their staggered heights:
    at every moment the cards keep at least the grid's own gap from each other */
-let p=j(s.progress),u=ez(p/.3),w2=ez((p-.3)/.12),lv=ez((u-.55)/.45),tB=ez((p-.42)/.2),tC=ez((p-.62)/.26),tD=ez((p-.88)/.12),kb=i.bw/BW.twister,cb={};
+let p=j(s.progress),/* (the other rows take their heights while they are still far off to the sides, unseen: no time is spent on it, so nothing ever seems to stand still) */u=ez(p/.37),w2=ez((p-.37)/.15),lv=ez((u-.55)/.45),tB=1,tC=ez((p-.3)/.55),tD=ez((p-.85)/.15),kb=i.bw/BW.twister,cb={};
 for(let q=0;q<a.length;q++){let d=T[q]||(T[q]=mk());lt(q,e,t,n,r,i,d);if(d.op<=.5){d.op=0;continue}d.op=1;d.gx=d.x;d.gy=d.y;d.rw=st.rowOf[i.slots[q]===void 0?q:i.slots[q]]||0;d.rw===0&&(cb[Math.round(d.x/i.stepX)]=d.y)}
-let SH=p<.42?(window.__twShA=[]):null,shv=-(u-lv)*Math.sin(geo.bt);
+let SH=p<.52?(window.__twShA=[]):null,shv=-(u-lv)*Math.sin(geo.bt);
 for(let q=0;q<a.length;q++){let d=T[q];if(!d.op)continue;
 let gx=d.gx,gy=d.gy,sx=gx-d.rw*RW,gs=d.sc*kb,f0=o[q],ph=st.ph[q],sg=cb[Math.round(gx/i.stepX)]||0,yf=d.rw*i.stepY;
-if(p<.42){if(ph!==void 0&&f0){let an=ph*(1-u),Rt=geo.R/Math.max(.002,1-u),hx=u>.998?geo.R*ph:Rt*Math.sin(an),hz=Rt*(Math.cos(an)-1)+geo.R*.5*(1-u);
+if(p<.52){if(ph!==void 0&&f0){let an=ph*(1-u),Rt=geo.R/Math.max(.002,1-u),hx=u>.998?geo.R*ph:Rt*Math.sin(an),hz=Rt*(Math.cos(an)-1)+geo.R*.5*(1-u);
 /* the ribbon straightens and levels in one go into a horizontal band of touching cards; only then do the gaps open */SH[q]=shv;let sxB=st.x0+(st.bn[q]||0)*i.stepX;d.x=hx+(sxB-hx)*w2;d.y=f0.y*(1-lv);d.z=hz*(1-w2)+d.z*w2;d.ry=an*57.2958;d.rx=0;d.rz=0;d.sc=f0.sc+(gs-f0.sc)*w2}else{d.x=sx;d.y=0;d.sc=gs;if(w2<1&&Math.abs(sx)<i.viewW*.5+i.bw)d.op=0}}
 else{d.x=sx+(gx-sx)*tC;d.y=yf*tB+(gy-yf)*tD;d.sc=gs}}
-T.length=a.length;G.draw(i,T,le.current,p<.42?u:1,BW.twister);bx&&bx.style.opacity!==`0`&&(bx.style.opacity=`0`)}
+T.length=a.length;G.draw(i,T,le.current,p<.52?u:1,BW.twister);bx&&bx.style.opacity!==`0`&&(bx.style.opacity=`0`)}
 else if(tw2||to2){let p=j(s.progress),ez=function(v){v=j(v);return v<.5?4*v*v*v:1-Math.pow(-2*v+2,3)/2},A=p<.5,k=A?ez(p/.5):1-ez((p-.5)/.5),T=window.__twTmp||(window.__twTmp=[]),H2=i.viewH,src=A?s.from:i.mode,far=H2*(src===`twister`?1.45:1.2),one=tw2&&i.mode===`list`?-1:to2&&s.from===`list`?1:0;/* to the List the whole ribbon rises out through the top; back from the List it comes up from below */one&&(far=H2*2.5);
 for(let q=0;q<a.length;q++){let d=T[q]||(T[q]={x:0,y:0,z:0,rx:0,ry:0,rz:0,sc:1,op:0,bl:0,bd:0,gs:0}),f0;
 if(A){f0=o[q];if(!f0){d.op=0;continue}d.x=f0.x;d.y=f0.y;d.z=f0.z;d.rx=f0.rx;d.ry=f0.ry;d.rz=f0.rz;d.sc=f0.sc;d.op=f0.op>.5?1:0}
