@@ -314,7 +314,7 @@
         tgt.style.filter = fl;
       } else if (st.set) { tgt.style.filter = ""; st.set = 0; }
     }
-    var galOn = !ABOUT && inside && c.on && !drag_ && !(TOP && window.__abOpen) && !window.__wkMove && !(window.__hoverLock && window.__hoverLock());
+    var galOn = !ABOUT && inside && c.on && !drag_ && !(TOP && window.__abOpen) && !window.__wkMove && !window.__modeMove && !(window.__hoverLock && window.__hoverLock());
     var twAny = ABOUT ? (jellyFx(c, sp, inside && c.on && !drag_, now, dtf) ? 1 : 0) : ((jellyFx(c, sp, galOn, now, dtf) ? 1 : 0) | (galFx(c, sp, galOn, now, dtf) ? 1 : 0));
     idle = active || twAny || inside ? 0 : idle + 1;
     if (inside || active || idle < 40) requestAnimationFrame(step); else run = false;
