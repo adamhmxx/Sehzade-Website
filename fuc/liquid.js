@@ -171,7 +171,7 @@
        picture is eaten away in patches of a second, slower noise, so it breaks up and sinks into the dark background. Both are strongest right when the
        cursor arrives and calm down to a gentle ripple. */
     f.innerHTML =
-      '<feTurbulence type="fractalNoise" baseFrequency="0.0075 0.012" numOctaves="2" seed="3" result="n"/>' +
+      '<feTurbulence type="fractalNoise" baseFrequency="0.0075 0.012" numOctaves="1" seed="3" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="no"/>' +
       '<feColorMatrix in="no" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1" result="n1"/>' +
       '<feFlood flood-color="#000" flood-opacity="1" result="black"/>' +
@@ -213,13 +213,13 @@
     var wkBox = !!box.closest("#wk");
     /* in the scroll of a project page the pictures drift under a resting cursor: only a cursor that really moves onto a picture fires the opening burst */
     if (hover && hover !== galHover && !(wkBox && sp < .03)) galPulse = 1;
-    galHover = hover; galPulse *= Math.exp(-dtf / .75);
+    galHover = hover; galPulse *= Math.exp(-dtf / 1.1);
     if (c.gmelt <= .5 && c.gdis <= 1) { if (galBox) { galBox.style.filter = ""; galBox = null; galS = 0; } return 0; }
     /* Twist: the ribbon must stay calm under the cursor (a strong, flowing melt read as the whole ribbon trembling up and down), so the melt is gentler there and its noise barely drifts */
-    var twBox = !!window.__twGLon && !wkBox;
-    var target = (hover || halo) ? c.gmelt * (1 + (twBox ? .8 : 2.2) * galPulse + sp * (twBox ? .25 : .6)) * (hover ? 1 : .35) * (wkBox ? .6 : twBox ? .5 : 1) : 0;
+    /* one recipe everywhere (Twist, Grid, project page): the same strength, the same soft opening swell and the same slow drift, so the hover feels the same on every page */
+    var target = (hover || halo) ? c.gmelt * .6 * (1 + 1.1 * galPulse + sp * .35) * (hover ? 1 : .35) : 0;
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
-    galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 14 : 9)));
+    galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 6.5 : 4)));   /* it swells in and settles slowly, like liquid, instead of snapping */
     if (galS < 1 && target === 0 && !(c.gdis > 1 && galPulse > .02)) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
     var g = galFilter(), br = galBR || box.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100;
     /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
@@ -229,7 +229,7 @@
     var lvl = ((c.gdis / 100) * Math.min(1, galPulse + (hover ? .2 : .05))).toFixed(3);
     [0, 1, 2].forEach(function (i) { g.sl.parentNode.children[i].setAttribute("slope", lvl); });
     g.turb.setAttribute("baseFrequency", (.0075 * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.012 * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
-    var fl = twBox ? 10 : 40, fs_ = twBox ? 2.6 : 1; g.off.setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
+    var fl = 16, fs_ = 2.2; g.off.setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
     g.turb2.setAttribute("baseFrequency", (.0055 * c.gnz / 100 * (1 + .1 * Math.cos(now / 1900))).toFixed(5) + " " + (.009 * c.gnz / 100 * (1 + .1 * Math.sin(now / 2300))).toFixed(5));
     g.off2.setAttribute("dx", (Math.cos(now / 1200) * 45).toFixed(1)); g.off2.setAttribute("dy", (Math.sin(now / 1500) * 45).toFixed(1));
     g.img.setAttribute("x", (mx - br.left - R).toFixed(1)); g.img.setAttribute("y", (my - br.top - R).toFixed(1)); g.img.setAttribute("width", (R * 2).toFixed(1)); g.img.setAttribute("height", (R * 2).toFixed(1));
