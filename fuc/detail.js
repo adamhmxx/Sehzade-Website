@@ -30,6 +30,7 @@
       '#wk.air{background:transparent}#wk.air .wk-in{opacity:0!important;transition:none!important}#wk.air .wk-bar{visibility:hidden}.wk-hide{visibility:hidden!important}' +
       /* the text rises in, one piece after the other */
       /* the text arrives the way everything on this site does: it dissolves in out of a liquid ripple that calms down (see liquidIn), one block after the other */
+      'html.lr-in #ls-root{opacity:1!important;visibility:visible!important}html.lr-in #ls-root .ls-row{clip-path:none!important;translate:0 0!important;opacity:1!important;transition:translate 1.2s cubic-bezier(.22,1,.36,1),opacity .8s ease!important}html.lr-in #ls-pv,html.lr-in #ls-mpv{opacity:0!important}' +
       '#wk.lout .wk-in:not(.wk-r):not(.wk-name){opacity:0!important;transition:none!important}#wk.lout .wk-bar{visibility:hidden}' +
       '#wk .wk-in{opacity:0;transform:translateY(18px);transition:opacity .9s ease,transform 1.1s cubic-bezier(.22,1,.36,1)}' +
       /* ...and so are the pictures of the scroll: each one rises into its frame, in turn */
@@ -343,8 +344,8 @@
   /* project -> List: the picture scroll slides away to the right, then the project's name flies back to its line in the list */
   function listBack(gone) {
     var h1 = ov.querySelector(".wk-name"), sp = h1 && h1.querySelector("span"), r = ov.querySelector(".wk-r"), name = sp ? sp.textContent.trim().toLowerCase() : "", dead = false, clone = null, row = null;
-    ov.classList.add("lout"); root.classList.add("lr-hold");
-    inFlight = function () { dead = true; if (clone) clone.remove(); if (row) row.style.visibility = ""; };
+    ov.classList.add("lout"); if (window.__lsLock) window.__lsLock(3200); root.classList.add("lr-out");
+    inFlight = function () { dead = true; if (clone) clone.remove(); if (row) row.style.visibility = ""; root.classList.remove("lr-in", "lr-out"); };
     if (r) r.animate([{ transform: "translateX(0)" }, { transform: "translateX(106%)" }], { duration: 650, easing: "cubic-bezier(.6,0,.85,.35)", fill: "forwards" });
     setTimeout(function () {
       if (dead || shown) return;
@@ -355,13 +356,15 @@
       });
       if (!row || !sp) { gone(); return; }
       var sb = sp.getBoundingClientRect(), fs2 = parseFloat(getComputedStyle(h1).fontSize) || 120, rg = document.createRange(); rg.selectNodeContents(row);
-      var tr = rg.getBoundingClientRect(), k2 = (parseFloat(getComputedStyle(row).fontSize) || 40) / fs2;
+      var tr0 = rg.getBoundingClientRect(), tx0 = parseFloat(getComputedStyle(row).translate) || 0, tr = { left: tr0.left - tx0, top: tr0.top, height: tr0.height };
+      root.classList.add("lr-in"); root.classList.remove("lr-out");   /* the other names come back in from the sides while the title travels home */
+      var k2 = (parseFloat(getComputedStyle(row).fontSize) || 40) / fs2;
       clone = el("div", "", sp.textContent);
       clone.style.cssText = "position:fixed;z-index:4;left:" + sb.left + "px;top:" + sb.top + "px;width:" + (sb.width + 1) + "px;font:400 " + fs2 + 'px/.92 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;color:#f2f2f2;overflow-wrap:anywhere;pointer-events:none;transform-origin:0 0;will-change:transform';
       document.body.appendChild(clone); h1.style.visibility = "hidden"; row.style.visibility = "hidden"; ov.classList.add("air");
-      var a = clone.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (tr.left - sb.left) + "px," + (tr.top + tr.height / 2 - clone.offsetHeight * k2 / 2 - sb.top) + "px,0) scale(" + k2 + ")" }], { duration: 900, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
-      var fin = 0, end = function () { if (fin || dead) return; fin = 1; row.style.visibility = ""; clone.remove(); clone = null; gone(); };
-      a.onfinish = end; setTimeout(end, 1500);
+      var a = clone.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (tr.left - sb.left) + "px," + (tr.top + tr.height / 2 - clone.offsetHeight * k2 / 2 - sb.top) + "px,0) scale(" + k2 + ")" }], { duration: 1150, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+      var fin = 0, end = function () { if (fin || dead) return; fin = 1; row.style.visibility = ""; clone.remove(); clone = null; gone(); setTimeout(function () { root.classList.remove("lr-in"); }, 400); };
+      a.onfinish = end; setTimeout(end, 1900);
     }, 650);
   }
   function onScreen(r) { return r && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
@@ -391,9 +394,14 @@
         if (o.tw) { twFlight(card, big, false, land); inFlight = function () { flTok++; window.__twX = null; }; }
         else if (mode === "list") {
           /* the name goes to its place first, then the picture rises into the scroll, then the text comes */
-          var h1 = ov.querySelector(".wk-name"), nm = listName, rmName = nameFly(nm, h1, 900);
+          /* the other names drift away to the left and the right while the chosen one travels */
+          if (window.__lsLock) window.__lsLock(2600);
+          if (listRow) listRow.style.visibility = "hidden";
+          root.classList.add("lr-hold"); void document.body.offsetWidth; root.classList.add("lr-out"); root.classList.remove("lr-hold");
+          setTimeout(function () { root.classList.remove("lr-out"); if (listRow) listRow.style.visibility = ""; }, 1000);
+          var h1 = ov.querySelector(".wk-name"), nm = listName, rmName = nameFly(nm, h1, 1150);
           var fin = function () { if (h1 && nm) { h1.classList.add("wk-now"); setTimeout(function () { h1.classList.remove("wk-now"); }, 400); } land(); rmName(); };
-          var killL = fs ? flyBox(big, ff, fs, false, 550, 1200, fin) : (setTimeout(fin, 950), function () {});
+          var killL = fs ? flyBox(big, ff, fs, false, 500, 1350, fin) : (setTimeout(fin, 1250), function () {});
           inFlight = function () { killL(); rmName(); };
         }
         else {
@@ -411,7 +419,7 @@
     window.__wkOpen = false; root.classList.remove("wk-open");
     var gone = function () {
       inFlight = null; window.__wkMove = false; pin = null; if (shown) return;
-      ov.classList.remove("on", "air", "lout"); root.classList.remove("lr-hold"); airOff(); if (strip) { strip.destroy(); strip = null; }
+      ov.classList.remove("on", "air", "lout"); root.classList.remove("lr-hold", "lr-out"); airOff(); if (strip) { strip.destroy(); strip = null; }
     };
     if (inFlight) { inFlight(); o = null; window.__twX = null; }   /* Back while the picture was still on its way in: everything snaps home */
     var lb = o && o.mode === "list" && !reduce && !!ov.animate;
@@ -468,10 +476,10 @@
   }
   window.__wkGo = go;
   /* List: remember where the clicked name and the picture are, before the list goes away */
-  var lastP = [innerWidth / 2, innerHeight / 2], listName = null;
+  var lastP = [innerWidth / 2, innerHeight / 2], listName = null, listRow = null;
   addEventListener("pointerdown", function (e) { lastP = [e.clientX, e.clientY]; }, true);
   function listFrom(it) {
-    listName = null;
+    listName = null; listRow = null;
     var lr = document.getElementById("ls-root"); if (!lr || getComputedStyle(lr).visibility === "hidden" || flyFrom) return;
     var pic = null; ["ls-pv", "ls-mpv"].forEach(function (id) { var n = document.getElementById(id); if (!n || pic) return; var r = n.getBoundingClientRect(); if (r.width > 40 && r.height > 40 && +getComputedStyle(n).opacity > .2 && r.bottom > 0 && r.top < innerHeight) pic = { el: n, r: r }; });
     var row = null, bd = 1e18, nm = String(it.name).trim().toLowerCase();
@@ -479,6 +487,7 @@
       if (n.textContent.trim().toLowerCase() !== nm) return; var r = n.getBoundingClientRect(); if (!r.height || r.bottom < 0 || r.top > innerHeight) return;
       var dd = Math.abs(r.top + r.height / 2 - lastP[1]); if (dd < bd) { bd = dd; row = n; }
     });
+    listRow = row;
     if (row) { var rg = document.createRange(); rg.selectNodeContents(row); var tr = rg.getBoundingClientRect(); listName = { text: row.textContent.trim(), r: tr, fs: parseFloat(getComputedStyle(row).fontSize) || 40 }; }
     if (pic && it.image && it.image.src) { flyFrom = pic.r; flyCard = pic.el; flyMode = "list"; flySrc = sm(it.image.src); }
     else if (row) { var c = listName.r; flyFrom = { left: c.left + c.width / 2 - 2, top: c.top + c.height / 2 - 1.5, width: 4, height: 3 }; flyCard = row; flyMode = "list"; flySrc = sm((it.image && it.image.src) || ""); }

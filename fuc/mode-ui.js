@@ -302,6 +302,7 @@
     hint.classList.toggle("on", ok && i >= 0 && i < LIST);
   }
 
+  window.__lsLock = function (ms) { sync.lock = performance.now() + ms; };   /* the project page asks the list not to rebuild itself while its names are moving */
   function start() {
     var t0 = setInterval(function () { if (tabs().length) { clearInterval(t0); sync(); watch(); } }, 200);
   }
