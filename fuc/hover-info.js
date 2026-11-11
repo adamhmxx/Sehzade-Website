@@ -62,7 +62,7 @@
     clearTimeout(hideT); hideT = 0;
     if (key !== shownKey) {
       shownKey = key; el.textContent = "";
-      [[it.name, ""], [it.description, ""], [it.year, ""]].forEach(function (p) { if (!p[0]) return; var d = document.createElement("div"); if (p[1]) d.className = p[1]; d.textContent = p[0]; el.appendChild(d); });
+      [[it.name, ""], [it.year, ""]].forEach(function (p) { if (!p[0]) return; var d = document.createElement("div"); if (p[1]) d.className = p[1]; d.textContent = p[0]; el.appendChild(d); });
     }
     /* Grid: right below the card and lined up with it; Twister: the fixed corner spot of the stylesheet */
     el.classList.toggle("gd", !!box);
@@ -81,7 +81,7 @@
     var m = mode(), root = document.documentElement;
     if (window.__abOpen || window.__wkOpen || root.classList.contains("intro-on") || root.classList.contains("intro-ui") || (m !== "twister" && m !== "grid" && m !== "list") || onMenu()) return show(null);
     /* List: the description and the year of the name under the pointer, in the Twister corner (the name itself is the big line) */
-    if (m === "list") { var li = window.__lsActive && window.__lsActive(); return show(li && (li.description || li.year) ? { name: "", description: li.description, year: li.year } : null, null); }
+    if (m === "list") { var li = window.__lsActive && window.__lsActive(); return show(li && li.year ? { name: "", description: "", year: li.year } : null, null); }
     if (down || window.__hoverLock()) return show(null);
     var c = m === "grid" ? focusCard() : pick(); if (!c) return show(null);
     var f = fname(srcOf(c)), found = null, a = items();
