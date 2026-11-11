@@ -278,7 +278,7 @@
         ]),
         field("Link (optional)", it.link, function (v) { it.link = v; changed(); }, { placeholder: "https://…" }),
         el("div", { class: "cp-label", style: "margin-top:18px" }, "Detail page"),
-        field("Client", it.client, function (v) { it.client = v; changed(); }),
+        field("Partner", it.client, function (v) { it.client = v; changed(); }),
         field("Challenge", it.challenge, function (v) { it.challenge = v; changed(); }, { area: 1, rows: 4 }),
         field("Approach", it.approach, function (v) { it.approach = v; changed(); }, { area: 1, rows: 4 }),
         galleryBox(it),

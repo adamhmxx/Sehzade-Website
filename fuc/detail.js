@@ -208,7 +208,7 @@
     var col = el("div", "wk-col");
     /* two groups: the short facts and the long texts (a phone shows the short ones in a row above the pictures and the long ones below them) */
     var gShort = el("div", "wk-short"), gLong = el("div", "wk-long");
-    [["Description", it.description, gShort], ["Client", it.client, gShort], ["Challenge", it.challenge, gLong], ["Approach", it.approach, gLong]].forEach(function (x) {
+    [["Description", it.description, gShort], ["Partner", it.client, gShort], ["Challenge", it.challenge, gLong], ["Approach", it.approach, gLong]].forEach(function (x) {
       if (!x[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", x[0]), el("p", "", x[1])); x[2].appendChild(put(sec));
     });
     col.append(gShort, gLong);
