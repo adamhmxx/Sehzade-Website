@@ -33,7 +33,8 @@
    "year": "2026",
    "link": "",
    "src": "uploads/enso-0d2f8d9a.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "pmw9hngme",
@@ -43,7 +44,8 @@
    "year": "2026",
    "link": "",
    "src": "uploads/sync-53a67f6a.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "pmw9hmjuh",
@@ -62,8 +64,9 @@
    "services": "Web design",
    "year": "2026",
    "link": "",
-   "src": "uploads/arcania-f309ff6d.webp",
-   "srcSet": ""
+   "src": "",
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "p6mw9hlmvg",
