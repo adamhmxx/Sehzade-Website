@@ -187,9 +187,9 @@
     /* the loading screen's "disappear", on the picture under the cursor: (1) a melt, the pixels are pushed around by flowing noise, (2) a dissolve, the
        picture is eaten away in patches of a second, slower noise, so it breaks up and sinks into the dark background. Both are strongest right when the
        cursor arrives and calm down to a gentle ripple. */
-    /* Light build: only the melt is computed, and only inside a box around the cursor (primitive subregions); the rest of the layer is the plain
-       picture (SourceGraphic) composited underneath. The old version ran two full-size noise fields plus a dissolve chain (unused since the dissolve
-       was switched off) over the whole gallery layer on every frame, which made the hover heavy. Same look, a fraction of the pixels. */
+    /* Light build: only the melt is computed. The old version also ran a second noise field and a dissolve chain (unused since the dissolve was
+       switched off) over the whole gallery layer on every frame. No primitive subregions: clipping the work to a box around the cursor tore
+       the pictures into flat grey tiles in Chrome. */
     f.innerHTML =
       '<feTurbulence type="fractalNoise" baseFrequency="0.0048 0.0072" numOctaves="1" seed="3" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="no"/>' +
@@ -198,8 +198,7 @@
       '<feComposite in="spot" in2="black" operator="over" result="m"/>' +
       '<feComposite in="no" in2="m" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="map"/>' +
       '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G" result="dm"/>' +
-      /* where the melt pulls the picture away from an edge the picture itself shows through, never a black tear */
-      '<feComposite in="dm" in2="SourceGraphic" operator="over"/>';
+      '<feMerge><feMergeNode in="dm"/></feMerge>';
     svg.appendChild(f); document.body.appendChild(svg);
     var ch = f.children;
     gal = { turb: ch[0], off: ch[1], fl: ch[2], img: ch[3], m: ch[4], ar: ch[5], map: ch[6], last: {} };
@@ -242,9 +241,6 @@
     var fl = 16, fs_ = 2.2; sa(g.off, "dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); sa(g.off, "dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
     var ix = (mx - br.left - R).toFixed(0), iy = (my - br.top - R).toFixed(0), iw = (R * 2).toFixed(0);
     sa(g.img, "x", ix); sa(g.img, "y", iy); sa(g.img, "width", iw); sa(g.img, "height", iw);
-    /* the work area: the cursor spot plus the reach of the displacement */
-    var pad = Math.ceil(galS / 2 + 4), bx = String(+ix - pad), by = String(+iy - pad), bw = String(+iw + pad * 2);
-    [g.turb, g.off, g.fl, g.m, g.ar, g.map].forEach(function (e, j) { var t = "s" + j; if (g.last[t] !== bx + by + bw) { g.last[t] = bx + by + bw; e.setAttribute("x", bx); e.setAttribute("y", by); e.setAttribute("width", bw); e.setAttribute("height", bw); } });
     return 1;
   }
   var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
