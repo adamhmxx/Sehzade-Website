@@ -554,6 +554,7 @@
 
   function start() {
     addEventListener("hashchange", route);
+    addEventListener("intro-done", function () { if (!shown) route(); });   /* a project address opened directly: show it the moment the loader leaves */
     /* the site's own router must not see our Back / Forward steps: it re-renders the gallery on them, which reshuffles the Grid under the returning picture */
     addEventListener("popstate", function (e) { if (shown || /^#\/work\//.test(location.hash)) e.stopImmediatePropagation(); route(); }, true);
     addEventListener("cms-change", function () { if (shown) { var list = data(); if (cur >= list.length) hide(); else render(cur); } });

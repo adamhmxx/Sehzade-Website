@@ -216,6 +216,13 @@
 
   /* ---- the Twister builds itself while the ribbon turns into place; then the page is live and scrolls forever ---- */
   function reveal() {
+    /* the ribbon's entrance belongs to the first arrival on the works page only. Opening the site straight onto a project page (its own address)
+       shows that page as the loader leaves: the works page is already in place behind it, with no entrance */
+    if (/^#\/work\//.test(location.hash)) {
+      window.__twRise = 0; window.__twSp = 1; window.__twAll = 1; window.__twRev = null; window.__twRevK = null;
+      root.classList.remove("intro-on", "intro-ui"); window.dispatchEvent(new Event("intro-done"));
+      return;
+    }
     /* the turn is the same angle on every screen: itstart is measured on the 1440px desktop ribbon (radius 714px); a phone ribbon is much
        tighter, so the same distance in px turned it more than twice as far */
     var gk = window.__galK && window.__galK.current, START = Math.PI * (window.__twRnow || 714), /* half a turn of the ribbon: the band swings in along its own curve */ D = CFG.itdur, s0 = performance.now();
