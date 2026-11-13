@@ -13,7 +13,7 @@
     css.textContent = '#hv-info{position:fixed;left:32px;top:auto;bottom:32px;max-width:min(420px,40vw);z-index:2000;pointer-events:none;color:#fff;mix-blend-mode:difference;font-family:"Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;font-size:16px;line-height:1.25;letter-spacing:0;opacity:0;transition:opacity .26s ease;-webkit-font-smoothing:antialiased}' +
       '#hv-info.on{opacity:1}#hv-info div{margin-bottom:8px}#hv-info div:last-child{margin-bottom:0}' +
       /* Grid: no plate; the three lines are centred under the lifted card and as wide as it is */
-      '#hv-info.gd{text-align:center;box-sizing:border-box;bottom:auto}' +
+      '#hv-info.gd{display:flex;justify-content:space-between;align-items:baseline;gap:16px;text-align:left;box-sizing:border-box;bottom:auto}#hv-info.gd div{margin:0}#hv-info.gd div:last-child{flex:none}' +   /* Grid: name on the left and year on the right, spread across the card's width */
       '@media (max-width:809.98px){#hv-info{left:16px;bottom:112px}}';
     document.head.appendChild(css);
     el = document.createElement("div"); el.id = "hv-info"; el.setAttribute("aria-hidden", "true"); document.body.appendChild(el);

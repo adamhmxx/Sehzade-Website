@@ -274,7 +274,7 @@
   }
   /* Twist (drawn on the GPU): the gallery itself plays the move */
   function twFlight(card, rect, back, done) {
-    var tok = ++flTok, t0 = 0, D = window.__twD || 1700;
+    var tok = ++flTok, t0 = 0, D = (window.__twD || 1700) * (back ? 1.2 : 1);   /* the way back to the Twist is 20% slower, calmer */
     var X = window.__twX = { live: true, hold: !back, sel: card, a: back ? 1 : 0, f: back ? 1 : 0, m: back ? 1 : 0, cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, w: rect.width, h: rect.height };
     window.__twFreeze = false;
     requestAnimationFrame(function f(now) {

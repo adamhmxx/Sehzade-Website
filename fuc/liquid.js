@@ -107,7 +107,7 @@
     var inList = new Set(els);
     els = els.filter(function (e) { for (var n = e.parentElement; n; n = n.parentElement) if (inList.has(n)) return false; return true; });
     /* pieces that just left the list drop their ripple */
-    states.forEach(function (st, el) { if (st.set && els.indexOf(el) < 0) { (el.__fxt || el).style.filter = ""; st.set = 0; st.b = st.d = st.vb = st.vd = 0; } });
+    states.forEach(function (st, el) { if ((st.set || st.zs) && els.indexOf(el) < 0) { var t0 = el.__fxt || el; t0.style.filter = ""; t0.style.scale = t0.style.translate = ""; st.set = st.zs = 0; st.b = st.d = st.vb = st.vd = st.z = st.vz = 0; } });
     /* cards that left the list keep no wobble style behind */
     galCards.forEach(function (c0) { if (!c0.__wkAway && tw.indexOf(c0) < 0 && c0.__jl) { c0.style.translate = c0.style.scale = c0.style.rotate = ""; c0.__jl = null; } });
     galCards = tw;
@@ -130,7 +130,20 @@
     if (galCards.length && galCards[0].classList && galCards[0].classList.contains("wk-it")) return 0;
     /* Twist: the cards form one unbroken ribbon, edge to edge. A wobble of single cards would open thin gaps between neighbours, so the ribbon is left whole and the melt alone carries the hover */
     /* (the bouncy wobble of the cards is switched off in every mode of the gallery: the hover is the liquid melt alone) */
-    if (!ABOUT) { for (n = 0; n < galCards.length; n++) { card = galCards[n]; if (card.__jl && card.__jl.set) { card.style.translate = card.style.scale = card.style.rotate = ""; card.__jl = null; } } return 0; }
+    if (!ABOUT) {
+      /* Grid: no wobble, only depth: the card under the cursor rises a little (up to 2.5% larger) and settles back softly when the cursor leaves.
+         Twist and the project page stay flat: their cards touch, and a card growing there would overlap its neighbours */
+      var gridMode = !window.__twGLon && !window.__wkOpen, anyD = 0;
+      for (n = 0; n < galCards.length; n++) {
+        card = galCards[n]; cb = rects[n]; var dz = card.__dz || (card.__dz = { z: 0, v: 0 });
+        var over = gridMode && on && cb && cb.width > 40 && mx > cb.left && mx < cb.right && my > cb.top && my < cb.bottom ? 1 : 0;
+        dz.v = (dz.v + (over - dz.z) * .07 * Math.min(2.5, Math.max(.4, dtf * 60))) * Math.pow(.8, Math.min(2.5, Math.max(.4, dtf * 60))); dz.z += dz.v;
+        if (dz.z > .003 || over) { card.style.scale = (1 + .025 * Math.max(0, dz.z)).toFixed(4); anyD = 1; }
+        else if (card.style.scale) { card.style.scale = ""; dz.z = dz.v = 0; }
+        if (card.__jl && card.__jl.set) { card.style.translate = card.style.rotate = ""; card.__jl = null; }
+      }
+      return anyD;
+    }
     for (n = 0; n < galCards.length; n++) {
       card = galCards[n]; cb = rects[n]; if (!cb) continue; if (card.__wkAway) continue;
       /* a card that has become tiny or hidden (another mode) must not keep a leftover wobble style */
@@ -284,7 +297,7 @@
     for (var q = 0; q < near.length; q++) {
       var it = near[q], el = it.el, b = it.b, dx = it.dx, dy = it.dy, f = q < (ABOUT ? 4 : 6) ? it.f : 0;
       var st = states.get(el);
-      if (!st) { st = { b: 0, vb: 0, d: 0, vd: 0, set: 0, warp: null }; states.set(el, st); }
+      if (!st) { st = { b: 0, vb: 0, d: 0, vd: 0, z: 0, vz: 0, zs: 0, set: 0, warp: null }; states.set(el, st); }
       var tgt = el.__fxt || el, vs = it.vs; /* the filter works in the element's own pixels: far (small) cards get the matching boost, so every mode shows the panel's on-screen strength */
       /* the same recipe as the loading screen: an opening burst of ripple the moment the cursor arrives, which calms down to a steady
          ripple while the cursor stays near; the noise flows by itself with time (it does not follow the cursor) */
@@ -292,6 +305,12 @@
       st.pulse = (st.pulse || 0) * Math.exp(-dtf / .75);
       spring(st, "b", f * c.blur * (.55 + sp * .9) / vs / ks, .09, .82);
       spring(st, "d", f * c.distort * 1.2 * (.6 + sp * .5 + 1.1 * st.pulse) / vs / ks, .08, .84);
+      /* depth: the component under the cursor comes a little towards the viewer (it grows by up to 3.5% and lifts by a pixel or two), softly, like a
+         surface rising out of liquid; the ones around it stay where they are */
+      spring(st, "z", f, .07, .8);
+      var zz = Math.max(0, Math.min(1, st.z)), dep = zz > .004;
+      if (dep || st.zs) { if (dep) { var big_ = Math.max(b.width, b.height), amp = big_ > 160 ? .018 : .035; tgt.style.scale = (1 + amp * zz).toFixed(4); if (!tgt.classList.contains("ls-row")) tgt.style.translate = "0 " + (-1.6 * zz).toFixed(2) + "px"; st.zs = 1; if (!tgt.style.transformOrigin) tgt.style.transformOrigin = "50% 60%"; active++; }
+        else { tgt.style.scale = tgt.style.translate = ""; st.zs = 0; } }
       var warp = st.d > .15;
       if (warp || st.b > .03) {
         active++; st.set = 1;
