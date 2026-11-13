@@ -9,7 +9,9 @@
    "link": "https://beeplus.it.com/",
    "src": "uploads/035f8c291a1d5de2173.webp",
    "srcSet": "",
-   "gallery": [],
+   "gallery": [
+    "uploads/4d72e97a1a1d5de5f46.webp"
+   ],
    "client": "SlabPixel",
    "challenge": "The challenge was delivering a high-quality design within a tight timeline while capturing the client's vision of a bold, colorful, and visually engaging Dribbble-inspired aesthetic.",
    "approach": "With a clear client reference, I analyzed its typography, colors, and layout direction. Within four days, I delivered the complete landing page along with its responsive version."
