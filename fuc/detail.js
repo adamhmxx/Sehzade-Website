@@ -73,17 +73,17 @@
       '#wk .wk-it img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none;user-select:none}' +
       /* phone: the pictures on top (endless horizontal), then the details, and the name set big at the bottom, above the Back button */
       /* phone, on the 8-column grid: the short facts in one row on top, the endless picture scroll in the middle, the long texts below it, then the link and the name; Back sits bottom right */
-      '@media (max-width:809.98px){#wk{grid-template-columns:repeat(8,minmax(0,1fr));column-gap:16px;grid-template-rows:auto 30dvh minmax(0,1fr) auto auto;padding:var(--top,104px) 16px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box}' +
+      '@media (max-width:809.98px){#wk{grid-template-columns:repeat(8,minmax(0,1fr));column-gap:16px;grid-template-rows:auto auto 30dvh minmax(0,1fr) auto;padding:var(--top,104px) 16px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box}' +
       /* phone: Back sits top right, just under the navbar; the texts are 14px */
       '#wk .wk-sec h3,#wk .wk-sec p,#wk .wk-visit{font-size:14px}' +
       '#wk .wk-l,#wk .wk-body,#wk .wk-grid,#wk .wk-col{display:contents}' +
-      '#wk .wk-year{grid-row:1;grid-column:1 / span 2}' +
-      '#wk .wk-short{grid-row:1;grid-column:3 / -1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);column-gap:16px;align-items:start}' +
+      '#wk .wk-year{grid-row:2;grid-column:1 / span 2}' +
+      '#wk .wk-short{grid-row:2;grid-column:3 / -1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);column-gap:16px;align-items:start}' +
       '#wk .wk-sec{margin-bottom:14px}' +
-      '#wk .wk-r{grid-row:2;grid-column:1 / -1;margin:0 -16px;touch-action:pan-y}' +
-      '#wk .wk-long{grid-row:3;grid-column:1 / -1;min-height:0;overflow:auto;scrollbar-width:none;padding-top:14px}#wk .wk-long::-webkit-scrollbar{display:none}' +
-      '#wk .wk-visit{grid-row:4;grid-column:1 / -1;justify-self:start;margin:6px 0 8px}' +
-      '#wk .wk-name{grid-row:5;grid-column:1 / -1}}' +
+      '#wk .wk-r{grid-row:3;grid-column:1 / -1;margin:0 -16px;touch-action:pan-y}' +
+      '#wk .wk-long{grid-row:4;grid-column:1 / -1;min-height:0;overflow:auto;scrollbar-width:none;padding-top:14px}#wk .wk-long::-webkit-scrollbar{display:none}' +
+      '#wk .wk-visit{grid-row:5;grid-column:1 / -1;justify-self:start;margin:6px 0 8px}' +
+      '#wk .wk-name{grid-row:1;grid-column:1 / -1;margin-bottom:18px}}' +   /* phone order: the project name first, then the short facts, the pictures, the long texts and the link */
       '@media (prefers-reduced-motion:reduce){#wk,#wk.on{transition:none}#wk .wk-in,#wk.on .wk-in{transition:none;opacity:1;transform:none}}';
     document.head.appendChild(s);
   }
