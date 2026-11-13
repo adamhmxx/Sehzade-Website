@@ -300,24 +300,35 @@
     a.onfinish = end; var tm = setTimeout(end, dur + (delay || 0) + 1500);
     return function () { fin = 1; clearTimeout(tm); try { a.cancel(); } catch (e) {} d.remove(); };
   }
-  /* Grid: the cards that were not chosen turn and leave, up or down by where they are (and come back the same way) */
+  /* Grid: the cards that were not chosen scatter straight outward, away from the chosen card, with no tilt (and come back the same way, converging on it).
+     Every card moves by the same factor at every moment (one scaling of the whole layout about the chosen card), so the gaps between them only grow:
+     nothing ever overlaps, crosses or piles up */
   var gridOut = [];
   function isCard(d) { return d.style && d.style.position === "absolute" && d.style.top === "50%" && d.style.left === "50%" && d.style.zIndex && d.querySelector("img"); }
   function gridAway(card) {
-    var H = innerHeight, e = "cubic-bezier(.65,0,.35,1)"; gridOut = [];
+    var W = innerWidth, H = innerHeight, e = "cubic-bezier(.65,0,.35,1)"; gridOut = [];
+    var cr = card.getBoundingClientRect(), ox = cr.left + cr.width / 2, oy = cr.top + cr.height / 2, list = [], K = 1;
     [].forEach.call(document.querySelectorAll("#main div"), function (d) {
       if (d === card || !isCard(d)) return;
       var r = d.getBoundingClientRect(); if (r.width < 20) return;
-      var up = (r.top + r.height / 2) < H / 2;
-      d.__wkAway = true; d.__jl = null;
-      d.style.transition = "translate 1s " + e + ",rotate 1s " + e;
-      d.style.translate = "0px " + (up ? -H * 1.15 : H * 1.15).toFixed(0) + "px"; d.style.rotate = (up ? -16 : 16) + "deg"; d.style.scale = ""; gridOut.push(d);
+      var dx = r.left + r.width / 2 - ox, dy = r.top + r.height / 2 - oy;
+      /* how far the layout must be scaled for this card to be fully off screen */
+      var kx = dx > 0 ? (W - r.left + 40) / dx + 1 : dx < 0 ? (r.right + 40) / -dx + 1 : 1e9,
+          ky = dy > 0 ? (H - r.top + 40) / dy + 1 : dy < 0 ? (r.bottom + 40) / -dy + 1 : 1e9;
+      if (r.right > 0 && r.left < W && r.bottom > 0 && r.top < H) K = Math.max(K, Math.min(kx, ky));
+      list.push({ d: d, dx: dx, dy: dy });
+    });
+    K = Math.min(K, 14);
+    list.forEach(function (it) {
+      var d = it.d; d.__wkAway = true; d.__jl = null;
+      d.style.transition = "translate 1.25s " + e; d.style.rotate = "";
+      d.style.translate = (it.dx * (K - 1)).toFixed(0) + "px " + (it.dy * (K - 1)).toFixed(0) + "px"; d.style.scale = ""; gridOut.push(d);
     });
   }
   function gridBack(now) {
     var g = gridOut, e = "cubic-bezier(.65,0,.35,1)"; gridOut = [];
-    g.forEach(function (d) { d.style.transition = now ? "none" : "translate 1.1s " + e + ",rotate 1.1s " + e; d.style.translate = ""; d.style.rotate = ""; });
-    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; d.__wkAway = false; }); }, now ? 0 : 1200);
+    g.forEach(function (d) { d.style.transition = now ? "none" : "translate 1.25s " + e; d.style.translate = ""; d.style.rotate = ""; });
+    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; d.__wkAway = false; }); }, now ? 0 : 1350);
   }
   /* where the chosen card sits in the gallery (measured with the other cards at home) */
   function homeRect(o) {
