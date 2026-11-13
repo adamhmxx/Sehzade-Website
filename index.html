@@ -155,7 +155,7 @@ if(matchMedia("(pointer:coarse)").matches){window.__twEff=8;window.__twMg=1}</sc
 (function(){var keep=[];function go(){var a=(window.__cmsItems&&window.__cmsItems())||window.__cmsDefaults||[],q=[];a.forEach(function(it){var u=it&&it.image&&it.image.src;if(u)q.push(window.__sms?window.__sms(u):u)});q=q.filter(function(u,i){return q.indexOf(u)===i});
 (function next(){var u=q.shift();if(!u)return;var im=new Image();im.decoding="async";im.src=u;keep.push(im);(im.decode?im.decode():Promise.resolve()).catch(function(){}).then(function(){(window.requestIdleCallback||setTimeout)(next,{timeout:400})})})();window.__galDecoded=keep;}
 if(document.documentElement.classList.contains("intro-ui"))addEventListener("intro-done",function(){setTimeout(go,300)},{once:true});else addEventListener("load",function(){setTimeout(go,800)});})();</script>
-<script src="fuc/intro.js?v=20261110q" defer></script>
+<script src="fuc/intro.js?v=20261113a" defer></script>
 <script src="fuc/linkfx.js?v=20261110c" defer></script>
 <script src="fuc/cms.js?v=20261112m" defer></script>
 <script src="fuc/liquid.js?v=20261112q" defer></script>

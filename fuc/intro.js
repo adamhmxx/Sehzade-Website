@@ -5,9 +5,10 @@
    the bottom of the screen to the top while the ribbon turns into place, then the navbar and mode menu appear. Add #nointro to skip it.
    All numbers live in DEF below and in the Liquid panel (Shift+L, tab "Intro"). */
 (function () {
-  var DEF = { imin: 2400, iline: 2, ildl: 600, iltr: 1300, ilst: 60, iliq: 8, iliqp: 20, iliqd: 3100, ioutd: 800, ioutl: 200,
-    iseept: 3200, iseeps: 18, iseepl: 20, iseepd: 60, iseepf: 130, iseepb: 30, iseepr: 30, iseepg: 4,
-    itdur: 2800, itstart: 1800, itui: 1800 };
+  /* every duration is 20% longer than before (a calmer opening) */
+  var DEF = { imin: 2880, iline: 2, ildl: 720, iltr: 1560, ilst: 72, iliq: 8, iliqp: 20, iliqd: 3720, ioutd: 960, ioutl: 200,
+    iseept: 3840, iseeps: 18, iseepl: 20, iseepd: 60, iseepf: 130, iseepb: 30, iseepr: 30, iseepg: 4,
+    itdur: 3360, itstart: 1800, itui: 2160 };
   window.__introDef = DEF;
   var CFG = {};
   function cfg(k) { try { var sv = JSON.parse(localStorage.getItem("liquid-cfg-v1") || "{}"); if (sv[k] !== undefined) return +sv[k]; } catch (e) {} return DEF[k]; }
@@ -43,7 +44,7 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 
   /* ---- progress: real signals, but never faster than the minimum show time ---- */
-  var target = 8, p = 0, last = T0, finished = false, MIN = reduce ? 600 : CFG.imin;
+  var target = 8, p = 0, sp = 0, last = T0, finished = false, MIN = reduce ? 600 : CFG.imin;
   function stage(v) { if (v > target) target = v; }
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { stage(45); });
   if (document.readyState === "complete") stage(75); else addEventListener("load", function () { stage(75); });
@@ -64,10 +65,13 @@
     var dt = Math.min(.05, (now - last) / 1000); last = now;
     liquid(now); if (!wiping) draw();
     if (!finished) {
-      var cap = Math.min(100, (now - T0) / MIN * 100);
+      /* smooth progress: the time limit follows an ease-in-out curve (soft start, soft arrival), and what is shown glides after the real value
+         instead of jumping when a loading stage completes */
+      var tk = Math.min(1, (now - T0) / MIN), cap = 100 * tk * tk * (3 - 2 * tk);
       p = Math.min(target, cap, p + Math.max((target - p) * 2.4, 12) * dt);
-      pct.textContent = Math.floor(p) + "%"; bar.style.transform = "scaleX(" + (p / 100).toFixed(4) + ")";
-      if (p >= 99.9 && target >= 100) { finished = true; pct.textContent = "100%"; bar.style.transform = "scaleX(1)"; setTimeout(wipe, 250); }
+      sp += (p - sp) * (1 - Math.exp(-dt * 7)); if (p >= 99.9 && sp > 99.5) sp = 100;
+      pct.textContent = Math.floor(sp) + "%"; bar.style.transform = "scaleX(" + (sp / 100).toFixed(4) + ")";
+      if (sp >= 100 && target >= 100) { finished = true; pct.textContent = "100%"; bar.style.transform = "scaleX(1)"; setTimeout(wipe, 300); }
     }
     if (!wiping || wipeActive) requestAnimationFrame(frame);
   }
