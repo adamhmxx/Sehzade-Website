@@ -46,7 +46,11 @@
    "link": "",
    "src": "uploads/7ff67c971a1d5a8e277.webp",
    "srcSet": "",
-   "gallery": [],
+   "gallery": [
+    "uploads/ef834b831a1d5a9e379.webp",
+    "uploads/43bcbc011a1d5a9f376.webp",
+    "uploads/11f08e7a1a1d5aa0438.webp"
+   ],
    "client": "Enso Build"
   },
   {
