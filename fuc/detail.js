@@ -187,10 +187,10 @@
       meltEl.style.scale = ps; meltEl.style.rotate = pr; meltEl.style.transition = pt;
     } else r = tl && tl.getBoundingClientRect();
     if (!r || !r.width) { bar.style.left = "50%"; bar.style.top = (innerHeight - 56) + "px"; bar.style.transform = "translate(-50%,-50%)"; return; }
-    if (phone()) {   /* phone: Back in the top right corner, right under the navbar */
+    if (phone()) {   /* phone: Back in the top left corner, right under the logo */
       var nv = document.querySelector("nav"), nb = nv ? nv.getBoundingClientRect() : null, top = nb && nb.height ? nb.bottom + 8 : 64;
-      bar.style.left = "auto"; bar.style.right = "16px"; bar.style.top = top + "px"; bar.style.transform = "none";
-      if (ov) ov.style.setProperty("--top", Math.round(top + 40) + "px");
+      bar.style.right = "auto"; bar.style.left = "12px"; bar.style.top = top + "px"; bar.style.transform = "none";
+      if (ov) ov.style.setProperty("--top", Math.round(top + 64) + "px");
     }
     else { bar.style.right = ""; bar.style.left = (r.left + r.width / 2) + "px"; bar.style.top = (r.top + r.height / 2) + "px"; bar.style.transform = "translate(-50%,-50%)"; }
     var cs = tab ? getComputedStyle(tab) : null; bar.style.setProperty("--f", (cs ? parseFloat(cs.fontSize) || 16 : 16) + "px");
