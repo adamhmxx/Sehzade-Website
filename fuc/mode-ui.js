@@ -276,6 +276,15 @@
     }
   }
 
+  /* Grid -> List: is any card of the grid still on the screen? (the names come in the moment the last one has left, with no empty pause) */
+  function cardsOnScreen() {
+    var cs = document.querySelectorAll('#main div[style*="z-index"]');
+    for (var i = 0; i < cs.length; i++) {
+      var c = cs[i], st = c.style; if (st.position !== "absolute" || st.top !== "50%" || st.visibility === "hidden") continue;
+      var r = c.getBoundingClientRect(); if (r.width > 40 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth) return true;
+    }
+    return false;
+  }
   function sync() {
     if (!tabs().length) return;
     build();
@@ -305,7 +314,7 @@
       sync.stage = 0; sync.lock = performance.now() + 7000;
       var go = function () { root.classList.remove("lr-wait"); box.classList.remove("on"); void box.offsetWidth; box.classList.add("on"); sync.lock = performance.now() + 3200; if (sync.g) liquidRows(0, false); };
       /* from the Grid: the names wait, unseen, until the last card has really left the screen (measured, not timed), so the two are never on screen together */
-      if (sync.g) { root.classList.add("lr-wait"); var n = 0, iv = setInterval(function () { if (window[sync.g] || ++n > 140 || idx() !== LIST) { clearInterval(iv); if (idx() === LIST) go(); else root.classList.remove("lr-wait"); } }, 50); }
+      if (sync.g) { root.classList.add("lr-wait"); var n = 0, iv = setInterval(function () { if (window[sync.g] || (sync.g === "__glDone" && n > 2 && !cardsOnScreen()) || ++n > 140 || idx() !== LIST) { clearInterval(iv); if (idx() === LIST) go(); else root.classList.remove("lr-wait"); } }, 50); }
       else go();
     } }   /* (while the names are on their way in, the list is not rebuilt: new rows would simply pop up in place) */   /* the list has just been rebuilt: its names first stand off to the sides, then they are sent in */
     placeHint(); clearTimeout(sync.t); sync.t = setTimeout(placeHint, 1100);
