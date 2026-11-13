@@ -14,7 +14,7 @@
     x: "https://x.com/adamhmwn", behance: "https://www.behance.net/adamhimawan", linkedin: "https://www.linkedin.com/in/adamhimawan/",
     dribbble: "https://dribbble.com/adamhmwn", instagram: "https://www.instagram.com/adamhmwn/"
   };
-  var DEF_SITE = { logo: "Sehzade.", aboutLabel: "About", callLabel: "Book a call", clock: "ID (WIB)", cardName: "Adam Himawan", copyright: "\u00a9 Sehzade 2026", title: "Adam Himawan",
+  var DEF_SITE = { logo: "Sehzade.", aboutLabel: "About", callLabel: "Book a call", clock: "(WIB)", cardName: "Adam Himawan", copyright: "\u00a9 Sehzade 2026", title: "Adam Himawan",
                    modes: ["Twist", "Grid", "List"] };
   var SOCIALS = [["x", "X"], ["behance", "Behance"], ["linkedin", "LinkedIn"], ["dribbble", "Dribbble"], ["instagram", "Instagram"]];
 
@@ -67,7 +67,7 @@
     if (links[0] && links[0].getAttribute("href") === "/") setLetters(links[0], o.logo);
     if (links[1]) setLetters(links[1], o.aboutLabel);
     if (links[2]) setLetters(links[2], o.callLabel);
-    [].forEach.call(nav.querySelectorAll("span"), function (sp) { if (!sp.children.length && /^ID \(|^[A-Z]{2} \(/.test(sp.textContent) && sp.textContent !== o.clock) sp.textContent = o.clock; });
+    [].forEach.call(nav.querySelectorAll("span"), function (sp) { if (!sp.children.length && /^ID \(|^[A-Z]{2} \(|^\([A-Z]{2,4}\)$/.test(sp.textContent) && sp.textContent !== o.clock) sp.textContent = o.clock; });
     [].forEach.call(document.querySelectorAll('[role="tab"]'), function (t, i) { if (o.modes[i]) setLetters(t, o.modes[i]); });
   }
   function applyAbout() {

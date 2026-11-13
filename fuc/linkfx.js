@@ -3,7 +3,7 @@
 (function () {
   if (window.__linkfx) return;
   window.__linkfx = 1;
-  var SPLIT = "#none-split"; /* plain-text controls, split into letters on first hover (none at the moment: every link and tab already has letter spans) */
+  var SPLIT = "#wk .wk-bar button, #wk .wk-visit"; /* plain-text controls of the project page (Back, Visit website), split into letters on first hover */
   var SEL = 'a[href], [role="tab"], button.abx-close, ' + SPLIT;
   var css = document.createElement("style");
   css.textContent =

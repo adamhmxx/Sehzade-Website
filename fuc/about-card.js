@@ -84,7 +84,7 @@
       if (Math.hypot(V.x, V.y) < 14) { glide = false; V.x = V.y = 0; T.x = S.x; T.y = S.y; }
     }
     PROPS.forEach(function (k) {
-      var tilt = k === "rx" || k === "ry", K = k === "r" ? 80 : k === "s" ? 120 : tilt ? 70 : open_ ? 62 : 70, D = 2 * Math.sqrt(K) * (k === "r" || tilt ? 1 : .95);
+      var tilt = k === "rx" || k === "ry", K = k === "r" ? 80 : k === "s" ? 120 : tilt ? 70 : open_ ? 62 : 70, D = 2 * Math.sqrt(K) * 1.05;   /* critically damped (a touch over): it settles without ever overshooting or bouncing back */
       if ((drag || glide) && (k === "x" || k === "y")) { if (glide) calm = false; return; }
       V[k] += ((T[k] - S[k]) * K - V[k] * D) * dt; S[k] += V[k] * dt;
       var tiny = k === "x" || k === "y" ? .4 : .02;

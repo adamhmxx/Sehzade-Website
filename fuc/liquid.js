@@ -40,7 +40,7 @@
   function save() { try { localStorage.setItem(KEY, JSON.stringify(own)); } catch (e) {} }
 
   var INK = ABOUT ? "11,11,11" : "242,242,242", BLEND = ABOUT ? "multiply" : "screen", GAIN = ABOUT ? 1.7 : 1;
-  var SCALE = 3, N = 14;
+  var SCALE = 4, N = 14;
   var mx = -9999, my = -9999, cvx = 0, cvy = 0, lastX = 0, lastY = 0, inside = false, run = false, idle = 0;
 
   /* ---------- background blob ---------- */
@@ -74,11 +74,11 @@
     /* The glow is only about 3% bright, i.e. 7 steps of an 8-bit channel over the whole disc: with a plain alpha that shows as visible rings (a faint
        hard-edged circle on the dark page). So the glow is written as opaque grey values (black = no effect under "screen", white = none under
        "multiply") with a random dither of the rounding, which turns the rings into smooth, grain-free gradation. */
-    var gray = +rgb[0], mult = ABOUT;
+    var gray = +rgb[0], mult = ABOUT, rs = (Math.random() * 4294967296) >>> 0;
     for (var k = 0; k < d.length; k += 4) {
       var t = (d[k + 3] / 255 - lo) / ew; t = t < 0 ? 0 : t > 1 ? 1 : t; t = t * t * (3 - 2 * t);
       var v = t * al, g = mult ? 255 - v * (255 - gray) : v * gray;
-      if (t > 0) g += Math.random() - .5;
+      if (t > 0) { rs = (rs * 1664525 + 1013904223) >>> 0; g += rs / 4294967296 - .5; }
       g = Math.round(g); g = g < 0 ? 0 : g > 255 ? 255 : g;
       d[k] = d[k + 1] = d[k + 2] = g; d[k + 3] = 255;
     }
@@ -137,13 +137,16 @@
       for (n = 0; n < galCards.length; n++) {
         card = galCards[n]; cb = rects[n]; var dz = card.__dz || (card.__dz = { z: 0, v: 0 });
         var over = gridMode && on && cb && cb.width > 40 && mx > cb.left && mx < cb.right && my > cb.top && my < cb.bottom ? 1 : 0;
-        dz.v = (dz.v + (over - dz.z) * .07 * Math.min(2.5, Math.max(.4, dtf * 60))) * Math.pow(.8, Math.min(2.5, Math.max(.4, dtf * 60))); dz.z += dz.v;
-        if (dz.z > .003 || over) { card.style.scale = (1 + .025 * Math.max(0, dz.z)).toFixed(4); anyD = 1; }
+        dz.v = 0; dz.z += (over - dz.z) * (1 - Math.pow(1 - .11, Math.min(2.5, Math.max(.4, dtf * 60))));   /* plain ease, no bounce */
+        if (dz.z > .003 || over) { card.style.scale = (1 + .03 * Math.max(0, dz.z)).toFixed(4); anyD = 1; }
         else if (card.style.scale) { card.style.scale = ""; dz.z = dz.v = 0; }
         if (card.__jl && card.__jl.set) { card.style.translate = card.style.rotate = ""; card.__jl = null; }
       }
       return anyD;
     }
+    /* About: no jelly wobble either (it bounced). Its text blocks get the same hover as every other text: the liquid ripple plus the soft depth rise */
+    for (n = 0; n < galCards.length; n++) { card = galCards[n]; if (card.__jl && card.__jl.set) { card.style.translate = card.style.scale = card.style.rotate = ""; } card.__jl = null; }
+    return 0;
     for (n = 0; n < galCards.length; n++) {
       card = galCards[n]; cb = rects[n]; if (!cb) continue; if (card.__wkAway) continue;
       /* a card that has become tiny or hidden (another mode) must not keep a leftover wobble style */
@@ -184,29 +187,22 @@
     /* the loading screen's "disappear", on the picture under the cursor: (1) a melt, the pixels are pushed around by flowing noise, (2) a dissolve, the
        picture is eaten away in patches of a second, slower noise, so it breaks up and sinks into the dark background. Both are strongest right when the
        cursor arrives and calm down to a gentle ripple. */
+    /* Light build: only the melt is computed, and only inside a box around the cursor (primitive subregions); the rest of the layer is the plain
+       picture (SourceGraphic) composited underneath. The old version ran two full-size noise fields plus a dissolve chain (unused since the dissolve
+       was switched off) over the whole gallery layer on every frame, which made the hover heavy. Same look, a fraction of the pixels. */
     f.innerHTML =
       '<feTurbulence type="fractalNoise" baseFrequency="0.0048 0.0072" numOctaves="1" seed="3" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="no"/>' +
-      '<feColorMatrix in="no" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1" result="n1"/>' +
       '<feFlood flood-color="#000" flood-opacity="1" result="black"/>' +
       '<feImage href="' + MASK + '" x="-999" y="-999" width="256" height="256" preserveAspectRatio="none" result="spot"/>' +
       '<feComposite in="spot" in2="black" operator="over" result="m"/>' +
-      '<feComposite in="n1" in2="m" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="map"/>' +
+      '<feComposite in="no" in2="m" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="map"/>' +
       '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G" result="dm"/>' +
-      '<feTurbulence type="fractalNoise" baseFrequency="0.0055 0.009" numOctaves="2" seed="9" result="nb"/>' +
-      '<feOffset in="nb" dx="0" dy="0" result="nbo"/>' +
-      '<feColorMatrix in="nbo" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1" result="nb1"/>' +
-      '<feComponentTransfer in="m" result="sl"><feFuncR type="linear" slope="0" intercept="0"/><feFuncG type="linear" slope="0" intercept="0"/><feFuncB type="linear" slope="0" intercept="0"/></feComponentTransfer>' +
-      '<feComposite in="sl" in2="nb1" operator="arithmetic" k1="0" k2="-1" k3="1" k4="1" result="df"/>' +
-      '<feComponentTransfer in="df" result="kp"><feFuncR type="linear" slope="7" intercept="-5.6"/></feComponentTransfer>' +
-      '<feColorMatrix in="kp" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" result="ka"/>' +
-      '<feComposite in="dm" in2="ka" operator="in" result="res"/>' +
-      /* a project page: the pictures fill their pane edge to edge, so where the melt pulls the picture away from an edge the picture itself shows through, never a black tear */
-      '<feFlood flood-opacity="0" result="nil"/>' +
-      '<feComposite in="res" in2="nil" operator="over"/>';
+      /* where the melt pulls the picture away from an edge the picture itself shows through, never a black tear */
+      '<feComposite in="dm" in2="SourceGraphic" operator="over"/>';
     svg.appendChild(f); document.body.appendChild(svg);
     var ch = f.children;
-    gal = { turb: ch[0], off: ch[1], img: ch[4], map: ch[7], turb2: ch[8], off2: ch[9], sl: ch[11].children[0], fin: ch[ch.length - 1] };
+    gal = { turb: ch[0], off: ch[1], fl: ch[2], img: ch[3], m: ch[4], ar: ch[5], map: ch[6], last: {} };
     return gal;
   }
   function galFx(c, sp, on, now, dtf) {
@@ -231,22 +227,24 @@
     if (c.gmelt <= .5) { if (galBox) { galBox.style.filter = ""; galBox = null; galS = 0; } return 0; }
     /* Twist: the ribbon must stay calm under the cursor (a strong, flowing melt read as the whole ribbon trembling up and down), so the melt is gentler there and its noise barely drifts */
     /* one recipe everywhere (Twist, Grid, project page): the same strength, the same soft opening swell and the same slow drift, so the hover feels the same on every page */
-    var target = (hover || halo) ? c.gmelt * .72 * (1 + 1.1 * galPulse + sp * .35) * (hover ? 1 : .35) : 0;
+    var target = (hover || halo) ? c.gmelt * .864 * (1 + 1.1 * galPulse + sp * .35) * (hover ? 1 : .35) : 0;
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
     galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 6.5 : 4)));   /* it swells in and settles slowly, like liquid, instead of snapping */
     if (galS < 1 && target === 0) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
     var g = galFilter(), br = galBR || box.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100;
     /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
     if (box.style.filter !== "url(#lq-gal)") box.style.filter = "url(#lq-gal)"; galBox = box;
-    g.map.setAttribute("scale", galS.toFixed(2)); 
-    /* how much of the picture dissolves: a lot at the arrival burst, a light veil while the cursor rests */
-    var lvl = "0";   /* no dissolve: the picture is never eaten into black patches, the hover is a smooth liquid distortion only */
-    [0, 1, 2].forEach(function (i) { g.sl.parentNode.children[i].setAttribute("slope", lvl); });
-    g.turb.setAttribute("baseFrequency", (.0048 * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.0072 * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
-    var fl = 16, fs_ = 2.2; g.off.setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
-    g.turb2.setAttribute("baseFrequency", (.0055 * c.gnz / 100 * (1 + .1 * Math.cos(now / 1900))).toFixed(5) + " " + (.009 * c.gnz / 100 * (1 + .1 * Math.sin(now / 2300))).toFixed(5));
-    g.off2.setAttribute("dx", (Math.cos(now / 1200) * 45).toFixed(1)); g.off2.setAttribute("dy", (Math.sin(now / 1500) * 45).toFixed(1));
-    g.img.setAttribute("x", (mx - br.left - R).toFixed(1)); g.img.setAttribute("y", (my - br.top - R).toFixed(1)); g.img.setAttribute("width", (R * 2).toFixed(1)); g.img.setAttribute("height", (R * 2).toFixed(1));
+    /* attributes are written only when they change: an unchanged filter is not re-rendered */
+    function sa(el, k, v) { var key = k + (el === g.map ? "m" : el === g.img ? "i" : el === g.off ? "o" : el === g.turb ? "t" : "s"); if (g.last[key] !== v) { g.last[key] = v; el.setAttribute(k, v); } }
+    var sc_ = galS.toFixed(1); sa(g.map, "scale", sc_);
+    /* the noise keeps its shape (a frequency change regenerated the whole field) and flows by a slow drift */
+    sa(g.turb, "baseFrequency", (.0048 * c.gnz / 100).toFixed(5) + " " + (.0072 * c.gnz / 100).toFixed(5));
+    var fl = 16, fs_ = 2.2; sa(g.off, "dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); sa(g.off, "dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
+    var ix = (mx - br.left - R).toFixed(0), iy = (my - br.top - R).toFixed(0), iw = (R * 2).toFixed(0);
+    sa(g.img, "x", ix); sa(g.img, "y", iy); sa(g.img, "width", iw); sa(g.img, "height", iw);
+    /* the work area: the cursor spot plus the reach of the displacement */
+    var pad = Math.ceil(galS / 2 + 4), bx = String(+ix - pad), by = String(+iy - pad), bw = String(+iw + pad * 2);
+    [g.turb, g.off, g.fl, g.m, g.ar, g.map].forEach(function (e, j) { var t = "s" + j; if (g.last[t] !== bx + by + bw) { g.last[t] = bx + by + bw; e.setAttribute("x", bx); e.setAttribute("y", by); e.setAttribute("width", bw); e.setAttribute("height", bw); } });
     return 1;
   }
   var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
@@ -270,7 +268,8 @@
     /* small text gets a fraction of the strength a large card gets, so every component distorts to the same degree visually */
     return { id: id, ph: fid * 1.7, fq: fq, turb: f.children[0], off: f.children[1], map: f.children[2], k: 1 };
   }
-  function spring(st, key, target, k, damp) { var t = spring.ts || 1; st["v" + key] = (st["v" + key] + (target - st[key]) * k * t) * Math.pow(damp, t); st[key] += st["v" + key] * t; }   /* time-based: the same softness at 20 or 144 fps (the About card runs slowly inside its scaled iframe and felt stiff) */
+  /* no bounce anywhere: every value glides to its target on a plain exponential ease (no velocity, so it can never overshoot and swing back); time-based, the same softness at 20 or 144 fps */
+  function spring(st, key, target, k, damp) { var t = spring.ts || 1; st["v" + key] = 0; st[key] += (target - st[key]) * (1 - Math.pow(1 - Math.min(.9, k * 1.6), t)); }
 
   function step(now) {
     var c = C();
@@ -279,7 +278,7 @@
     cvx *= .88; cvy *= .88;
     var dtf = Math.min(.12, (now - (step.last || now)) / 1000); step.last = now; spring.ts = Math.min(3, Math.max(.4, dtf * 60));
     var active = 0, follow = Math.max(.12, Math.min(.5, .46 - c.trail * .24));
-    head.vx = (head.vx + (mx - head.x) * .08) * .8; head.vy = (head.vy + (my - head.y) * .08) * .8; head.x += head.vx; head.y += head.vy;
+    var hk = 1 - Math.pow(1 - .2, spring.ts); head.vx = (mx - head.x) * hk; head.vy = (my - head.y) * hk; head.x += head.vx; head.y += head.vy;   /* the glow follows on a plain ease: no overshoot */
     chain[0].x = head.x; chain[0].y = head.y;
     for (var i = 1; i < N; i++) { chain[i].x += (chain[i - 1].x - chain[i].x) * follow; chain[i].y += (chain[i - 1].y - chain[i].y) * follow; }
     drawBlob(c);
@@ -304,12 +303,12 @@
       if (f > .2 && !st.hot) { st.hot = 1; st.pulse = 1; } else if (f < .06) st.hot = 0;
       st.pulse = (st.pulse || 0) * Math.exp(-dtf / .75);
       spring(st, "b", f * c.blur * (.55 + sp * .9) / vs / ks, .09, .82);
-      spring(st, "d", f * c.distort * 1.2 * (.6 + sp * .5 + 1.1 * st.pulse) / vs / ks, .08, .84);
+      spring(st, "d", f * c.distort * 1.44 * (.6 + sp * .5 + 1.1 * st.pulse) / vs / ks, .08, .84);
       /* depth: the component under the cursor comes a little towards the viewer (it grows by up to 3.5% and lifts by a pixel or two), softly, like a
          surface rising out of liquid; the ones around it stay where they are */
       spring(st, "z", f, .07, .8);
       var zz = Math.max(0, Math.min(1, st.z)), dep = zz > .004;
-      if (dep || st.zs) { if (dep) { var big_ = Math.max(b.width, b.height), amp = big_ > 160 ? .018 : .035; tgt.style.scale = (1 + amp * zz).toFixed(4); if (!tgt.classList.contains("ls-row")) tgt.style.translate = "0 " + (-1.6 * zz).toFixed(2) + "px"; st.zs = 1; if (!tgt.style.transformOrigin) tgt.style.transformOrigin = "50% 60%"; active++; }
+      if (dep || st.zs) { if (dep) { var big_ = Math.max(b.width, b.height), amp = big_ > 160 ? .0216 : .042; tgt.style.scale = (1 + amp * zz).toFixed(4); if (!tgt.classList.contains("ls-row")) tgt.style.translate = "0 " + (-1.92 * zz).toFixed(2) + "px"; st.zs = 1; if (!tgt.style.transformOrigin) tgt.style.transformOrigin = "50% 60%"; active++; }
         else { tgt.style.scale = tgt.style.translate = ""; st.zs = 0; } }
       var warp = st.d > .15;
       if (warp || st.b > .03) {
@@ -320,7 +319,7 @@
           /* never more than about a third of the element\'s own height: small text (14-20px) broke into overlapping, clipped glyphs when the arrival burst pushed it by 10+ px */
           if (!st.fs) st.fs = parseFloat(getComputedStyle(tgt).fontSize) || 16;
           /* ...and for text, never more than about 25% of the font size: lines of a paragraph (a few px apart) otherwise slide over each other and print twice */
-          st.warp.map.setAttribute("scale", Math.min(st.d * st.warp.k, Math.max(2, b.height * .41), Math.max(2, st.fs * .3)).toFixed(2));
+          st.warp.map.setAttribute("scale", Math.min(st.d * st.warp.k, Math.max(2, b.height * .49), Math.max(2, st.fs * .36)).toFixed(2));
           /* the noise flows on its own clock, like the loading screen. It flows by morphing (a slow change of its frequency) plus a small sway that stays
              inside the filter margin: sliding the whole noise field by hundreds of pixels left an empty strip in it, which showed up as a hard tear
              through the text (lines cut and printed twice) */
