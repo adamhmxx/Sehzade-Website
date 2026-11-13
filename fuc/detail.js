@@ -65,7 +65,7 @@
       '#wk .wk-visit:hover{color:rgba(255,255,255,.6)}#wk .wk-visit i{font-style:normal}' +
       '#wk .wk-name{flex:none;margin:0;font:400 var(--nm,140px)/.92 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;padding-bottom:.04em;overflow-wrap:anywhere}' +
       '#wk .wk-name span{display:block;white-space:normal}' +
-      '@media (min-width:1440px){#wk{--nm:160px}}@media (min-width:810px) and (max-width:1439.98px){#wk{--nm:120px}}@media (max-width:809.98px){#wk{--nm:64px}}' +
+      '@media (min-width:1440px){#wk{--nm:160px}}@media (min-width:810px) and (max-width:1439.98px){#wk{--nm:120px}}@media (max-width:809.98px){#wk{--nm:48px}}' +
       '#wk .wk-r{position:relative;overflow:hidden;background:#0b0b0b;touch-action:none;cursor:grab}' +
       '#wk .wk-r.drag{cursor:grabbing}' +
       '#wk .wk-rs{position:absolute;inset:-90px;pointer-events:none}#wk .wk-ro{position:absolute;left:90px;top:90px;width:0;height:0}' +
