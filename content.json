@@ -78,7 +78,8 @@
    "year": "2026",
    "link": "",
    "src": "uploads/routeonefi-691dc1d7.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "p4mw9hlmvg",
@@ -121,7 +122,8 @@
    "year": "2025",
    "link": "",
    "src": "uploads/recruitpilot-9a20b267.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "p9mw9hlmvg",
@@ -153,7 +155,8 @@
    "year": "2025",
    "link": "",
    "src": "uploads/anywear-6c94b41e.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "p11mw9hlmvg",
@@ -163,7 +166,10 @@
    "year": "2026",
    "link": "",
    "src": "uploads/lexur-ca98949c.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": [],
+   "client": "Prime",
+   "challenge": "CHall"
   },
   {
    "id": "p12mw9hlmvg",
