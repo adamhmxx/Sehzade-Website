@@ -47,7 +47,7 @@
       '#wk .wk-bar button{min-height:40px;padding:0 4px;opacity:.45;transition:opacity .24s ease}' +
       '#wk .wk-bar .wk-back{opacity:1}' +
       '#wk .wk-bar button:hover{opacity:1}' +
-      '#wk .wk-body{flex:1;min-height:0;overflow:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-bottom:22px}' +
+      '#wk .wk-body{flex:1;min-height:0;overflow:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:-22px -22px 0 -24px;padding:22px 22px 22px 24px}' +
       '#wk .wk-body::-webkit-scrollbar{display:none}' +
       '#wk .wk-idx{margin:0 0 18px;font-size:16px;line-height:1.3;color:#fff;font-variant-numeric:tabular-nums}' +
       '#wk .wk-lede{margin:0 0 24px;font-size:16px;line-height:1.4;font-weight:400;max-width:60ch;color:#fff}' +
@@ -84,7 +84,7 @@
       '#wk .wk-short{grid-row:3;grid-column:3 / -1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);column-gap:16px;align-items:start}' +
       '#wk .wk-sec{margin-bottom:14px}' +
       '#wk .wk-r{grid-row:2;margin-bottom:18px!important;grid-column:1 / -1;margin:0 -16px;touch-action:pan-y}' +
-      '#wk .wk-long{grid-row:4;grid-column:3 / -1;min-height:0;overflow:auto;scrollbar-width:none;padding-top:14px}#wk .wk-long::-webkit-scrollbar{display:none}' +
+      '#wk .wk-long{grid-row:4;grid-column:3 / -1;min-height:0;overflow:auto;scrollbar-width:none;padding:14px 16px 0;margin:0 -16px}#wk .wk-long::-webkit-scrollbar{display:none}' +
       '#wk .wk-visit{grid-row:5;grid-column:3 / -1;justify-self:start;margin:6px 0 8px}' +
       '#wk .wk-name{grid-row:1;grid-column:1 / -1;margin-bottom:18px}}' +   /* phone order: the project name first, then the pictures, the short facts, the long texts and the link */
       '@media (prefers-reduced-motion:reduce){#wk,#wk.on{transition:none}#wk .wk-in,#wk.on .wk-in{transition:none;opacity:1;transform:none}}';

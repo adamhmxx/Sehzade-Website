@@ -259,6 +259,16 @@
     return { id: id, ph: fid * 1.7, fq: fq, turb: f.children[0], off: f.children[1], map: f.children[2], k: 1 };
   }
   /* no bounce anywhere: every value glides to its target on a plain exponential ease (no velocity, so it can never overshoot and swing back); time-based, the same softness at 20 or 144 fps */
+  /* free space around an element's glyphs before the nearest clipping box (overflow other than visible, a clip-path, or the screen) */
+  function roomOf(el, b) {
+    var t = b; try { var rg = document.createRange(); rg.selectNodeContents(el); var q = rg.getBoundingClientRect(); if (q.width > 0) t = q; } catch (e) {}
+    var L = 0, T = 0, R = innerWidth, B = innerHeight;
+    for (var n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+      var cs = getComputedStyle(n); if (cs.display === "contents") continue;
+      if (cs.overflowX !== "visible" || cs.overflowY !== "visible" || cs.clipPath !== "none") { var r = n.getBoundingClientRect(); if (r.width < innerWidth * 1.5 && r.height < innerHeight * 3) { L = Math.max(L, r.left); T = Math.max(T, r.top); R = Math.min(R, r.right); B = Math.min(B, r.bottom); } }
+    }
+    return Math.min(t.left - L, R - t.right, t.top - T, B - t.bottom);
+  }
   function spring(st, key, target, k, damp) { var t = spring.ts || 1; st["v" + key] = 0; st[key] += (target - st[key]) * (1 - Math.pow(1 - Math.min(.9, k * 1.6), t)); }
 
   function step(now) {
@@ -309,7 +319,10 @@
           /* never more than about a third of the element\'s own height: small text (14-20px) broke into overlapping, clipped glyphs when the arrival burst pushed it by 10+ px */
           if (!st.fs) st.fs = parseFloat(getComputedStyle(tgt).fontSize) || 16;
           /* ...and for text, never more than about 25% of the font size: lines of a paragraph (a few px apart) otherwise slide over each other and print twice */
-          st.warp.map.setAttribute("scale", Math.min(st.d * st.warp.k, Math.max(2, b.height * .49), Math.max(2, st.fs * .36)).toFixed(2));
+          /* never cut off: the ripple (it pushes the glyphs by up to half its scale) and the depth growth must stay inside whatever clips this text
+             (a scrolling box, a card, the screen edge). The room is measured on the glyphs themselves and re-measured twice a second */
+          if (!st.roomT || now - st.roomT > 500) { st.roomT = now; st.room = roomOf(tgt, b); }
+          st.warp.map.setAttribute("scale", Math.max(0, Math.min(st.d * st.warp.k, Math.max(2, b.height * .49), Math.max(2, st.fs * .36), (st.room - Math.max(b.width, b.height) * .0216 - 3) * 2)).toFixed(2));
           /* the noise flows on its own clock, like the loading screen. It flows by morphing (a slow change of its frequency) plus a small sway that stays
              inside the filter margin: sliding the whole noise field by hundreds of pixels left an empty strip in it, which showed up as a hard tear
              through the text (lines cut and printed twice) */
