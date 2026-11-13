@@ -73,7 +73,9 @@
       '#wk .wk-it img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none;user-select:none}' +
       /* phone: the pictures on top (endless horizontal), then the details, and the name set big at the bottom, above the Back button */
       /* phone, on the 8-column grid: the short facts in one row on top, the endless picture scroll in the middle, the long texts below it, then the link and the name; Back sits bottom right */
-      '@media (max-width:809.98px){#wk{grid-template-columns:repeat(8,minmax(0,1fr));column-gap:16px;grid-template-rows:auto 30dvh minmax(0,1fr) auto auto;padding:72px 16px var(--bar,104px);box-sizing:border-box}' +
+      '@media (max-width:809.98px){#wk{grid-template-columns:repeat(8,minmax(0,1fr));column-gap:16px;grid-template-rows:auto 30dvh minmax(0,1fr) auto auto;padding:72px 16px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box}' +
+      /* phone: no Back button (the browser's own back, or the back swipe, closes the page); its space goes to the content */
+      '#wk .wk-bar{display:none!important}' +
       '#wk .wk-l,#wk .wk-body,#wk .wk-grid,#wk .wk-col{display:contents}' +
       '#wk .wk-year{grid-row:1;grid-column:1 / span 2}' +
       '#wk .wk-short{grid-row:1;grid-column:3 / -1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);column-gap:16px;align-items:start}' +
