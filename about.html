@@ -229,7 +229,8 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     });
     var boxes=rows.map(function(r){return r.parentElement;}).filter(function(b,i,a){return a.indexOf(b)===i;});
     boxes.forEach(function(b){b.classList.add("ascii-live");});
-    /* the ASCII portrait has no hover reveal any more: it stays hidden */
+    /* the ASCII portrait has no hover reveal any more: it stays hidden, so its per-frame wave animation (about 180 rows and the petals, all invisible) is stopped */
+    window.__asciiOff=1;
   }
   addEventListener("load",function(){setTimeout(start,800);});
 })();

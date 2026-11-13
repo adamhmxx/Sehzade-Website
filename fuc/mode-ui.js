@@ -180,7 +180,7 @@
     var T = S * RH, c = CY - RH / 2, k = Math.round(pos / RH), slot = wrap(k, S);
     for (var s = 0; s < S; s++) {
       var y = wrap(s * RH - pos + T / 2, T) - T / 2;
-      mRows[s].style.transform = "translate3d(0," + (c + y).toFixed(1) + "px,0)";
+      var tf = "translate3d(0," + (c + y).toFixed(1) + "px,0)", rw = mRows[s]; if (rw.__tf !== tf) { rw.style.transform = tf; rw.__tf = tf; }   /* unchanged rows are not written again */
     }
     if (slot !== mK) {
       if (mK >= 0 && mRows[mK]) mRows[mK].classList.remove("act");
