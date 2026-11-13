@@ -76,13 +76,16 @@
       '@media (max-width:809.98px){#wk{grid-template-columns:repeat(8,minmax(0,1fr));column-gap:16px;grid-template-rows:auto 30dvh auto minmax(0,1fr) auto;padding:var(--top,104px) 16px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box}' +
       /* phone: Back sits top right, just under the navbar; the texts are 14px */
       '#wk .wk-sec h3,#wk .wk-sec p,#wk .wk-visit{font-size:14px}' +
+      'html.wk-open .wk-logo{visibility:hidden!important}' +
+      /* the navbar sits above the project page: its empty parts let taps through to Back, only its links stay tappable */
+      'html.wk-open nav,html.wk-open nav *,html.wk-open .ls-navw,html.wk-open .ls-navw *{pointer-events:none!important}html.wk-open nav a:not(.wk-logo),html.wk-open nav a:not(.wk-logo) *{pointer-events:auto!important}' +
       '#wk .wk-l,#wk .wk-body,#wk .wk-grid,#wk .wk-col{display:contents}' +
       '#wk .wk-year{grid-row:3;grid-column:1 / span 2}' +
       '#wk .wk-short{grid-row:3;grid-column:3 / -1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);column-gap:16px;align-items:start}' +
       '#wk .wk-sec{margin-bottom:14px}' +
       '#wk .wk-r{grid-row:2;margin-bottom:18px!important;grid-column:1 / -1;margin:0 -16px;touch-action:pan-y}' +
-      '#wk .wk-long{grid-row:4;grid-column:1 / -1;min-height:0;overflow:auto;scrollbar-width:none;padding-top:14px}#wk .wk-long::-webkit-scrollbar{display:none}' +
-      '#wk .wk-visit{grid-row:5;grid-column:1 / -1;justify-self:start;margin:6px 0 8px}' +
+      '#wk .wk-long{grid-row:4;grid-column:3 / -1;min-height:0;overflow:auto;scrollbar-width:none;padding-top:14px}#wk .wk-long::-webkit-scrollbar{display:none}' +
+      '#wk .wk-visit{grid-row:5;grid-column:3 / -1;justify-self:start;margin:6px 0 8px}' +
       '#wk .wk-name{grid-row:1;grid-column:1 / -1;margin-bottom:18px}}' +   /* phone order: the project name first, then the pictures, the short facts, the long texts and the link */
       '@media (prefers-reduced-motion:reduce){#wk,#wk.on{transition:none}#wk .wk-in,#wk.on .wk-in{transition:none;opacity:1;transform:none}}';
     document.head.appendChild(s);
@@ -187,15 +190,24 @@
       meltEl.style.scale = ps; meltEl.style.rotate = pr; meltEl.style.transition = pt;
     } else r = tl && tl.getBoundingClientRect();
     if (!r || !r.width) { bar.style.left = "50%"; bar.style.top = (innerHeight - 56) + "px"; bar.style.transform = "translate(-50%,-50%)"; return; }
-    if (phone()) {   /* phone: Back in the top left corner, right under the logo */
-      var nv = document.querySelector("nav"), nb = nv ? nv.getBoundingClientRect() : null, top = nb && nb.height ? nb.bottom + 8 : 64;
-      bar.style.right = "auto"; bar.style.left = "12px"; bar.style.top = top + "px"; bar.style.transform = "none";
-      if (ov) ov.style.setProperty("--top", Math.round(top + 64) + "px");
+    if (phone()) {   /* phone: Back takes the place of the SEHZADE logo (same spot, same type), the logo steps aside while the project is open */
+      var nv = document.querySelector("nav"), nb = nv ? nv.getBoundingClientRect() : null, lg = logoEl(), lr = lg ? lg.getBoundingClientRect() : null;
+      if (lg) lg.classList.add("wk-logo");
+      var fs = lg ? parseFloat(getComputedStyle(lg).fontSize) || 16 : 16;
+      bar.style.setProperty("--f", fs + "px");
+      bar.style.right = "auto"; bar.style.left = (lr && lr.width ? lr.left - 4 : 12) + "px";
+      bar.style.top = (lr && lr.height ? lr.top + lr.height / 2 : 35) + "px"; bar.style.transform = "translate(0,-50%)";
+      if (ov) ov.style.setProperty("--top", Math.round((nb && nb.height ? nb.bottom : 64) + 16) + "px");
+      return;
     }
     else { bar.style.right = ""; bar.style.left = (r.left + r.width / 2) + "px"; bar.style.top = (r.top + r.height / 2) + "px"; bar.style.transform = "translate(-50%,-50%)"; }
     var cs = tab ? getComputedStyle(tab) : null; bar.style.setProperty("--f", (cs ? parseFloat(cs.fontSize) || 16 : 16) + "px");
     var g = parseFloat(getComputedStyle(tl).columnGap || getComputedStyle(tl).gap); bar.style.setProperty("--g", (isNaN(g) ? 16 : g) + "px");
     if (ov) ov.style.setProperty("--bar", Math.max(80, innerHeight - r.top + 14) + "px");
+  }
+  function logoEl() {
+    var best = null; [].forEach.call(document.querySelectorAll("nav a, nav p"), function (e) { if (!best && /^sehzade\.?$/i.test(e.textContent.trim())) best = e.closest("a") || e; });
+    return best;
   }
   function render(i, keepScroll, hold) {
     var list = data(), it = list[i]; if (!it) return;
