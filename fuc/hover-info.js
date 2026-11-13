@@ -22,7 +22,7 @@
   function mode() { var t = [].slice.call(document.querySelectorAll('[role="tab"]')), i = t.findIndex(function (x) { return x.getAttribute("aria-selected") === "true"; }); return ["twister", "grid", "list"][i] || ""; }
   function onMenu() { var tl = document.querySelector('[role="tablist"]'); if (!tl) return false; var r = tl.getBoundingClientRect(); return mx >= r.left - 16 && mx <= r.right + 16 && my >= r.top - 16 && my <= r.bottom + 16; }
   function cards() {
-    return [].filter.call(document.querySelectorAll("#main div"), function (d) { var s = d.style; return s.position === "absolute" && s.top === "50%" && s.left === "50%" && s.zIndex; });
+    return [].filter.call(document.querySelectorAll('#main div[style*="z-index"]'), function (d) {   /* the selector engine narrows it to positioned divs first; the exact test stays below */ var s = d.style; return s.position === "absolute" && s.top === "50%" && s.left === "50%" && s.zIndex; });
   }
   /* the image of a card: a plain <img>, or (Twister, where a card is cut into slices) the background image of a slice */
   function srcOf(card) {

@@ -235,7 +235,7 @@
     rows.forEach(function (r) { r.style.height = lh + "px"; r.style.lineHeight = lh + "px"; });
     var widest = 0; rows.forEach(function (r) { widest = Math.max(widest, r.getBoundingClientRect().width); });
     if (widest > vw * .94) { fs *= vw * .94 / widest; listEl.style.fontSize = fs + "px"; }
-    var w = Math.round(Math.max(200, Math.min(420, vw * (vw < 810 ? .5 : .26)))); pv.style.width = w + "px"; pv.style.height = Math.round(w * .75) + "px";
+    var w = Math.round(Math.max(200, Math.min(420, vw * (vw < 810 ? .5 : .26)))); pv.style.width = w + "px"; pv.style.height = Math.round(w * .75) + "px"; pvW = w; pvH = Math.round(w * .75);
     if (act >= rows.length) deactivate(); else if (act >= 0) rows[act].classList.add("act");
   }
 
@@ -250,12 +250,16 @@
   function deactivate() { var was = act; if (act >= 0 && rows[act]) rows[act].classList.remove("act"); act = -1; pv.classList.remove("on"); if (was >= 0) told(); }
 
   /* the picture follows the pointer with a little lag */
+  /* its size is known from layout(), so the frame never has to measure it (a measure right after the last style write forced a layout every frame),
+     and an unchanged position is not written again */
+  var pvW = 0, pvH = 0, pvT = "";
   function follow() { if (!raf) raf = requestAnimationFrame(tick); }
   function tick() {
     raf = 0;
     px += (mx - px) * .16; py += (my - py) * .16;
-    var w = pv.offsetWidth, h = pv.offsetHeight;
-    pv.style.transform = "translate3d(" + (px - w / 2).toFixed(1) + "px," + (py - h / 2).toFixed(1) + "px,0)" + (pv.classList.contains("on") ? "" : " scale(.94)");
+    var w = pvW || pv.offsetWidth, h = pvH || pv.offsetHeight;
+    var tf = "translate3d(" + (px - w / 2).toFixed(1) + "px," + (py - h / 2).toFixed(1) + "px,0)" + (pv.classList.contains("on") ? "" : " scale(.94)");
+    if (tf !== pvT) { pv.style.transform = tf; pvT = tf; }
     if (act >= 0 || Math.abs(mx - px) + Math.abs(my - py) > .5) follow();
   }
 

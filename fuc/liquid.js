@@ -45,17 +45,30 @@
 
   /* ---------- background blob ---------- */
   var cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
-  cv.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2147482000;mix-blend-mode:" + BLEND;
+  cv.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2147482000;visibility:hidden;mix-blend-mode:" + BLEND;
   var chain = [], head = { x: -9999, y: -9999, vx: 0, vy: 0 };
   for (var i = 0; i < N; i++) chain.push({ x: -9999, y: -9999 });
-  function size() { cv.width = Math.ceil(innerWidth / SCALE); cv.height = Math.ceil(innerHeight / SCALE); }
+  function size() { cv.width = Math.ceil(innerWidth / SCALE); cv.height = Math.ceil(innerHeight / SCALE); if (typeof drawn !== "undefined") drawn[N * 2 + 3] = -1; }
   size(); addEventListener("resize", size);
 
+  /* The glow is only redrawn when it would look different: a resting cursor (the usual case) leaves it exactly as it is, so the frame skips the
+     whole pixel pass (read back, per-pixel shading, upload). With nothing to show the canvas is hidden, so the browser does not blend an empty
+     full-screen layer over the page on every frame either */
+  var blank = true, drawn = new Float64Array(N * 2 + 4), LUT = new Float64Array(256), LUTd = new Uint8Array(256);
   function drawBlob(c) {
     var W = cv.width, H = cv.height, s = 1 / SCALE;
+    if (!c.on || (TOP && window.__abOpen) || (!inside && Math.abs(head.vx) + Math.abs(head.vy) < .05 && idle > 40)) {
+      if (!blank) { cx.clearRect(0, 0, W, H); blank = true; cv.style.visibility = "hidden"; }
+      return;
+    }
+    var rad = c.radius * s / KS(), same = !blank && drawn[N * 2] === rad && drawn[N * 2 + 1] === c.softness && drawn[N * 2 + 2] === c.brightness && drawn[N * 2 + 3] === W;
+    for (var j0 = 0; same && j0 < N; j0++) same = Math.abs(chain[j0].x * s - drawn[j0 * 2]) < .02 && Math.abs(chain[j0].y * s - drawn[j0 * 2 + 1]) < .02;
+    if (same) return;
+    for (j0 = 0; j0 < N; j0++) { drawn[j0 * 2] = chain[j0].x * s; drawn[j0 * 2 + 1] = chain[j0].y * s; }
+    drawn[N * 2] = rad; drawn[N * 2 + 1] = c.softness; drawn[N * 2 + 2] = c.brightness; drawn[N * 2 + 3] = W;
+    if (blank) { blank = false; cv.style.visibility = ""; }
     cx.clearRect(0, 0, W, H);
-    if (!c.on || (TOP && window.__abOpen) || (!inside && Math.abs(head.vx) + Math.abs(head.vy) < .05 && idle > 40)) return;
-    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, rad = c.radius * s / KS(), soft = c.softness, h = (1 - soft) * .6;
+    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, soft = c.softness, h = (1 - soft) * .6;
     for (var j = N - 1; j >= 0; j--) {
       var f = j / (N - 1), p = chain[j], r = rad * (.32 + .68 * Math.pow(1 - f, 1.1)), a = Math.pow(1 - f, 1.4);
       var x = p.x * s, y = p.y * s, g = cx.createRadialGradient(x, y, 0, x, y, r);
@@ -75,10 +88,14 @@
        hard-edged circle on the dark page). So the glow is written as opaque grey values (black = no effect under "screen", white = none under
        "multiply") with a random dither of the rounding, which turns the rings into smooth, grain-free gradation. */
     var gray = +rgb[0], mult = ABOUT, rs = (Math.random() * 4294967296) >>> 0;
+    /* the shade depends only on the pixel's coverage (0..255), so it is worked out once for each of the 256 values and looked up per pixel */
+    for (var a = 0; a < 256; a++) {
+      var t = (a / 255 - lo) / ew; t = t < 0 ? 0 : t > 1 ? 1 : t; t = t * t * (3 - 2 * t);
+      var v = t * al; LUT[a] = mult ? 255 - v * (255 - gray) : v * gray; LUTd[a] = t > 0 ? 1 : 0;
+    }
     for (var k = 0; k < d.length; k += 4) {
-      var t = (d[k + 3] / 255 - lo) / ew; t = t < 0 ? 0 : t > 1 ? 1 : t; t = t * t * (3 - 2 * t);
-      var v = t * al, g = mult ? 255 - v * (255 - gray) : v * gray;
-      if (t > 0) { rs = (rs * 1664525 + 1013904223) >>> 0; g += rs / 4294967296 - .5; }
+      var a1 = d[k + 3], g = LUT[a1];
+      if (LUTd[a1]) { rs = (rs * 1664525 + 1013904223) >>> 0; g += rs / 4294967296 - .5; }
       g = Math.round(g); g = g < 0 ? 0 : g > 255 ? 255 : g;
       d[k] = d[k + 1] = d[k + 2] = g; d[k + 3] = 255;
     }
@@ -115,7 +132,7 @@
   /* The gallery's hover liquid: the cards near the cursor behave like blobs of wet paint. Dragging the cursor through them shoves them along and they
      slosh back and forth on a soft, springy rhythm; arriving on a card gives it a squashy jolt away from the cursor, and a card that is stretched one way
      is squeezed the other (it keeps its volume). It is pure motion of the card as a whole, so every edge stays perfectly smooth in every mode. */
-  var galR = [], galBR = null;
+  var galR = [], galBR = null, gzN = -1, gzSig = "", gzT = 0;
   function jellyFx(c, sp, on, now, dtf) {
     var k = Math.max(0, c.jel / 100), kp = c.jpush / 100, kj = c.jjolt / 100, ksq = c.jsq / 100, ktw = c.jtw / 100, any = 0, reach = (c.reach + 160) * c.jrng / 100 / KS(), aks = 1 / KS();
     var damp = .8 + (c.jbnc / 100) * .16;
@@ -124,8 +141,17 @@
     on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
     /* all measuring first, all style writing after: reading a rect right after writing a style forces the browser to lay the page out again for every card */
     var rects = [], n, card, cb;
-    for (n = 0; n < galCards.length; n++) rects.push(galCards[n].isConnected ? galCards[n].getBoundingClientRect() : null);
-    galR = rects; galBR = galCards.length && galCards[0].parentElement ? galCards[0].parentElement.getBoundingClientRect() : null;   /* shared with the picture layer, which runs right after */
+    /* the cards are only measured when the hover can act on them: not while a mode change or a project page moves them (the hover is off then), and
+       when none was on screen last time (List mode) only every 15th frame, or at once when the mode or the project page changes */
+    var gsig = (window.__modeMove ? 1 : 0) + "" + (window.__wkOpen ? 1 : 0) + (window.__twGLon ? 1 : 0) + galCards.length;
+    if (on && !(gzN === 0 && gsig === gzSig && ++gzT < 15)) {
+      gzT = 0; gzSig = gsig; gzN = 0;
+      for (n = 0; n < galCards.length; n++) {
+        var r0 = galCards[n].isConnected ? galCards[n].getBoundingClientRect() : null; rects.push(r0);
+        if (r0 && r0.width >= 40 && r0.bottom > 0 && r0.top < innerHeight && r0.right > 0 && r0.left < innerWidth && galCards[n].style.visibility !== "hidden") gzN++;
+      }
+    } else if (!on) gzSig = "";
+    galR = rects; galBR = rects.length && galCards[0].parentElement ? galCards[0].parentElement.getBoundingClientRect() : null;   /* shared with the picture layer, which runs right after */
     /* a project page: the pictures of the endless scroll are one continuous column, so they do not wobble one by one (their seams would open and close); the melt alone carries the hover there */
     if (galCards.length && galCards[0].classList && galCards[0].classList.contains("wk-it")) return 0;
     /* Twist: the cards form one unbroken ribbon, edge to edge. A wobble of single cards would open thin gaps between neighbours, so the ribbon is left whole and the melt alone carries the hover */
@@ -212,7 +238,7 @@
     var hover = null, halo = false;
     on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
     if (on) for (var i = 0; i < galCards.length; i++) {
-      var r = galR[i] || galCards[i].getBoundingClientRect(); if (r.width < 40) continue; if (galCards[i].style.visibility === "hidden") continue;
+      var r = galR[i]; if (!r || r.width < 40) continue;   /* measured once per frame by jellyFx (nothing measured = no card on screen) */ if (galCards[i].style.visibility === "hidden") continue;
       if (mx > r.left && mx < r.right && my > r.top && my < r.bottom) hover = galCards[i];
       else if (mx > r.left - 90 && mx < r.right + 90 && my > r.top - 90 && my < r.bottom + 90) halo = true;
     }
@@ -262,11 +288,16 @@
   /* free space around an element's glyphs before the nearest clipping box (overflow other than visible, a clip-path, or the screen) */
   function roomOf(el, b) {
     var t = b; try { var rg = document.createRange(); rg.selectNodeContents(el); var q = rg.getBoundingClientRect(); if (q.width > 0) t = q; } catch (e) {}
-    var L = 0, T = 0, R = innerWidth, B = innerHeight;
-    for (var n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
-      var cs = getComputedStyle(n); if (cs.display === "contents") continue;
-      if (cs.overflowX !== "visible" || cs.overflowY !== "visible" || cs.clipPath !== "none") { var r = n.getBoundingClientRect(); if (r.width < innerWidth * 1.5 && r.height < innerHeight * 3) { L = Math.max(L, r.left); T = Math.max(T, r.top); R = Math.min(R, r.right); B = Math.min(B, r.bottom); } }
+    var L = 0, T = 0, R = innerWidth, B = innerHeight, cl = el.__clipA;
+    /* which ancestors clip is a property of the page's styles, so it is looked up once per element; only their boxes are measured again */
+    if (!cl) {
+      cl = el.__clipA = [];
+      for (var n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+        var cs = getComputedStyle(n); if (cs.display === "contents") continue;
+        if (cs.overflowX !== "visible" || cs.overflowY !== "visible" || cs.clipPath !== "none") cl.push(n);
+      }
     }
+    for (var i = 0; i < cl.length; i++) { var r = cl[i].getBoundingClientRect(); if (r.width < innerWidth * 1.5 && r.height < innerHeight * 3) { L = Math.max(L, r.left); T = Math.max(T, r.top); R = Math.min(R, r.right); B = Math.min(B, r.bottom); } }
     return Math.min(t.left - L, R - t.right, t.top - T, B - t.bottom);
   }
   function spring(st, key, target, k, damp) { var t = spring.ts || 1; st["v" + key] = 0; st[key] += (target - st[key]) * (1 - Math.pow(1 - Math.min(.9, k * 1.6), t)); }
