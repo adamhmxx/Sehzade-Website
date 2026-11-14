@@ -94,7 +94,8 @@
    "year": "2026",
    "link": "",
    "src": "uploads/routeonefi-691dc1d7.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "p4mw9hlmvg",
@@ -146,16 +147,10 @@
    "description": "AI Talent Recruitment website",
    "services": "Web design",
    "year": "2025",
-   "link": "https://recruitpilot.ai/",
-   "src": "uploads/674ebdbe1a1d886a394.webp",
+   "link": "",
+   "src": "uploads/780c6a281a1d88f6919.webp",
    "srcSet": "",
-   "gallery": [
-    "uploads/c762ff311a1d880de7b.webp",
-    "uploads/645cf4291a1d880ef3d.webp",
-    "uploads/3567a9341a1d8810108.webp",
-    "uploads/ca1bef2b1a1d88114e0.webp",
-    "uploads/c34590c81a1d8812c51.webp"
-   ],
+   "gallery": [],
    "client": "Recruitpilot AI",
    "challenge": "The challenge of this project is how I create this SaaS theme design with glow effect without distracting the features of the main platform, especially the timeline is also very tight which is 3 days.",
    "approach": "The approach is I use a simple typography and glow effect circular to highlighting hero and cta section only and for the other components is I adopting their existing platforn as their visual tratment and key visual itself."
@@ -190,7 +185,8 @@
    "year": "2025",
    "link": "",
    "src": "uploads/anywear-6c94b41e.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "p11mw9hlmvg",
