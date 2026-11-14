@@ -65,6 +65,7 @@
       '#wk .wk-visit:hover{color:rgba(255,255,255,.6)}#wk .wk-visit i{font-style:normal}' +
       '#wk .wk-name{flex:none;margin:0;font:400 var(--nm,140px)/.92 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;padding-bottom:.04em;overflow-wrap:anywhere}' +
       '#wk .wk-name span{display:block;white-space:normal}' +
+      '#wk .wk-long.wk-more,#wk .wk-body.wk-more{-webkit-mask-image:linear-gradient(#000 calc(100% - 64px),transparent);mask-image:linear-gradient(#000 calc(100% - 64px),transparent)}' +
       '@media (min-width:1440px){#wk{--nm:160px}}@media (min-width:810px) and (max-width:1439.98px){#wk{--nm:120px}}@media (max-width:809.98px){#wk{--nm:48px}}' +
       '#wk .wk-r{position:relative;overflow:hidden;background:#0b0b0b;touch-action:none;cursor:grab}' +
       '#wk .wk-r.drag{cursor:grabbing}' +
@@ -163,7 +164,20 @@
 
   /* ---------- the name, as big as the column allows ---------- */
   /* the name: one fixed size per breakpoint (160px desktop, 120px laptop/tablet, 64px phone); a long name simply wraps onto more lines */
-  function fitName(h1, name) { h1.textContent = ""; h1.appendChild(el("span", "", String(name).toUpperCase())); }
+  /* the name keeps its size per breakpoint and long names wrap at spaces; a single word wider than the column (RECRUITPILOT, WEGONORTH) was split
+     mid-word, so in that case only, the size is brought down just enough for the longest word to fit whole */
+  function fitName(h1, name) {
+    var up = String(name).toUpperCase(); h1.textContent = ""; h1.appendChild(el("span", "", up)); h1.style.fontSize = "";
+    var avail = h1.clientWidth; if (!avail) return;
+    var probe = el("span", "", ""); probe.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap;display:inline-block"; h1.appendChild(probe);
+    var widest = 0; up.split(/\s+/).forEach(function (w) { probe.textContent = w; widest = Math.max(widest, probe.offsetWidth); }); probe.remove();
+    if (widest > avail) h1.style.fontSize = (parseFloat(getComputedStyle(h1).fontSize) * avail / widest * .98).toFixed(1) + "px";
+  }
+  /* a text column with more text than fits fades out at its bottom edge instead of cutting a line in half; the fade goes once the end is reached */
+  function moreFade(box) {
+    if (!box) return; var f = function () { box.classList.toggle("wk-more", box.scrollHeight - box.scrollTop - box.clientHeight > 4); };
+    box.addEventListener("scroll", f, { passive: true }); f(); setTimeout(f, 400); return f;
+  }
 
   /* ---------- building the page ---------- */
   function build() {
@@ -241,7 +255,8 @@
     var urls = [it.image && it.image.src].concat(it.gallery || []).filter(Boolean).map(sm);
     if (!urls.length) urls = [];
     strip = urls.length ? Strip(r, urls, !phone(), !!hold, function () { rvLay = true; rvTry(); }) : null;
-    var fit = function () { placeBar(bar); fitName(h1, it.name); };
+    var fadeL = moreFade(gLong), fadeB = moreFade(body);
+    var fit = function () { placeBar(bar); fitName(h1, it.name); fadeL && fadeL(); fadeB && fadeB(); };
     fit(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     try { window.dispatchEvent(new Event("wk-render")); } catch (e) {}
   }

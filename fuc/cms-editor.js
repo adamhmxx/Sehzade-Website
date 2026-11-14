@@ -44,11 +44,66 @@
     }
     return attempt(0);
   }
+  /* ---- never overwrite newer work ----
+     The editor remembers the content as it last saw it on GitHub (BASE). Before publishing it reads the live copy again: if someone (another tab, another
+     device, an editor left open since yesterday) has published in the meantime, only the fields THIS editor really changed since BASE are laid over the
+     newer copy, and everything else is kept as it is now. (Publishing the whole old copy used to silently undo newer saves.) */
+  var BASE = null;
+  function snap(d) { return { items: d && Array.isArray(d.items) ? d.items : null, about: (d && d.about) || {}, site: (d && d.site) || {} }; }
+  function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+  function clone(x) { return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
+  function mergeObj(b, m, t) {
+    b = b || {}; m = m || {}; t = t || {}; var o = {}, keys = {};
+    [b, m, t].forEach(function (x) { Object.keys(x).forEach(function (k) { keys[k] = 1; }); });
+    Object.keys(keys).forEach(function (k) {
+      var v = same(m[k], b[k]) ? t[k] : m[k];   /* untouched here: take the live value; changed here: keep this editor's value */
+      if (v !== undefined) o[k] = clone(v);
+    });
+    return o;
+  }
+  function mergeItems(b, m, t) {
+    if (!Array.isArray(m)) return clone(t); if (!Array.isArray(t)) return clone(m); b = Array.isArray(b) ? b : [];
+    var B = {}, M = {}, T = {}; b.forEach(function (x) { B[x.id] = x; }); m.forEach(function (x) { M[x.id] = x; }); t.forEach(function (x) { T[x.id] = x; });
+    var ids = function (a) { return a.map(function (x) { return x.id; }); };
+    /* the order: this editor's if it reordered, otherwise the live one; projects added on either side are kept */
+    var order = same(ids(m), ids(b)) ? ids(t) : ids(m);
+    t.forEach(function (x, i) { if (order.indexOf(x.id) < 0 && !B[x.id]) order.splice(Math.min(i, order.length), 0, x.id); });
+    m.forEach(function (x, i) { if (order.indexOf(x.id) < 0 && !B[x.id]) order.splice(Math.min(i, order.length), 0, x.id); });
+    var out = [];
+    order.forEach(function (id) {
+      var bi = B[id], mi = M[id], ti = T[id];
+      if (bi && !mi && (!ti || same(ti, bi))) return;      /* deleted here */
+      if (bi && !ti && (!mi || same(mi, bi))) return;      /* deleted there */
+      out.push(bi ? mergeObj(bi, mi || bi, ti || bi) : clone(mi || ti));
+    });
+    return out;
+  }
+  /* lay the merged content into the editor's own objects, so every open field keeps working on the right project */
+  function adopt(next) {
+    var cur = S.data; if (!cur.items || !next.items) { cur.items = next.items; }
+    else {
+      var byId = {}; cur.items.forEach(function (x) { byId[x.id] = x; });
+      var list = next.items.map(function (n) { var o = byId[n.id]; if (!o) return n; Object.keys(o).forEach(function (k) { if (!(k in n)) delete o[k]; }); Object.assign(o, n); return o; });
+      cur.items.length = 0; Array.prototype.push.apply(cur.items, list);
+    }
+    ["about", "site"].forEach(function (k) { var o = cur[k] || (cur[k] = {}); Object.keys(o).forEach(function (q) { if (!(q in next[k])) delete o[q]; }); Object.assign(o, next[k]); });
+    try { localStorage.setItem(KEY, JSON.stringify(cur)); } catch (e) {}
+    window.dispatchEvent(new Event("cms-change"));
+    var a = document.activeElement; if (!(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.closest && a.closest("#cp"))) render();
+  }
   function ghPush() {
     if (pushing) { pushAgain = true; return; }
     pushing = true; pushAgain = false; setStatus("Publishing…");
-    var text = JSON.stringify({ items: S.data.items, about: S.data.about || {}, site: S.data.site || {} }, null, 1) + "\n";
-    ghPut("content.json", b64utf8(text), "CMS: update content").then(function () {
+    ghFile("content.json").then(function (f) {
+      var live = null; try { live = f && f.content ? snap(JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(f.content.replace(/\s/g, "")), function (c) { return c.charCodeAt(0); })))) : null; } catch (e) {}
+      var mine = snap(S.data);
+      if (live && BASE && !same(live, BASE)) {
+        var merged = { items: mergeItems(BASE.items, mine.items, live.items), about: mergeObj(BASE.about, mine.about, live.about), site: mergeObj(BASE.site, mine.site, live.site) };
+        if (!same(merged, mine)) adopt(merged);
+      }
+      var text = JSON.stringify(snap(S.data), null, 1) + "\n";
+      return ghPut("content.json", b64utf8(text), "CMS: update content").then(function () { BASE = clone(snap(S.data)); });
+    }).then(function () {
       pushing = false; if (pushAgain) ghPush(); else setStatus("Published. Live in about a minute.");
     }).catch(function (e) {
       pushing = false;
@@ -59,6 +114,7 @@
   var saveTimer = 0, statusEl = null;
   function setStatus(t, bad) { if (statusEl) { statusEl.textContent = t; statusEl.style.color = bad ? "#ff6b5e" : "rgba(242,242,242,.55)"; } }
   function persist() {
+    saveTimer = 0;
     var ok = true;
     try { localStorage.setItem(KEY, JSON.stringify(S.data)); } catch (e) { ok = false; }
     if (PAGE && GHM && AUTHED) { clearTimeout(ghTimer); setStatus("Saved. Publishing in a moment…"); ghTimer = setTimeout(function () { ghTimer = 0; ghPush(); }, 2500); return; }
@@ -83,6 +139,8 @@
         if (e === "auth") { showLogin(); setStatus("Signed out", true); } else setStatus("Could not publish. Your edits are kept in this browser.", true);
       });
   }
+  /* closing the tab while a change is still waiting to be published would lose it (the pictures would be uploaded but never attached): ask first */
+  addEventListener("beforeunload", function (e) { if (ghTimer || pushing || saveTimer) { e.preventDefault(); e.returnValue = ""; } });
   function changed(immediate) {
     window.dispatchEvent(new Event("cms-change"));
     clearTimeout(saveTimer);
@@ -440,7 +498,7 @@
                     : fetch("content.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; });
     first.catch(function (e) { if (e === "auth") { AUTHED = false; showConnect(authMsg()); return "stop"; } return null; }).then(function (j) {
       if (j === "stop") return;
-      if (j) applyRemote(j);
+      if (j) { applyRemote(j); BASE = clone(snap(j)); }
       else if (S.data.items || Object.keys(S.data.about || {}).length || Object.keys(S.data.site || {}).length) { if (GHM) ghPush(); else push(); }
       setStatus(GHM ? "Connected to GitHub" : "Published"); go();
     });

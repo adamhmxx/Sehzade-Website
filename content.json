@@ -17,13 +17,13 @@
     "uploads/31e9bc431a1d5dec4f6.webp"
    ],
    "client": "SlabPixel",
-   "challenge": "The challenge was delivering a high-quality design within a tight timeline while capturing the client's vision of a bold, colorful, and visually engaging Dribbble-inspired aesthetic.",
-   "approach": "With a clear client reference, I analyzed its typography, colors, and layout direction. Within four days, I delivered the complete landing page along with its responsive version."
+   "challenge": "SlabPixel came with a clear vision: a bold, colorful delivery app website with that playful Dribbble energy. The catch was a tight timeline, with no room to compromise on quality.",
+   "approach": "I started from their reference and broke down its typography, colors, and layout to capture what made it feel alive. Four days later, the full landing page was done, responsive version included."
   },
   {
    "id": "pmw9hvoet",
    "name": "Mercedes F1",
-   "description": "Mercedes AMG F1  Website Redesign",
+   "description": "Mercedes AMG F1 Website Redesign",
    "services": "",
    "year": "2026",
    "link": "https://www.behance.net/gallery/252676601/Mercedes-AMG-F1-Petronas-Landing-Page",
@@ -40,8 +40,8 @@
     "uploads/bcc33ba71a1d58e616b.webp"
    ],
    "client": "SlabPixel",
-   "challenge": "Main challenge of this case study is how we change approach of existing static website to dynamic motion website using the f1 car part as the main key visual.",
-   "approach": "We decide to use the car and also it's part to be our main key visual and then we apply i through all of the website section using hover, scroll and also website interaction."
+   "challenge": "The existing website was static, which felt at odds with a team built on speed. The goal was to turn it into a website that moves, with the F1 car itself leading the story.",
+   "approach": "We made the car and its parts the main key visual and carried them through every section. Hover, scroll, and every interaction set those parts in motion, so the website finally moves at the pace of the team behind it."
   },
   {
    "id": "pmw9hurki",
@@ -63,16 +63,16 @@
     "uploads/4981f4471a1d5aa622a.webp"
    ],
    "client": "Enso Build",
-   "challenge": "The challenge is enso want to create a fresh traditional finance concept website and transition from crypto glow dark mode concept which is completely different."
+   "challenge": "Enso wanted to leave their glowing, dark mode crypto look behind for something fresh and grounded in traditional finance. A complete change of direction, not just a refresh."
   },
   {
    "id": "pmw9hngme",
    "name": "Sync",
-   "description": "Sleeping suplement product website",
+   "description": "Sleeping supplement product website",
    "services": "",
    "year": "2026",
    "link": "",
-   "src": "uploads/f64d6e0a1a1d840f5ce.webp",
+   "src": "uploads/be2a28631a1d8fce11a.webp",
    "srcSet": "",
    "gallery": [
     "uploads/02c5941b1a1d8421cb6.webp",
@@ -83,19 +83,27 @@
     "uploads/ed2e0e591a1d8429c62.webp"
    ],
    "client": "Sync",
-   "challenge": "The main challenge is how to create a product page template that can be reuse multiple times but I have to make the design doesn't look likes a template and basic.",
-   "approach": "My approach is I create this design using combination of template website and editorial design, to avoid the the basic and templates looks I use aestethic images and vibrant gradient to make it standout."
+   "challenge": "Sync needed a product page template they could reuse again and again, without it ever looking like a template or feeling basic.",
+   "approach": "I blended the structure of a template with the rhythm of editorial design. Aesthetic imagery and a vibrant gradient do the rest, giving every page enough personality to stand on its own."
   },
   {
    "id": "pmw9hmjuh",
    "name": "Routeonefi",
-   "description": "Solana staking & tranding website",
+   "description": "Solana staking & trading website",
    "services": "",
    "year": "2026",
    "link": "",
-   "src": "uploads/routeonefi-691dc1d7.webp",
+   "src": "uploads/9dd142991a1d8fb3b76.webp",
    "srcSet": "",
-   "gallery": []
+   "gallery": [
+    "uploads/3af32ff61a1d8fb7a23.webp",
+    "uploads/e06627371a1d8fb8ac9.webp",
+    "uploads/ac8adbfa1a1d8fb99ca.webp",
+    "uploads/581b47fc1a1d8fba968.webp"
+   ],
+   "client": "Routeonefi",
+   "challenge": "Routeonefi wanted a website that felt illustrative while keeping a clean crypto feel, and there were no brand guidelines to lean on.",
+   "approach": "I gave every section a simple, semi 3D UI illustration, paired with subtle brand colors and a clean, tidy typeface. Enough character to feel illustrative, restrained enough to never feel overwhelming or cheap."
   },
   {
    "id": "p4mw9hlmvg",
@@ -117,8 +125,8 @@
     "uploads/af9fbb561a1d56d99ee.webp"
    ],
    "client": "SlabPixel",
-   "challenge": "The man challenge of this case study is how can we bring \"Interior design\" to become our main visual approach, either the layout, font and also the interaction.",
-   "approach": "We use the approach of interior by applying ruler as a grid representation, all of our section is using line grid and same view height to respresent that all of this section website feels like designed in interior approach."
+   "challenge": "Arcania is about interior design, so the website had to feel designed like a room: its layout, its type, even the way it responds to you.",
+   "approach": "We borrowed the ruler as our grid. Every section is built on visible guide lines and shares the same view height, so scrolling through the website feels like walking through rooms drawn to scale."
   },
   {
    "id": "p6mw9hlmvg",
@@ -127,7 +135,7 @@
    "services": "Stablecoin",
    "year": "2025",
    "link": "https://onestable.xyz",
-   "src": "uploads/0ddc5e191a1d85d8187.webp",
+   "src": "uploads/dac200741a1d8fdaeaf.webp",
    "srcSet": "",
    "gallery": [
     "uploads/53df04a51a1d85dc760.webp",
@@ -138,8 +146,8 @@
     "uploads/a2eef6801a1d85e286a.webp"
    ],
    "client": "Enso Build",
-   "challenge": "Challenge of this project is the timeline is very tight and I have to create this design and develop it using framer in only 4 days without make it looks rushed and still polished.",
-   "approach": "Since this client is really like one of my exploration and they really want their design to be looks like that, I literally use that exploration to be the main reference and improve it based on the existing branding."
+   "challenge": "Four days to design and build the whole website in Framer, and it still had to feel polished, not rushed.",
+   "approach": "The client had fallen for one of my explorations and wanted their website to feel just like it. So I used that exploration as the foundation and shaped it around their existing branding."
   },
   {
    "id": "p8mw9hlmvg",
@@ -148,7 +156,7 @@
    "services": "Web design",
    "year": "2025",
    "link": "",
-   "src": "uploads/780c6a281a1d88f6919.webp",
+   "src": "uploads/388361d41a1d8fdc367.webp",
    "srcSet": "",
    "gallery": [
     "uploads/31c79a1e1a1d88fd2c0.webp",
@@ -158,13 +166,13 @@
     "uploads/2eeaadda1a1d8901d69.webp"
    ],
    "client": "Recruitpilot AI",
-   "challenge": "The challenge of this project is how I create this SaaS theme design with glow effect without distracting the features of the main platform, especially the timeline is also very tight which is 3 days.",
-   "approach": "The approach is I use a simple typography and glow effect circular to highlighting hero and cta section only and for the other components is I adopting their existing platforn as their visual tratment and key visual itself."
+   "challenge": "Recruitpilot wanted a SaaS look with a glow effect, but without pulling attention away from the platform's features. All in just three days.",
+   "approach": "I kept the typography simple and saved the circular glow for the hero and the call to action. Everywhere else, the platform's own interface became the visual, so the product does the talking."
   },
   {
    "id": "p9mw9hlmvg",
    "name": "Wegonorth",
-   "description": "Design agency webste",
+   "description": "Design agency website",
    "services": "Web design",
    "year": "2026",
    "link": "",
@@ -180,8 +188,8 @@
     "uploads/6a3c209b1a1cb6d6ca9.webp"
    ],
    "client": "Wegonorth",
-   "challenge": "The client wants a website that incorporates a narrative or objects that representing \"Wegonorth\" and highlights their company motto \"moving forward.\"\n",
-   "approach": "I decide to use compass as the main key visual for this website, the compas movement is applied on entire website including scroll animation and hover interaction."
+   "challenge": "Wegonorth wanted a website that tells their story through a symbol of their own, one that carries their motto: moving forward.",
+   "approach": "A compass became the key visual. Its movement runs through the entire website, in every scroll animation and hover, always pointing the way forward."
   },
   {
    "id": "p10mw9hlmvg",
@@ -190,11 +198,18 @@
    "services": "Web design",
    "year": "2026",
    "link": "",
-   "src": "uploads/anywear-6c94b41e.webp",
+   "src": "uploads/6b940f9d1a1d8fd2898.webp",
    "srcSet": "",
-   "gallery": [],
+   "gallery": [
+    "uploads/5b93b9ec1a1d8fd414d.webp",
+    "uploads/e09a35821a1d8fd4eaf.webp",
+    "uploads/8edf47241a1d8fd5d85.webp",
+    "uploads/eedeb1d11a1d8fd6cad.webp",
+    "uploads/f17cbc611a1d8fd7a5b.webp"
+   ],
    "client": "OWW Studio",
-   "challenge": "Mao"
+   "challenge": "Anywear's mobile app needed a single landing page that brings three worlds together as one concept: SaaS, mobile app, and editorial layout.",
+   "approach": "The layout follows editorial principles with generous white space, giving the fashion room to breathe. UI elements bring in the tech side to show off the app's features, so style and product sit naturally on the same page."
   },
   {
    "id": "p11mw9hlmvg",
@@ -214,8 +229,8 @@
     "uploads/d8d1803e1a1d821015c.webp"
    ],
    "client": "Lexur",
-   "challenge": "The main challenge is create a dark glow crypto website vibes without making it looks overwhelmed, so basically combined the glow dark mode and simplicity at the same time with only 2 days timeline.",
-   "approach": "So I decided to use the simple illustration approach for core section for this website then only using vibrant glow color for the most prominent section which is hero and cta section and last thing I use simple font to keep"
+   "challenge": "Lexur wanted the dark, glowing crypto look without it ever feeling overwhelming: glow and simplicity in balance, with only two days to make it happen.",
+   "approach": "I used simple illustrations for the core sections and saved the vibrant glow for where it matters most, the hero and the call to action. A simple typeface keeps everything else clean."
   },
   {
    "id": "p12mw9hlmvg",
@@ -226,7 +241,14 @@
    "link": "",
    "src": "uploads/webser-8c1a474b.webp",
    "srcSet": "",
-   "gallery": []
+   "gallery": [
+    "uploads/a7246f541a1d9117216.webp",
+    "uploads/34d423771a1d9118402.webp",
+    "uploads/0398f3951a1d9118c63.webp",
+    "uploads/1a1b813b1a1d91193e7.webp",
+    "uploads/23e195861a1d911ad55.webp",
+    "uploads/34403c911a1d911bed4.webp"
+   ]
   }
  ],
  "about": {},
