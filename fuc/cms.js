@@ -114,6 +114,14 @@
   });
 
 
+  /* a picture of the works that failed to load (a slow network, or a new upload the server is still deploying) is asked for again a little later,
+     up to 6 times, so it fills in by itself instead of leaving an empty frame until the page is reloaded */
+  document.addEventListener("error", function (e) {
+    var im = e.target; if (!im || im.tagName !== "IMG" || !/uploads\//.test(im.getAttribute("src") || "")) return;
+    var n = (im.__rt || 0) + 1; if (n > 6) return; im.__rt = n;
+    setTimeout(function () { if (!im.isConnected) return; var base = (im.getAttribute("src") || "").replace(/[?&]r=\d+$/, ""); im.src = base + (base.indexOf("?") < 0 ? "?r=" : "&r=") + n; }, 3000 * Math.min(n, 5));
+  }, true);
+
   if (PAGE) {
     window.__cms = { KEY: KEY, DKEY: DKEY, SOCIALS: SOCIALS, site: site, about: about, savedModes: savedModes, applyRemote: applyRemote,
                      get data() { return data; }, set data(v) { data = v; } };

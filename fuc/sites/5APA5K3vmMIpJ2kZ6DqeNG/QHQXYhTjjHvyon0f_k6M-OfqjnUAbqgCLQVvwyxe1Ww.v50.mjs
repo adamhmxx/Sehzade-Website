@@ -47,8 +47,11 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
     o[12]+=ox+tx-(a*ox+c*oy);o[13]+=oy+ty-(b*ox+d*oy);
   }
   function getTex(src){
-    var t=texs.get(src);if(t)return t.ready?t.tex:null;
-    t={tex:null,ready:false};texs.set(src,t);window.__twGLpend=(window.__twGLpend||0)+1;
+    var t=texs.get(src),n0=0;
+    /* a picture that failed (a slow network, or a new upload that the server is still deploying) is asked for again a little later, so the card fills
+       in by itself instead of staying an empty grey card until the page is reloaded */
+    if(t){if(!(t.failed&&performance.now()-t.ft>3000*Math.min(t.n,5)))return t.ready?t.tex:null;n0=t.n;texs.delete(src)}
+    t={tex:null,ready:false,n:n0};texs.set(src,t);window.__twGLpend=(window.__twGLpend||0)+1;
     var im=new Image();im.decoding="async";
     im.onload=function(){
       var cap=window.__lite?640:1280,w=Math.min(cap,im.naturalWidth||cap),p;
@@ -64,8 +67,9 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
       })};
       p.then(up,function(){up(im)});
     };
-    im.onerror=function(){if(src.indexOf("uploads/sm/")>=0&&!t.retried){t.retried=true;im.src=src.replace("uploads/sm/","uploads/")}else if(!t.ready&&!t.failed){t.failed=true;window.__twGLpend=Math.max(0,(window.__twGLpend||1)-1)}};
-    im.src=src;return null;
+    var rq=n0?(src.indexOf("?")<0?"?r=":"&r=")+n0:"";   /* a retry bypasses a cached error */
+    im.onerror=function(){if(src.indexOf("uploads/sm/")>=0&&!t.retried){t.retried=true;im.src=src.replace("uploads/sm/","uploads/")+rq}else if(!t.ready&&!t.failed){t.failed=true;t.ft=performance.now();t.n++;window.__twGLpend=Math.max(0,(window.__twGLpend||1)-1)}};
+    im.src=src+rq;return null;
   }
   var F32=new Float32Array(16),seen=-1,seenOk=0,lastB=null;
   window.__twGL={
