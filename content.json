@@ -128,7 +128,9 @@
    "link": "https://onestable.xyz",
    "src": "uploads/0ddc5e191a1d85d8187.webp",
    "srcSet": "",
-   "gallery": [],
+   "gallery": [
+    "uploads/53df04a51a1d85dc760.webp"
+   ],
    "client": "Enso Build",
    "challenge": "Challenge of this project is the timeline is very tight and I have to create this design and develop it using framer in only 4 days without make it looks rushed and still polished.",
    "approach": "Since this client is really like one of my exploration and they really want their design to be looks like that, I literally use that exploration to be the main reference and improve it based on the existing branding."
