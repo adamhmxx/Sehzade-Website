@@ -568,6 +568,9 @@
   document.addEventListener("click", function (e) {
     if (shown || !e.target || !e.target.closest) return;
     if (e.target.closest("#ls-root,[role='tablist'],nav,#wk")) return;
+    /* only a click on the gallery itself opens a project: closing the About card by clicking beside it used to fall through to the highlighted Grid
+       card and open it, and a click while the mode is still changing opened a project in the middle of the change */
+    if (!e.target.closest("#main") || e.target.closest("#about-backdrop,#about-sheet") || window.__abOpen || window.__modeMove) return;
     var c = cardOf(e.target);
     if (!c) {   /* any card under the pointer, by its box (Grid / Twister layers can sit above the card) */
       var hit = null, hz = -1; [].forEach.call(document.querySelectorAll("#main div"), function (d) {
