@@ -39,9 +39,19 @@
     if (ok) { try { window.dispatchEvent(new StorageEvent("storage", { key: KEY })); return; } catch (e) {} }
     window.dispatchEvent(new Event("cms-change"));
   }
+  /* The content is read from two places at once: the site itself (updated only when the host redeploys) and the repository on GitHub (updated the
+     moment the CMS publishes, cached there for at most 5 minutes). The newer one wins (the CMS stamps every publish in site.updated), so an edit shows
+     up within minutes even while the host is not deploying (it rate-limits deploys). If GitHub is slow or unreachable, the site's own copy is used. */
+  var RAW = "https://raw.githubusercontent.com/adamhmxx/Sehzade-Website/main/";
+  window.__cmsRaw = RAW;
   function loadRemote(cb) {
-    fetch("content.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
-      .then(function (j) { if (j) applyRemote(j); if (cb) cb(!!j); });
+    var get = function (u) { return fetch(u, { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); };
+    var raw = Promise.race([get(RAW + "content.json"), new Promise(function (r) { setTimeout(function () { r(null); }, 4000); })]);
+    Promise.all([get("content.json"), raw]).then(function (v) {
+      var a = v[0], b = v[1], ta = (a && a.site && +a.site.updated) || 0, tb = (b && b.site && +b.site.updated) || 0;
+      var j = b && tb > ta ? b : (a || b);
+      if (j) applyRemote(j); if (cb) cb(!!j);
+    });
   }
   /* ---------- gallery data, read by the gallery component ---------- */
   window.__cmsItems = function () {
@@ -119,6 +129,9 @@
   document.addEventListener("error", function (e) {
     var im = e.target; if (!im || im.tagName !== "IMG" || !/uploads\//.test(im.getAttribute("src") || "")) return;
     var n = (im.__rt || 0) + 1; if (n > 6) return; im.__rt = n;
+    var src0 = im.getAttribute("src") || "";
+    /* the first retry asks GitHub for it at once (a picture the host has not deployed yet), later ones try again with growing pauses */
+    if (n === 1 && src0.indexOf(RAW) < 0) { im.src = RAW + src0.replace(/^\.?\//, "").replace(/[?&]r=\d+$/, ""); return; }
     setTimeout(function () { if (!im.isConnected) return; var base = (im.getAttribute("src") || "").replace(/[?&]r=\d+$/, ""); im.src = base + (base.indexOf("?") < 0 ? "?r=" : "&r=") + n; }, 3000 * Math.min(n, 5));
   }, true);
 

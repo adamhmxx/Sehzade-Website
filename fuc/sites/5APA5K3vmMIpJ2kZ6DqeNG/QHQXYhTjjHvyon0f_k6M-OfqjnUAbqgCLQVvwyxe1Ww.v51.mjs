@@ -68,7 +68,10 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
       p.then(up,function(){up(im)});
     };
     var rq=n0?(src.indexOf("?")<0?"?r=":"&r=")+n0:"";   /* a retry bypasses a cached error */
-    im.onerror=function(){if(src.indexOf("uploads/sm/")>=0&&!t.retried){t.retried=true;im.src=src.replace("uploads/sm/","uploads/")+rq}else if(!t.ready&&!t.failed){t.failed=true;t.ft=performance.now();t.n++;window.__twGLpend=Math.max(0,(window.__twGLpend||1)-1)}};
+    im.onerror=function(){if(src.indexOf("uploads/sm/")>=0&&!t.retried){t.retried=true;im.src=src.replace("uploads/sm/","uploads/")+rq}
+      /* not on the host yet (a new upload waiting for a deploy): GitHub has it already */
+      else if(window.__cmsRaw&&!t.rawTried&&/^(\.\/)?uploads\//.test(src)){t.rawTried=true;im.crossOrigin="anonymous";im.src=window.__cmsRaw+src.replace(/^\.\//,"")}
+      else if(!t.ready&&!t.failed){t.failed=true;t.ft=performance.now();t.n++;window.__twGLpend=Math.max(0,(window.__twGLpend||1)-1)}};
     im.src=src+rq;return null;
   }
   var F32=new Float32Array(16),seen=-1,seenOk=0,lastB=null;

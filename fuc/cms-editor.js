@@ -91,9 +91,31 @@
     window.dispatchEvent(new Event("cms-change"));
     var a = document.activeElement; if (!(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.closest && a.closest("#cp"))) render();
   }
-  function ghPush() {
-    if (pushing) { pushAgain = true; return; }
+  /* ---- one commit per publish ----
+     Every commit makes the host (Vercel) build and deploy the site, and it allows only so many deploys a day: publishing every few seconds, and every
+     picture as two commits of its own, used the whole allowance in one editing session (348 commits in a day), after which nothing reached the live
+     site for 24 hours. So pictures wait in the editor until the next publish, and a publish sends the content and all its new pictures in ONE commit. */
+  var pending = {};   /* path -> base64 of pictures added since the last publish */
+  function ghJSON(path, method, body) {
+    return ghApi("/repos/" + GHC.repo + path, { method: method || "GET", body: body ? JSON.stringify(body) : undefined }).then(function (r) {
+      if (r.status === 401 || r.status === 403) return ghDeny(r); if (!r.ok) { var e = new Error("gh"); e.status = r.status; throw e; } return r.json();
+    });
+  }
+  function ghCommit(files, msg) {
+    var br = GHC.branch || "main", head;
+    return ghJSON("/git/ref/heads/" + encodeURIComponent(br)).then(function (ref) { head = ref.object.sha; return ghJSON("/git/commits/" + head); }).then(function (c) {
+      return Promise.all(files.map(function (f) { return ghJSON("/git/blobs", "POST", { content: f.b64, encoding: "base64" }).then(function (bl) { return { path: f.path, mode: "100644", type: "blob", sha: bl.sha }; }); }))
+        .then(function (tree) { return ghJSON("/git/trees", "POST", { base_tree: c.tree.sha, tree: tree }); });
+    }).then(function (t) { return ghJSON("/git/commits", "POST", { message: msg, tree: t.sha, parents: [head] }); })
+      .then(function (nc) { return ghJSON("/git/refs/heads/" + encodeURIComponent(br), "PATCH", { sha: nc.sha, force: false }); });
+  }
+  function noStamp(o) { var c = clone(o); if (c && c.site) delete c.site.updated; return c; }
+  function ghPush(tries) {
+    tries = tries || 0;
+    if (pushing && !tries) { pushAgain = true; return; }
+    clearTimeout(ghTimer); ghTimer = 0;
     pushing = true; pushAgain = false; setStatus("Publishing…");
+    var sent = [];
     ghFile("content.json").then(function (f) {
       var live = null; try { live = f && f.content ? snap(JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(f.content.replace(/\s/g, "")), function (c) { return c.charCodeAt(0); })))) : null; } catch (e) {}
       var mine = snap(S.data);
@@ -101,23 +123,32 @@
         var merged = { items: mergeItems(BASE.items, mine.items, live.items), about: mergeObj(BASE.about, mine.about, live.about), site: mergeObj(BASE.site, mine.site, live.site) };
         if (!same(merged, mine)) adopt(merged);
       }
+      var body0 = JSON.stringify(snap(S.data));
+      sent = Object.keys(pending).filter(function (p) { var full = p.replace("uploads/sm/", "uploads/"); return body0.indexOf(full) >= 0; });
+      if (live && same(noStamp(live), noStamp(snap(S.data))) && !sent.length) return "same";
+      S.data.site = S.data.site || {}; S.data.site.updated = Date.now();   /* lets the live site tell which copy of the content is newer */
+      try { localStorage.setItem(KEY, JSON.stringify(S.data)); } catch (e) {}
       var text = JSON.stringify(snap(S.data), null, 1) + "\n";
-      return ghPut("content.json", b64utf8(text), "CMS: update content").then(function () { BASE = clone(snap(S.data)); });
+      var files = [{ path: "content.json", b64: b64utf8(text) }].concat(sent.map(function (p) { return { path: p, b64: pending[p] }; }));
+      var n = sent.filter(function (p) { return p.indexOf("/sm/") < 0; }).length;
+      return ghCommit(files, "CMS: publish" + (n ? " (" + n + " new image" + (n > 1 ? "s" : "") + ")" : "")).then(function () { BASE = clone(snap(S.data)); sent.forEach(function (p) { delete pending[p]; }); });
     }).then(function () {
-      pushing = false; if (pushAgain) ghPush(); else setStatus("Published. Live in about a minute.");
+      pushing = false; if (pushAgain || ghTimer) { if (!ghTimer) ghPush(); } else setStatus("Published. Live within about 5 minutes.");
     }).catch(function (e) {
+      /* someone else published at the same moment: read again and merge */
+      if (e && (e.status === 409 || e.status === 422) && tries < 3) return ghPush(tries + 1);
       pushing = false;
       if (e === "auth") { AUTHED = false; showConnect(authMsg()); setStatus("Not connected", true); }
-      else setStatus("Could not publish (" + e + "). Your edits are kept in this browser.", true);
+      else setStatus("Could not publish (" + ((e && e.status) || e) + "). Your edits are kept in this browser; press Publish now to try again.", true);
     });
   }
-  var saveTimer = 0, statusEl = null;
-  function setStatus(t, bad) { if (statusEl) { statusEl.textContent = t; statusEl.style.color = bad ? "#ff6b5e" : "rgba(242,242,242,.55)"; } }
+  var saveTimer = 0, statusEl = null, pubEl = null;
+  function setStatus(t, bad) { if (statusEl) { statusEl.textContent = t; statusEl.style.color = bad ? "#ff6b5e" : "rgba(242,242,242,.55)"; } if (pubEl) pubEl.style.display = GHM && AUTHED ? "" : "none"; }
   function persist() {
     saveTimer = 0;
     var ok = true;
     try { localStorage.setItem(KEY, JSON.stringify(S.data)); } catch (e) { ok = false; }
-    if (PAGE && GHM && AUTHED) { clearTimeout(ghTimer); setStatus("Saved. Publishing in a moment…"); ghTimer = setTimeout(function () { ghTimer = 0; ghPush(); }, 2500); return; }
+    if (PAGE && GHM && AUTHED) { clearTimeout(ghTimer); setStatus("Saved. Publishing when you pause (20 s), or press Publish now."); ghTimer = setTimeout(function () { ghTimer = 0; ghPush(); }, 20000); return; }
     if (PAGE && API && AUTHED) { push(); return; }
     if (ok) setStatus(PAGE && !API ? "Saved in this browser only" : "Saved"); else setStatus("Storage is full. Remove a project or use smaller images.", true);
   }
@@ -140,7 +171,9 @@
       });
   }
   /* closing the tab while a change is still waiting to be published would lose it (the pictures would be uploaded but never attached): ask first */
-  addEventListener("beforeunload", function (e) { if (ghTimer || pushing || saveTimer) { e.preventDefault(); e.returnValue = ""; } });
+  addEventListener("beforeunload", function (e) { if (ghTimer || pushing || saveTimer || Object.keys(pending).length) { e.preventDefault(); e.returnValue = ""; } });
+  /* switching to another tab (to look at the live site) publishes at once */
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden" && ghTimer && GHM && AUTHED) ghPush(); });
   function changed(immediate) {
     window.dispatchEvent(new Event("cms-change"));
     clearTimeout(saveTimer);
@@ -194,23 +227,20 @@
       var m = /^data:(image\/[a-z+.-]+);base64,(.*)$/.exec(dataUrl), ext = m && ({ "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png" })[m[1]];
       if (!m || !ext) { done(dataUrl); return; }
       var path = "uploads/" + Math.random().toString(16).slice(2, 10) + Date.now().toString(16) + "." + ext;
-      setStatus("Uploading image…");
-      /* the picture goes up twice: full size for desktop, and a 720px copy in uploads/sm/ for phones (the site picks the right one) */
-      ghPut(path, m[2], "CMS: add image", true).then(function () {
-        previews[path] = dataUrl;
-        var im = new Image();
-        im.onload = function () {
-          try {
-            var w = Math.min(720, im.width), c = document.createElement("canvas"); c.width = w; c.height = Math.round(im.height * w / im.width);
-            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
-            var out = c.toDataURL(m[1] === "image/png" ? "image/png" : m[1] === "image/webp" ? "image/webp" : "image/jpeg", .8), mm = /^data:[^;]+;base64,(.*)$/.exec(out);
-            if (!mm) throw 0;
-            ghPut("uploads/sm/" + path.slice(8), mm[1], "CMS: add image (phone size)", true).then(function () { done(path); }).catch(function () { done(path); });
-          } catch (x) { done(path); }
-        };
-        im.onerror = function () { done(path); };
-        im.src = dataUrl;
-      }).catch(function () { setStatus("Could not upload the image.", true); done(""); });
+      previews[path] = dataUrl; pending[path] = m[2];
+      /* a 720px copy for phones goes with it (uploads/sm/); both are sent with the next publish, in the same commit as the content */
+      var im = new Image();
+      im.onload = function () {
+        try {
+          var w = Math.min(720, im.width), c = document.createElement("canvas"); c.width = w; c.height = Math.round(im.height * w / im.width);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+          var out = c.toDataURL(m[1] === "image/png" ? "image/png" : m[1] === "image/webp" ? "image/webp" : "image/jpeg", .8), mm = /^data:[^;]+;base64,(.*)$/.exec(out);
+          if (mm) pending["uploads/sm/" + path.slice(8)] = mm[1];
+        } catch (x) {}
+        done(path);
+      };
+      im.onerror = function () { done(path); };
+      im.src = dataUrl;
       return;
     }
     if (!(API && AUTHED)) { done(dataUrl); return; }
@@ -556,6 +586,8 @@
   function build() {
     document.head.appendChild(el("style", {}, CSS));
     statusEl = el("span", { id: "cp-status" }, "Saved");
+    /* publish right away instead of waiting for the pause (only shown when connected to GitHub) */
+    pubEl = el("button", { type: "button", class: "cp-link", style: "display:none", onclick: function () { if (GHM && AUTHED) { clearTimeout(saveTimer); if (saveTimer) persist(); ghPush(); } } }, "Publish now");
     logoutEl = el("button", { type: "button", class: "cp-link", style: "display:none", onclick: function () {
       if (GHM) { try { localStorage.removeItem(GHKEY); } catch (e) {} GHC = {}; AUTHED = false; setStatus(""); showConnect(); return; }
       fetch("api/logout", { method: "POST", credentials: "same-origin" }).then(function () { AUTHED = false; logoutEl.style.display = "none"; setStatus(""); showLogin(); });
@@ -567,7 +599,7 @@
     var back = el("a", { class: "cp-back", href: "./" }, "← Sehzade");
     back.addEventListener("click", function (e) { if (document.referrer && history.length > 1) { e.preventDefault(); history.back(); } });
     var root = el("div", { id: "cp" }, [
-      el("header", {}, el("div", { class: "cp-grid" }, [back, tabsEl, el("div", { class: "cp-side" }, [statusEl, el("a", { href: "./" }, "View site"), logoutEl])])),
+      el("header", {}, el("div", { class: "cp-grid" }, [back, tabsEl, el("div", { class: "cp-side" }, [statusEl, pubEl, el("a", { href: "./" }, "View site"), logoutEl])])),
       el("main", {}, [el("div", { class: "cp-grid" }, el("h1", {}, "CMS")), body])
     ]);
     document.body.appendChild(root);
