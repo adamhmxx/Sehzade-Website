@@ -150,7 +150,9 @@
    "link": "",
    "src": "uploads/780c6a281a1d88f6919.webp",
    "srcSet": "",
-   "gallery": [],
+   "gallery": [
+    "uploads/31c79a1e1a1d88fd2c0.webp"
+   ],
    "client": "Recruitpilot AI",
    "challenge": "The challenge of this project is how I create this SaaS theme design with glow effect without distracting the features of the main platform, especially the timeline is also very tight which is 3 days.",
    "approach": "The approach is I use a simple typography and glow effect circular to highlighting hero and cta section only and for the other components is I adopting their existing platforn as their visual tratment and key visual itself."
