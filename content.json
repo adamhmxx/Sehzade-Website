@@ -95,7 +95,9 @@
    "link": "",
    "src": "uploads/9dd142991a1d8fb3b76.webp",
    "srcSet": "",
-   "gallery": [],
+   "gallery": [
+    "uploads/3af32ff61a1d8fb7a23.webp"
+   ],
    "client": "Routeonefi",
    "challenge": "Main challenge of this website is how can this website feels illustrative but still keep the clean and crypto vibes exist, and also the client doesn't have any specific brand guideliness for the styling.",
    "approach": "To solving that challenge, I use a simple semi 3D UI illustration to support the visual for every section on this website with subtle branding color and simple tidy font to avoid overwhelmend and cheap feels."
