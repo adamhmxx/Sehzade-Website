@@ -93,17 +93,9 @@
    "services": "",
    "year": "2026",
    "link": "",
-   "src": "uploads/f874f7351a1d8bbf4e3.webp",
+   "src": "uploads/routeonefi-691dc1d7.webp",
    "srcSet": "",
-   "gallery": [
-    "uploads/913088ce1a1d8bc452f.webp",
-    "uploads/fe5a97331a1d8bc58dc.webp",
-    "uploads/058f0a671a1d8bc66ee.webp",
-    "uploads/5ac03bd21a1d8bc775a.webp"
-   ],
-   "client": "Routeone Finance",
-   "challenge": "The challenge is I have to create illustration website concept in tight timeline without make the illustration feels slop and still unique without have any specific brand guidelines.",
-   "approach": "To solve this challenge I use very subtle and simple UI Illustration without adding any unecessary elements and apply the branding color in minimalist way so the design still looks premium and unique."
+   "gallery": []
   },
   {
    "id": "p4mw9hlmvg",
@@ -155,15 +147,15 @@
    "description": "AI Talent Recruitment website",
    "services": "Web design",
    "year": "2025",
-   "link": "https://recruitpilot.ai/",
-   "src": "uploads/674ebdbe1a1d886a394.webp",
+   "link": "",
+   "src": "uploads/780c6a281a1d88f6919.webp",
    "srcSet": "",
    "gallery": [
-    "uploads/c762ff311a1d880de7b.webp",
-    "uploads/645cf4291a1d880ef3d.webp",
-    "uploads/3567a9341a1d8810108.webp",
-    "uploads/ca1bef2b1a1d88114e0.webp",
-    "uploads/c34590c81a1d8812c51.webp"
+    "uploads/31c79a1e1a1d88fd2c0.webp",
+    "uploads/89b2c2bb1a1d88ffb48.webp",
+    "uploads/ae35377d1a1d88fe3f1.webp",
+    "uploads/1a49150c1a1d8900dca.webp",
+    "uploads/2eeaadda1a1d8901d69.webp"
    ],
    "client": "Recruitpilot AI",
    "challenge": "The challenge of this project is how I create this SaaS theme design with glow effect without distracting the features of the main platform, especially the timeline is also very tight which is 3 days.",
@@ -196,10 +188,11 @@
    "name": "Anywear",
    "description": "Eyewear landing page",
    "services": "Web design",
-   "year": "2025",
+   "year": "2026",
    "link": "",
    "src": "uploads/anywear-6c94b41e.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "p11mw9hlmvg",
