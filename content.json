@@ -125,9 +125,10 @@
    "description": "Stablecoin Landing Page",
    "services": "Stablecoin",
    "year": "2025",
-   "link": "",
+   "link": "https://onestable.xyz",
    "src": "uploads/onestable-c4922a1a.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "p8mw9hlmvg",
@@ -200,7 +201,8 @@
    "year": "2026",
    "link": "",
    "src": "uploads/webser-8c1a474b.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   }
  ],
  "about": {},
