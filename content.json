@@ -143,12 +143,13 @@
   {
    "id": "p8mw9hlmvg",
    "name": "Recruitpilot",
-   "description": "AI Recruitment website",
+   "description": "AI Talent Recruitment website",
    "services": "Web design",
    "year": "2025",
    "link": "",
    "src": "uploads/recruitpilot-9a20b267.webp",
-   "srcSet": ""
+   "srcSet": "",
+   "gallery": []
   },
   {
    "id": "p9mw9hlmvg",
