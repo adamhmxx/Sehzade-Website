@@ -72,7 +72,7 @@
    "services": "",
    "year": "2026",
    "link": "",
-   "src": "uploads/be2a28631a1d8fce11a.webp",
+   "src": "uploads/f64d6e0a1a1d840f5ce.webp",
    "srcSet": "",
    "gallery": [
     "uploads/02c5941b1a1d8421cb6.webp",
@@ -93,17 +93,9 @@
    "services": "",
    "year": "2026",
    "link": "",
-   "src": "uploads/9dd142991a1d8fb3b76.webp",
+   "src": "uploads/routeonefi-691dc1d7.webp",
    "srcSet": "",
-   "gallery": [
-    "uploads/3af32ff61a1d8fb7a23.webp",
-    "uploads/e06627371a1d8fb8ac9.webp",
-    "uploads/ac8adbfa1a1d8fb99ca.webp",
-    "uploads/581b47fc1a1d8fba968.webp"
-   ],
-   "client": "Routeonefi",
-   "challenge": "Main challenge of this website is how can this website feels illustrative but still keep the clean and crypto vibes exist, and also the client doesn't have any specific brand guideliness for the styling.",
-   "approach": "To solving that challenge, I use a simple semi 3D UI illustration to support the visual for every section on this website with subtle branding color and simple tidy font to avoid overwhelmend and cheap feels."
+   "gallery": []
   },
   {
    "id": "p4mw9hlmvg",
@@ -135,7 +127,7 @@
    "services": "Stablecoin",
    "year": "2025",
    "link": "https://onestable.xyz",
-   "src": "uploads/dac200741a1d8fdaeaf.webp",
+   "src": "uploads/0ddc5e191a1d85d8187.webp",
    "srcSet": "",
    "gallery": [
     "uploads/53df04a51a1d85dc760.webp",
@@ -156,7 +148,7 @@
    "services": "Web design",
    "year": "2025",
    "link": "",
-   "src": "uploads/388361d41a1d8fdc367.webp",
+   "src": "uploads/780c6a281a1d88f6919.webp",
    "srcSet": "",
    "gallery": [
     "uploads/31c79a1e1a1d88fd2c0.webp",
@@ -198,18 +190,11 @@
    "services": "Web design",
    "year": "2026",
    "link": "",
-   "src": "uploads/6b940f9d1a1d8fd2898.webp",
+   "src": "uploads/anywear-6c94b41e.webp",
    "srcSet": "",
-   "gallery": [
-    "uploads/5b93b9ec1a1d8fd414d.webp",
-    "uploads/e09a35821a1d8fd4eaf.webp",
-    "uploads/8edf47241a1d8fd5d85.webp",
-    "uploads/eedeb1d11a1d8fd6cad.webp",
-    "uploads/f17cbc611a1d8fd7a5b.webp"
-   ],
+   "gallery": [],
    "client": "OWW Studio",
-   "challenge": "Main challenge of this project is I have to combine saas and mobile app landing page with editorial layouts approach to be presented as one concept for single landing page for their mobile app.",
-   "approach": "Approach I used is for the layout treatment I use editorial approach and white space design principal, and for the SaaS tech vibes for showing their mobile app feature I use UI elements to support the website design and vibes"
+   "challenge": "Mao"
   },
   {
    "id": "p11mw9hlmvg",
