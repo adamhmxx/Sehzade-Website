@@ -44,6 +44,27 @@
    "approach": "I made the car and its parts the main key visual and carried them through every section. Hover, scroll, and every interaction set those parts in motion, so the site moves like the car."
   },
   {
+   "id": "pmw9hngme",
+   "name": "Sync",
+   "description": "Sleeping supplement product website",
+   "services": "",
+   "year": "2026",
+   "link": "",
+   "src": "uploads/d1efb5e51a1d9692c13.webp",
+   "srcSet": "",
+   "gallery": [
+    "uploads/02c5941b1a1d8421cb6.webp",
+    "uploads/01b645b51a1d842308a.webp",
+    "uploads/ecc09a881a1d842498e.webp",
+    "uploads/557b083b1a1d8426c51.webp",
+    "uploads/a4b9086b1a1d842899e.webp",
+    "uploads/ed2e0e591a1d8429c62.webp"
+   ],
+   "client": "Sync",
+   "challenge": "Sync needed a product page template they could reuse again and again for every launch. The twist was making sure it never looked like a template or felt basic.",
+   "approach": "I blended the structure of a template with the rhythm of editorial design. Aesthetic imagery and a vibrant gradient then give every page enough personality to stand on its own."
+  },
+  {
    "id": "pmw9hurki",
    "name": "Enso",
    "description": "Finance company website",
@@ -64,27 +85,6 @@
    ],
    "client": "Enso Build",
    "challenge": "Enso wanted to leave their glowing, dark mode crypto look behind for something fresh and grounded in traditional finance. A full change of direction, not a refresh."
-  },
-  {
-   "id": "pmw9hngme",
-   "name": "Sync",
-   "description": "Sleeping supplement product website",
-   "services": "",
-   "year": "2026",
-   "link": "",
-   "src": "uploads/d1efb5e51a1d9692c13.webp",
-   "srcSet": "",
-   "gallery": [
-    "uploads/02c5941b1a1d8421cb6.webp",
-    "uploads/01b645b51a1d842308a.webp",
-    "uploads/ecc09a881a1d842498e.webp",
-    "uploads/557b083b1a1d8426c51.webp",
-    "uploads/a4b9086b1a1d842899e.webp",
-    "uploads/ed2e0e591a1d8429c62.webp"
-   ],
-   "client": "Sync",
-   "challenge": "Sync needed a product page template they could reuse again and again for every launch. The twist was making sure it never looked like a template or felt basic.",
-   "approach": "I blended the structure of a template with the rhythm of editorial design. Aesthetic imagery and a vibrant gradient then give every page enough personality to stand on its own."
   },
   {
    "id": "pmw9hmjuh",
@@ -254,5 +254,7 @@
   }
  ],
  "about": {},
- "site": {}
+ "site": {
+  "updated": 1794655715752
+ }
 }
