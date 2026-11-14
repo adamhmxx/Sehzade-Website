@@ -17,13 +17,13 @@
     "uploads/31e9bc431a1d5dec4f6.webp"
    ],
    "client": "SlabPixel",
-   "challenge": "SlabPixel came with a clear vision: a bold, colorful delivery app website with that playful Dribbble energy. The catch was a tight timeline, with no room to compromise on quality.",
-   "approach": "I started from their reference and broke down its typography, colors, and layout to capture what made it feel alive. Four days later, the full landing page was done, responsive version included."
+   "challenge": "SlabPixel came with a clear vision: a bold, colorful delivery app website with playful Dribbble energy. The catch was a tight timeline with no room to cut quality.",
+   "approach": "I broke their reference down into typography, colors, and layout to capture what made it feel alive. Four days later, the full landing page was done, responsive version included."
   },
   {
    "id": "pmw9hvoet",
    "name": "Mercedes F1",
-   "description": "Mercedes AMG F1 Website Redesign",
+   "description": "Mercedes AMG F1 website redesign",
    "services": "",
    "year": "2026",
    "link": "https://www.behance.net/gallery/252676601/Mercedes-AMG-F1-Petronas-Landing-Page",
@@ -40,8 +40,8 @@
     "uploads/bcc33ba71a1d58e616b.webp"
    ],
    "client": "SlabPixel",
-   "challenge": "The existing website was static, which felt at odds with a team built on speed. The goal was to turn it into a website that moves, with the F1 car itself leading the story.",
-   "approach": "We made the car and its parts the main key visual and carried them through every section. Hover, scroll, and every interaction set those parts in motion, so the website finally moves at the pace of the team behind it."
+   "challenge": "Mercedes AMG F1 had a static website, which felt at odds with a team built on speed. The goal was a website that moves, with the F1 car leading the story.",
+   "approach": "I made the car and its parts the main key visual and carried them through every section. Hover, scroll, and every interaction set those parts in motion, so the site moves like the car."
   },
   {
    "id": "pmw9hurki",
@@ -63,7 +63,7 @@
     "uploads/4981f4471a1d5aa622a.webp"
    ],
    "client": "Enso Build",
-   "challenge": "Enso wanted to leave their glowing, dark mode crypto look behind for something fresh and grounded in traditional finance. A complete change of direction, not just a refresh."
+   "challenge": "Enso wanted to leave their glowing, dark mode crypto look behind for something fresh and grounded in traditional finance. A full change of direction, not a refresh."
   },
   {
    "id": "pmw9hngme",
@@ -83,8 +83,8 @@
     "uploads/ed2e0e591a1d8429c62.webp"
    ],
    "client": "Sync",
-   "challenge": "Sync needed a product page template they could reuse again and again, without it ever looking like a template or feeling basic.",
-   "approach": "I blended the structure of a template with the rhythm of editorial design. Aesthetic imagery and a vibrant gradient do the rest, giving every page enough personality to stand on its own."
+   "challenge": "Sync needed a product page template they could reuse again and again for every launch. The twist was making sure it never looked like a template or felt basic.",
+   "approach": "I blended the structure of a template with the rhythm of editorial design. Aesthetic imagery and a vibrant gradient then give every page enough personality to stand on its own."
   },
   {
    "id": "pmw9hmjuh",
@@ -102,13 +102,13 @@
     "uploads/581b47fc1a1d8fba968.webp"
    ],
    "client": "Routeonefi",
-   "challenge": "Routeonefi wanted a website that felt illustrative while keeping a clean crypto feel, and there were no brand guidelines to lean on.",
-   "approach": "I gave every section a simple, semi 3D UI illustration, paired with subtle brand colors and a clean, tidy typeface. Enough character to feel illustrative, restrained enough to never feel overwhelming or cheap."
+   "challenge": "Routeonefi wanted a website that felt illustrative while keeping a clean crypto feel. There were no brand guidelines to lean on, so the style started from scratch.",
+   "approach": "I gave every section a simple, semi 3D UI illustration, paired with subtle brand colors and a clean typeface. It has enough character to feel illustrative, never overwhelming or cheap."
   },
   {
    "id": "p4mw9hlmvg",
    "name": "Arcania",
-   "description": "AI Interior design website",
+   "description": "AI interior design website",
    "services": "Web design",
    "year": "2026",
    "link": "https://www.behance.net/gallery/245444867/Arcania-AI-Branding-Website-Design",
@@ -125,13 +125,13 @@
     "uploads/af9fbb561a1d56d99ee.webp"
    ],
    "client": "SlabPixel",
-   "challenge": "Arcania is about interior design, so the website had to feel designed like a room: its layout, its type, even the way it responds to you.",
-   "approach": "We borrowed the ruler as our grid. Every section is built on visible guide lines and shares the same view height, so scrolling through the website feels like walking through rooms drawn to scale."
+   "challenge": "Arcania is an AI interior design product, so its website had to feel like a designed room. The layout, the type, even the way it responds to you all had to fit.",
+   "approach": "I turned a ruler into the grid. Every section sits on visible guide lines and shares the same view height, so scrolling through the website feels like walking through rooms drawn to scale."
   },
   {
    "id": "p6mw9hlmvg",
    "name": "Onestable",
-   "description": "Stablecoin Landing Page",
+   "description": "Stablecoin landing page",
    "services": "Stablecoin",
    "year": "2025",
    "link": "https://onestable.xyz",
@@ -146,13 +146,13 @@
     "uploads/a2eef6801a1d85e286a.webp"
    ],
    "client": "Enso Build",
-   "challenge": "Four days to design and build the whole website in Framer, and it still had to feel polished, not rushed.",
-   "approach": "The client had fallen for one of my explorations and wanted their website to feel just like it. So I used that exploration as the foundation and shaped it around their existing branding."
+   "challenge": "Onestable needed its whole website designed and built in Framer in just four days. Even with that timeline, the result still had to feel polished, never rushed.",
+   "approach": "I used one of my own explorations as the foundation, since it was exactly what the client had fallen for. Then I reshaped it around their existing branding to make it truly theirs."
   },
   {
    "id": "p8mw9hlmvg",
    "name": "Recruitpilot",
-   "description": "AI Talent Recruitment website",
+   "description": "AI talent recruitment website",
    "services": "Web design",
    "year": "2025",
    "link": "",
@@ -166,8 +166,8 @@
     "uploads/2eeaadda1a1d8901d69.webp"
    ],
    "client": "Recruitpilot AI",
-   "challenge": "Recruitpilot wanted a SaaS look with a glow effect, but without pulling attention away from the platform's features. All in just three days.",
-   "approach": "I kept the typography simple and saved the circular glow for the hero and the call to action. Everywhere else, the platform's own interface became the visual, so the product does the talking."
+   "challenge": "Recruitpilot wanted a SaaS look with a glow effect that never pulls attention away from the platform's features. All of it had to be done in just three days.",
+   "approach": "I kept the typography simple and saved the circular glow for the hero and the call to action. Everywhere else, the platform's own interface is the visual, so the product does the talking."
   },
   {
    "id": "p9mw9hlmvg",
@@ -188,8 +188,8 @@
     "uploads/6a3c209b1a1cb6d6ca9.webp"
    ],
    "client": "Wegonorth",
-   "challenge": "Wegonorth wanted a website that tells their story through a symbol of their own, one that carries their motto: moving forward.",
-   "approach": "A compass became the key visual. Its movement runs through the entire website, in every scroll animation and hover, always pointing the way forward."
+   "challenge": "Wegonorth wanted a website that tells their story through a symbol of their own. That symbol had to carry the company motto at its heart: moving forward.",
+   "approach": "I chose a compass as the key visual and let its movement run through the entire website. Every scroll animation and every hover follows it, always pointing the way forward."
   },
   {
    "id": "p10mw9hlmvg",
@@ -208,8 +208,8 @@
     "uploads/f17cbc611a1d8fd7a5b.webp"
    ],
    "client": "OWW Studio",
-   "challenge": "Anywear's mobile app needed a single landing page that brings three worlds together as one concept: SaaS, mobile app, and editorial layout.",
-   "approach": "The layout follows editorial principles with generous white space, giving the fashion room to breathe. UI elements bring in the tech side to show off the app's features, so style and product sit naturally on the same page."
+   "challenge": "Anywear needed one landing page for their mobile app that unites three worlds. SaaS, mobile app, and an editorial layout all had to read as a single concept.",
+   "approach": "I built the layout on editorial principles with generous white space, giving the fashion room to breathe. UI elements then bring in the tech side and show off the app's features."
   },
   {
    "id": "p11mw9hlmvg",
@@ -229,8 +229,8 @@
     "uploads/d8d1803e1a1d821015c.webp"
    ],
    "client": "Lexur",
-   "challenge": "Lexur wanted the dark, glowing crypto look without it ever feeling overwhelming: glow and simplicity in balance, with only two days to make it happen.",
-   "approach": "I used simple illustrations for the core sections and saved the vibrant glow for where it matters most, the hero and the call to action. A simple typeface keeps everything else clean."
+   "challenge": "Lexur wanted the dark, glowing crypto look without it ever feeling overwhelming. Glow and simplicity had to stay in balance, with only two days to make it happen.",
+   "approach": "I used simple illustrations for the core sections and saved the vibrant glow for where it matters most: the hero and the call to action. A simple typeface keeps the rest clean."
   },
   {
    "id": "p12mw9hlmvg",
@@ -249,8 +249,8 @@
     "uploads/23e195861a1d911ad55.webp",
     "uploads/34403c911a1d911bed4.webp"
    ],
-   "challenge": "The challenge is how to create the editorial website agency that still have a straight forward content and structure withou making it looks template and plain",
-   "approach": "I decide to create this portofolio in semi editorial way and then I avoid using gradient as a color approach and using solid one instead, I also create an retro art from their branding and website to support the v"
+   "challenge": "Webser wanted an editorial agency website with straightforward content and structure. The hard part was keeping it simple without it looking plain or templated.",
+   "approach": "I took a semi editorial direction and chose solid colors over gradients. Then I created retro artwork from their branding and website, giving the visuals a character of their own."
   }
  ],
  "about": {},
