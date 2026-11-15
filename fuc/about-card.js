@@ -9,7 +9,7 @@
   var root = document.documentElement, reduce = matchMedia("(prefers-reduced-motion: reduce)");
   var touchy = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && Math.min(innerWidth, innerHeight) < 820);
   var sheet, card, frame, nameEl, nameTxt, backdrop, shadow;
-  var FK = 1, FW = 0, raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56;
+  var TALL = false, FK = 1, FW = 0, raf = 0, last = 0, drag = null, open_ = false, W = 0, H = 0, GRIP = 56;
   var S = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }, V = { x: 0, y: 0, r: 0, s: 0, rx: 0, ry: 0 }, T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 };
   var hx = [], hy = [], glide = false, sv = { x: 0, y: 0 };
   var PROPS = ["x", "y", "r", "s", "rx", "ry"];
@@ -26,7 +26,8 @@
     '.ab-card{pointer-events:auto;touch-action:none}' +
     '.ab-grip{flex:none;display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;cursor:grab;user-select:none;-webkit-user-select:none}' +
     '.ab-card.dragging,.ab-card.dragging .ab-grip{cursor:grabbing}' +
-    '.ab-card iframe{flex:1;min-height:0;width:100%;border:0;display:block;background:transparent}' +
+    '.ab-card iframe{flex:1;min-height:0;width:100%;border:0;display:block;background:transparent;opacity:0;transition:opacity .6s cubic-bezier(.4,0,.2,1)}' +
+    '.ab-card.ready iframe{opacity:1}' +
     '.ab-card.grip-drag iframe{pointer-events:none}' +
     '.ab-copy{font:400 16px/1.2 "Anton","Inter Display",sans-serif;text-transform:uppercase;letter-spacing:0;white-space:nowrap}' +
     '.ab-close{padding:4px 0;border:0;background:none;color:#0b0b0b;font:400 16px/1.2 "Anton","Inter Display",sans-serif;text-transform:uppercase;letter-spacing:0;cursor:pointer}' +
@@ -44,11 +45,17 @@
     var vw = innerWidth, vh = innerHeight, m = vw >= 1440 ? 32 : vw >= 810 ? 24 : 16, cols = vw >= 1440 ? 12 : 8,
         col = (vw - 2 * m - (cols - 1) * 16) / cols, span = vw >= 1440 ? 5 : vw >= 810 ? (vw >= 1100 ? 4 : 5) : cols;
     W = span * col + (span - 1) * 16; H = vw < 810 ? vh - 2 * m : Math.min(vh - 2 * m, W * 1.4);
+    /* a phone on its side is too short for the page: the card keeps its upright phone shape, taller than the screen, and is slid up and down like a sheet of paper */
+    TALL = touchy && vw > vh && vh < 600;
+    if (TALL) { W = Math.min(vw - 2 * m, 358); H = Math.round(W * 2.27); }
   }
+  /* how far the card may travel: any card may go up to the top edge and down until only its strip shows; a card taller than the screen may also go up until its bottom is in view */
+  function yMin(cy) { return Math.min(-cy, innerHeight - 16 - H - cy); }
+  function restY() { return TALL ? 16 - (innerHeight - H) / 2 : 0; }
   function hiddenPose() { return { x: 0, y: innerHeight / 2 + H / 2 + 70, r: -3, s: .9, rx: 42, ry: 0 }; }
   function clampT() {
     var cx = (innerWidth - W) / 2, cy = (innerHeight - H) / 2;
-    T.x = clamp(T.x, -(W - 110) - cx, innerWidth - 110 - cx); T.y = clamp(T.y, -cy, innerHeight - 60 - cy);
+    T.x = clamp(T.x, -(W - 110) - cx, innerWidth - 110 - cx); T.y = clamp(T.y, yMin(cy), innerHeight - 60 - cy);
   }
   function paint() {
     var x = ((innerWidth - W) / 2 + S.x).toFixed(2), y = ((innerHeight - H) / 2 + S.y).toFixed(2);
@@ -78,7 +85,7 @@
       /* after a throw the sheet coasts and slows down with friction; it never bounces or springs back */
       var fr = Math.exp(-dt * 4.6), cx = (innerWidth - W) / 2, cy = (innerHeight - H) / 2;
       V.x *= fr; V.y *= fr; S.x += V.x * dt; S.y += V.y * dt;
-      var minX = -(W - 110) - cx, maxX = innerWidth - 110 - cx, minY = -cy, maxY = innerHeight - 60 - cy;
+      var minX = -(W - 110) - cx, maxX = innerWidth - 110 - cx, minY = yMin(cy), maxY = innerHeight - 60 - cy;
       if (S.x < minX) { S.x = minX; V.x = 0; } else if (S.x > maxX) { S.x = maxX; V.x = 0; }
       if (S.y < minY) { S.y = minY; V.y = 0; } else if (S.y > maxY) { S.y = maxY; V.y = 0; }
       if (Math.hypot(V.x, V.y) < 14) { glide = false; V.x = V.y = 0; T.x = S.x; T.y = S.y; }
@@ -90,8 +97,8 @@
       var tiny = k === "x" || k === "y" ? .4 : .02;
       if (Math.abs(T[k] - S[k]) > tiny || Math.abs(V[k]) > tiny * 1.5) calm = false;
     });
-    /* the last fraction of a degree of the settling spring is invisible but keeps the card under a 3D transform, where taps on the page inside miss: snap flat as soon as it is close */
-    if (open_ && !drag && !glide && Math.abs(S.rx) < .4 && Math.abs(S.ry) < .4 && Math.abs(S.r) < .25 && Math.abs(S.s - 1) < .006 && Math.abs(T.rx) < .01) { S.rx = S.ry = S.r = 0; S.s = 1; V.rx = V.ry = V.r = V.s = 0; }
+    /* (close enough that the snap moves no edge by more than a pixel) the last fraction of a degree of the settling spring is invisible but keeps the card under a 3D transform, where taps on the page inside miss: snap flat as soon as it is close */
+    if (open_ && !drag && !glide && Math.abs(S.rx) < .12 && Math.abs(S.ry) < .12 && Math.abs(S.r) < .06 && Math.abs(S.s - 1) < .0015 && Math.abs(T.rx) < .01) { S.rx = S.ry = S.r = 0; S.s = 1; V.rx = V.ry = V.r = V.s = 0; }
     if (open_) { var tl = touchy ? 0 : 1; /* the card only sways (rotates in its own plane): no perspective tilt and no scale pulse, so the text never changes size while it is dragged */ T.rx = 0; T.ry = 0; T.r = clamp(sv.x * .0012, -1.5, 1.5) * tl; T.s = 1; }
     hx.push(sv.x); hy.push(sv.y); if (hx.length > 40) { hx.shift(); hy.shift(); }
     var energy = 0; for (var i = 0; i < hx.length; i++) energy = Math.max(energy, Math.abs(hx[i]), Math.abs(hy[i]));
@@ -104,7 +111,7 @@
     if (moving) raf = requestAnimationFrame(step);
     else {
       raf = 0; window.__abBusy = false;
-      if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); abOpen(false); }
+      if (!open_) { sheet.style.visibility = "hidden"; pauseFrame(true); abOpen(false); if (deferred) layout(); }
       else { S.x = T.x; S.y = T.y; S.r = 0; S.s = 1; S.rx = 0; S.ry = 0; paint(); pauseFrame(false); }
     }
   }
@@ -112,11 +119,13 @@
 
   /* the name at the bottom is scaled so it exactly fills the card width */
   /* hands the page what it needs to draw its own copyright line and name: scale, sizes, texts */
-  function pushPage(k) {
+  var measK = 0; /* while the page is being measured, everything that re-sends its sizes keeps the measuring sizes */
+  function pushPage(k, meas) {
+    if (measK) { k = measK; meas = true; }
     k = k || FK || 1;
     try {
       var w = frame.contentWindow; if (!w || !w.__abxSet || !nameTxt) return;
-      w.__abxSet({ k: k, top: GRIP, avail: H - GRIP - nameEl.offsetHeight, fs: parseFloat(nameTxt.style.fontSize) || 100, copy: siteText("copyright", "\u00a9 Sehzade 2026"), name: cardName() });
+      w.__abxSet({ k: k, top: GRIP, avail: meas ? 1 : H - GRIP - nameEl.offsetHeight, fs: parseFloat(nameTxt.style.fontSize) || 100, copy: siteText("copyright", "\u00a9 Sehzade 2026"), name: cardName() });
     } catch (e) {}
   }
   function fitName() {
@@ -141,37 +150,74 @@
       return m ? m + 16 : 0;
     } catch (e) { return 0; }
   }
-  var needKey = "", needVal = 0, needBusy = false;
+  /* The page inside is shown only once it has settled (loaded, fonts and CMS text in, its height stable) and been fitted, and then it is never
+     hidden or resized again while the card is open: a later re-fit that would visibly change it waits until the card has gone */
+  var needKey = "", needVal = 0, needBusy = false, geom = null, settled = false, shown = false, deferred = false, shownW = 0, kCap = 9;
+  function setGeom(css) { if (css !== geom) { geom = css; frame.style.cssText = css; } }
+  function reveal(v) { if (v !== shown) { shown = v; card.classList.toggle("ready", v); } }
   function frameFit() {
     /* desktop: the page is always laid out at one fixed width (DW) and the whole page is scaled to the card, so on any screen size the text, line breaks and alignment are the same (a real-width iframe switched Framer breakpoints and re-flowed) */
     var desk = !touchy && innerWidth >= 810, DW = desk ? 564 : 390, base = desk ? W / DW : Math.min(1, W / 390), avail = H - GRIP - nameEl.offsetHeight, key = W.toFixed(1) + ":" + contentVer;   /* not the height: a phone toolbar sliding in or out must not re-measure (the text flashed through two sizes each time) */
-    var pend = key !== needKey || frameFit.chk !== key;
-    var k = base;
-    if (key === needKey) { if (needVal > avail / base + 1) k = Math.max(.55, avail / needVal); }
-    else if (!needBusy) {
-      /* measure the content at the plain phone geometry first (two frames, so the page has really been resized), then fit */
-      needBusy = true;
-      frame.style.cssText = base !== 1 ? "flex:none;width:" + DW + "px;height:" + H / base + "px;transform:scale(" + base + ");transform-origin:0 0" : "";
-      requestAnimationFrame(function () { requestAnimationFrame(function () {
-        needBusy = false; var v = needH(); if (!v) { frame.style.visibility = ""; setTimeout(layout, 800); return; }
-        needVal = v; needKey = key; layout();
-      }); });
+    var meas = base !== 1 ? "flex:none;width:" + DW + "px;height:" + H / base + "px;transform:scale(" + base + ");transform-origin:0 0" : "";
+    if (key !== needKey && !needBusy) {
+      /* measuring needs the plain phone geometry: on an open card where that would visibly change the page, it waits for the close */
+      if (shown && open_ && meas !== geom && W === shownW) deferred = true;   /* (a new card width is always fitted at once) */
+      else {
+        /* the page stretches its rows over whatever height it is given, so it is measured with no height at all: what is left is the content's
+           own height. (Measured at the height of the previous fit, every re-fit came out a little smaller than the last: 0.92, 0.74, 0.67, 0.58 on a phone) */
+        needBusy = true; deferred = false; setGeom(meas); measK = base; pushPage();
+        requestAnimationFrame(function () { requestAnimationFrame(function () {
+          needBusy = false; var v = needH(); measK = 0; if (!v) { setTimeout(layout, 800); return; }
+          needVal = v; needKey = key; kCap = 9; frameFit.n = 0; frameFit.chk = ""; layout();
+        }); });
+      }
     }
-    var fw = W / k, sig_ = k.toFixed(3) + ":" + fw.toFixed(1);
-    frame.style.cssText = k !== 1 || base !== 1 ? "flex:none;width:" + fw + "px;height:" + H / k + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
-    /* while the fit is still being measured the text is not shown, so it never appears in one size and then jumps to another */
-    frame.style.visibility = pend ? "hidden" : "";
-    pushPage(k);
+    if (needBusy) return;
+    var k = base; if (needKey && needVal > avail / base + 1) k = Math.max(.55, avail / needVal); k = Math.min(k, kCap);
+    var fw = W / k, css = k !== 1 || base !== 1 ? "flex:none;width:" + fw + "px;height:" + H / k + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
+    if (shown && open_ && css !== geom && W === shownW) { deferred = true; return; }
+    setGeom(css); shownW = W; FK = k; FW = fw; pushPage(k);
+    if (key !== needKey) return;
     /* the page is measured at the phone width, but shown at the card's own width, where wrapped rows can break differently: check once at the
        final width and shrink a little more if the content would run under the name */
-    if (key === needKey && frameFit.chk !== key) {
+    if (frameFit.chk !== key) {
       frameFit.chk = key;
+      if (shown && open_) return;
+      measK = k; pushPage();
       requestAnimationFrame(function () { requestAnimationFrame(function () {
-        var v2 = needH(); if (v2 && v2 > avail / k + 1 && v2 > needVal) { needVal = v2; layout(); } else frame.style.visibility = "";
+        var v2 = needH(), kw = rowFit(); measK = 0; pushPage(k);
+        if (shown && open_) return;
+        /* (re-checked after each correction, a few times at most, so the fit always ends in the same place) */
+        var again = (frameFit.n = (frameFit.n || 0) + 1) < 5;
+        if (again && v2 && v2 > avail / k + 1 && v2 > needVal) { needVal = v2; frameFit.chk = ""; layout(); }
+        else if (again && kw < 1 && k * kw >= .6) { kCap = k * kw; frameFit.chk = ""; layout(); }   /* a row of links that just wraps (one word on a line of its own) is kept on one line by a slightly smaller fit */
+        else if (settled) reveal(true);
       }); });
-    }
-    if (sig_ !== frameFit.key) { frameFit.key = sig_; scheduleFit(400); }
-    FK = k; FW = fw;
+    } else if (settled) reveal(true);
+  }
+  /* how much narrower the page would have to be scaled for every row of links to fit on one line (1 = they already do) */
+  function rowFit() {
+    var f = 1;
+    try {
+      [].forEach.call(frame.contentDocument.querySelectorAll("div.ab-type"), function (row) {
+        var as = [].filter.call(row.children, function (a) { return a.tagName === "A" && a.offsetWidth; }); if (as.length < 2) return;
+        var tops = as.map(function (a) { return a.offsetTop; }); if (Math.max.apply(0, tops) - Math.min.apply(0, tops) < 2) return;
+        var gap = parseFloat(getComputedStyle(row).columnGap) || 0, need = gap * (as.length - 1);
+        as.forEach(function (a) { var cs = getComputedStyle(a); need += a.offsetWidth + parseFloat(cs.marginLeft) + parseFloat(cs.marginRight); });
+        f = Math.min(f, row.clientWidth / need * .99);
+      });
+    } catch (e) {}
+    return f;
+  }
+  /* settled = the page's content height has stayed the same for a moment (fonts, the CMS text and the page's own layout are in) */
+  function settle() {
+    settled = false; reveal(false); var t0 = performance.now(), lastV = -1, same = 0;
+    (function poll() {
+      if (settled) return; var v = needH();
+      same = v && Math.abs(v - lastV) < 1 ? same + 1 : 0; lastV = v;
+      if (same >= 3 || (v && performance.now() - t0 > 3500)) { settled = true; contentVer++; layout(); }
+      else setTimeout(poll, 200);
+    })();
   }
   function layout() {
     if (!sheet) return; dims();
@@ -196,8 +242,8 @@
     sheet.append(shadow, card, nameEl); document.body.append(backdrop, sheet);
     layout(); S = hiddenPose(); paint();
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
-    frame.addEventListener("load", function () { contentVer++; pushPage(); setTimeout(pushPage, 600); setTimeout(function () { contentVer++; layout(); }, 1800); paused = null; pauseFrame(!open_); scheduleFit(1600); });
-    addEventListener("resize", function () { layout(); clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
+    frame.addEventListener("load", function () { pushPage(); setTimeout(pushPage, 600); paused = null; pauseFrame(!open_); settle(); });
+    addEventListener("resize", function () { var wasTall = TALL; layout(); if (open_ && TALL !== wasTall) { T.x = 0; T.y = restY(); } clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
     addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { contentVer++; nameTxt.textContent = cardName(); layout(); scheduleFit(500); } });
   }
 
@@ -227,8 +273,8 @@
     if (open_) return; open_ = true; abOpen(true);
     sheet.style.visibility = "visible";
     glide = false; var h = hiddenPose(); S.x = h.x; S.y = h.y; S.r = h.r; S.s = h.s; S.rx = h.rx; S.ry = 0;
-    V.x = V.y = V.r = V.s = V.rx = V.ry = 0; T = { x: 0, y: 0, r: 0, s: 1, rx: 0, ry: 0 }; hx = []; hy = [];
-    if (reduce.matches) { S.x = 0; S.y = 0; S.r = 0; S.s = 1; S.rx = 0; }
+    V.x = V.y = V.r = V.s = V.rx = V.ry = 0; T = { x: 0, y: restY(), r: 0, s: 1, rx: 0, ry: 0 }; hx = []; hy = [];
+    if (reduce.matches) { S.x = 0; S.y = T.y; S.r = 0; S.s = 1; S.rx = 0; }
     paint(); root.classList.add("about-open"); run();
   }
   function close() {

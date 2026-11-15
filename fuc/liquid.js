@@ -30,7 +30,8 @@
   if (TOP) window.__liquidCfg = own;
   /* the About page lives in an iframe of the main page, so it follows the main page's panel */
   /* no component distortion while the About card is being dragged: the text under the cursor would shimmer as the card moves */
-  function dragging() { try { return !!(TOP ? window : parent).__abDragging; } catch (e) { return false; } }
+  /* ...nor while the card itself is still moving (rising, sinking, swaying to rest): the page inside moves under a still cursor */
+  function dragging() { try { var w = TOP ? window : parent; return !!(w.__abDragging || (!TOP && w.__abBusy)); } catch (e) { return false; } }
   /* while the card is open nothing behind it reacts: only the card's own pieces (name, copyright, Close) do */
   function behindCard(el) { return TOP && window.__abOpen && !(el.closest && el.closest(".ab-card")); }
   /* the About page is shown inside the card scaled by the card (window.__abK): every size here is divided by it, so the blob, its reach and the ripple look
@@ -304,6 +305,8 @@
 
   function step(now) {
     var c = C();
+    /* the About card has closed under a still cursor: no pointer event will say the cursor has left the page, so the card says it */
+    if (!TOP && inside) { try { if (!parent.__abOpen) inside = false; } catch (e) {} }
     scan(now);
     var sp = Math.min(1, Math.hypot(cvx, cvy) / 40);
     cvx *= .88; cvy *= .88;
