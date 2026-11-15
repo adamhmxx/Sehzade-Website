@@ -96,10 +96,10 @@
    "src": "uploads/8e067d151a1d9641290.webp",
    "srcSet": "",
    "gallery": [
-    "uploads/3af32ff61a1d8fb7a23.webp",
-    "uploads/e06627371a1d8fb8ac9.webp",
-    "uploads/ac8adbfa1a1d8fb99ca.webp",
-    "uploads/581b47fc1a1d8fba968.webp"
+    "uploads/f1da36441a1ddc86162.webp",
+    "uploads/215e9c711a1ddc8621c.webp",
+    "uploads/51e39d011a1ddc86285.webp",
+    "uploads/6965ee2f1a1ddc8630d.webp"
    ],
    "client": "Routeonefi",
    "challenge": "Routeonefi wanted a website that felt illustrative while keeping a clean crypto feel. There were no brand guidelines to lean on, so the style started from scratch.",
@@ -256,6 +256,6 @@
  ],
  "about": {},
  "site": {
-  "updated": 1794655849106
+  "updated": 1794722280543
  }
 }
