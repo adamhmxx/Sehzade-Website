@@ -161,7 +161,7 @@ h1{font-family:"Anton","Inter Display",Impact,sans-serif!important;font-weight:4
     var abxLast=null;
     window.__abxSet=function(o){
       if(o)abxLast=o;o=abxLast;if(!o)return;var k=o.k||1;window.__abK=k;root.style.setProperty("--tap",(44/k).toFixed(1)+"px");if(window.__tapFit){setTimeout(window.__tapFit,60);setTimeout(window.__tapFit,500);setTimeout(window.__tapFit,1500);}
-      var sm=k<1?14:16;root.style.setProperty("--abx-small",(sm/k)+"px");
+      var sm=k<1?14:16;root.style.setProperty("--abx-small",(sm/Math.max(k,.55))+"px");/* on a very short phone the small texts shrink a little with the card, so everything still fits */
       abxTop.style.height=(o.top/k)+"px";abxTop.style.padding="0 "+(16/k)+"px";abxTop.style.fontSize=(sm/k)+"px";abxCopy.textContent=o.copy;
       abxName.style.padding=(8/k)+"px "+(16/k)+"px "+(16/k)+"px";abxNm.style.fontSize=(o.fs/k)+"px";abxNm.textContent=o.name;
       /* the page content sits below the copyright line (applied inline so the bendable copy of the page inherits it) */

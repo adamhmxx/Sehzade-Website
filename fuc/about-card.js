@@ -44,7 +44,7 @@
   function dims() {
     var vw = innerWidth, vh = innerHeight, m = vw >= 1440 ? 32 : vw >= 810 ? 24 : 16, cols = vw >= 1440 ? 12 : 8,
         col = (vw - 2 * m - (cols - 1) * 16) / cols, span = vw >= 1440 ? 5 : vw >= 810 ? (vw >= 1100 ? 4 : 5) : cols;
-    W = span * col + (span - 1) * 16; H = vw < 810 ? vh - 2 * m : Math.min(vh - 2 * m, W * 1.4);
+    W = span * col + (span - 1) * 16; H = vw < 810 ? Math.min(vh - 2 * m, Math.round(vh * .8)) : Math.min(vh - 2 * m, W * 1.4);   /* phone: at most 80% of the screen height */
     /* a phone on its side is too short for the page: the card keeps its upright phone shape, taller than the screen, and is slid up and down like a sheet of paper */
     TALL = touchy && vw > vh && vh < 600;
     if (TALL) { W = Math.min(vw - 2 * m, 358); H = Math.round(W * 2.27); }
@@ -173,7 +173,7 @@
       }
     }
     if (needBusy) return;
-    var k = base; if (needKey && needVal > avail / base + 1) k = Math.max(.55, avail / needVal); k = Math.min(k, kCap);
+    var k = base; if (needKey && needVal > avail / base + 1) k = Math.max(innerWidth < 810 ? .4 : .55, avail / needVal); k = Math.min(k, kCap);
     var fw = W / k, css = k !== 1 || base !== 1 ? "flex:none;width:" + fw + "px;height:" + H / k + "px;transform:scale(" + k + ");transform-origin:0 0" : "";
     if (shown && open_ && css !== geom && W === shownW) { deferred = true; return; }
     setGeom(css); shownW = W; FK = k; FW = fw; pushPage(k);
