@@ -50,6 +50,16 @@
       "source": "/README",
       "destination": "/",
       "permanent": false
+    },
+    {
+      "source": "/src",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/src/:path*",
+      "destination": "/",
+      "permanent": false
     }
   ],
   "headers": [
@@ -86,6 +96,24 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/fuc/([^/]+)\\.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/fuc/sites/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
         }
       ]
     }
