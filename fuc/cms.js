@@ -14,7 +14,7 @@
     x: "https://x.com/adamhmwn", behance: "https://www.behance.net/adamhimawan", linkedin: "https://www.linkedin.com/in/adamhimawan/",
     dribbble: "https://dribbble.com/adamhmwn", instagram: "https://www.instagram.com/adamhmwn/"
   };
-  var DEF_SITE = { logo: "Sehzade.", aboutLabel: "About", callLabel: "Book a call", clock: "(WIB)", cardName: "Adam Himawan", copyright: "\u00a9 Sehzade 2026", title: "Adam Himawan",
+  var DEF_SITE = { logo: "Sehzade.", aboutLabel: "About", callLabel: "Book a call", clock: "(WIB)", cardName: "Adam Himawan", copyright: "\u00a9 Sehzade 2026", title: "Adam Himawan - Designer",
                    modes: ["Twist", "Grid", "List"] };
   var SOCIALS = [["x", "X"], ["behance", "Behance"], ["linkedin", "LinkedIn"], ["dribbble", "Dribbble"], ["instagram", "Instagram"]];
 
