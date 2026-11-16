@@ -50,7 +50,7 @@
    "services": "",
    "year": "2026",
    "link": "",
-   "src": "uploads/d1efb5e51a1d9692c13.webp",
+   "src": "uploads/00e62ebb1a1e49e45f2.webp",
    "srcSet": "",
    "gallery": [
     "uploads/02c5941b1a1d8421cb6.webp",
@@ -135,7 +135,7 @@
    "services": "Stablecoin",
    "year": "2025",
    "link": "https://onestable.xyz",
-   "src": "uploads/82a7aad01a1d9696184.webp",
+   "src": "uploads/d343c0981a1e49e7859.webp",
    "srcSet": "",
    "gallery": [
     "uploads/53df04a51a1d85dc760.webp",
@@ -156,7 +156,7 @@
    "services": "Web design",
    "year": "2025",
    "link": "",
-   "src": "uploads/c217ff061a1d9698eb8.webp",
+   "src": "uploads/f4df9deb1a1e49ea422.webp",
    "srcSet": "",
    "gallery": [
     "uploads/31c79a1e1a1d88fd2c0.webp",
@@ -256,6 +256,6 @@
  ],
  "about": {},
  "site": {
-  "updated": 1794722280543
+  "updated": 1794836967838
  }
 }
