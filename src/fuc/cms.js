@@ -118,7 +118,9 @@
     applyAbout();
   }
   addEventListener("storage", function (e) {
-    if (e.key !== KEY) return;
+    /* the editor keeps its own working copy: the live site open in another tab writes the published (older) content here, and that must never
+       replace edits that are still waiting to be published (it wiped them, pictures included) */
+    if (e.key !== KEY || PAGE) return;
     data = read() || { items: null, about: {} };
     applyAbout(); window.dispatchEvent(new Event("cms-change"));
   });
@@ -132,6 +134,8 @@
     var src0 = im.getAttribute("src") || "";
     /* the first retry asks GitHub for it at once (a picture the host has not deployed yet), later ones try again with growing pauses */
     if (n === 1 && src0.indexOf(RAW) < 0) { im.src = RAW + src0.replace(/^\.?\//, "").replace(/[?&]r=\d+$/, ""); return; }
+    /* the phone-size copy is missing: the full picture is shown instead */
+    if (n === 2 && /uploads\/sm\//.test(src0)) { im.src = src0.replace("uploads/sm/", "uploads/").replace(/[?&]r=\d+$/, ""); return; }
     setTimeout(function () { if (!im.isConnected) return; var base = (im.getAttribute("src") || "").replace(/[?&]r=\d+$/, ""); im.src = base + (base.indexOf("?") < 0 ? "?r=" : "&r=") + n; }, 3000 * Math.min(n, 5));
   }, true);
 

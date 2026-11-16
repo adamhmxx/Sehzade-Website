@@ -10,6 +10,7 @@
   var S = window.__cms; if (!S) return;
   var KEY = S.KEY, DKEY = S.DKEY, SOCIALS = S.SOCIALS, PAGE = true, site = S.site, about = S.about, savedModes = S.savedModes, applyRemote = S.applyRemote;
   var API = false, GHM = false, AUTHED = false, pushTimer = 0, pushing = false, pushAgain = false, ghTimer = 0, previews = {};
+  var pending = {};   /* path -> base64 of pictures added since the last publish */
   function remote() { return (API || GHM) && AUTHED; }
   function gated() { return (API || GHM) && !AUTHED; }
   /* GitHub mode: token + repo are kept in this browser only */
@@ -49,6 +50,36 @@
      device, an editor left open since yesterday) has published in the meantime, only the fields THIS editor really changed since BASE are laid over the
      newer copy, and everything else is kept as it is now. (Publishing the whole old copy used to silently undo newer saves.) */
   var BASE = null;
+  /* The editor's own copies, which nothing else writes: the working content (DRAFT) and the content as last seen on GitHub (BKEY). With them, edits that
+     were not published yet (tab closed, phone put away, browser restarted) are found again on the next visit and published then */
+  var DRAFT = KEY + "-draft", BKEY = KEY + "-base";
+  function readLS(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
+  function saveLocal(d) { var ok = true, t = JSON.stringify(d); try { localStorage.setItem(DRAFT, t); } catch (e) { ok = false; } try { localStorage.setItem(KEY, t); } catch (e) {} return ok; }
+  function setBase(b) { BASE = b; try { localStorage.setItem(BKEY, JSON.stringify(b)); } catch (e) {} }
+  /* pictures waiting to be published are kept on disk too (IndexedDB), not only in the tab's memory */
+  var IDB = null;
+  function idb() {
+    if (!IDB) IDB = new Promise(function (res) { try { var r = indexedDB.open("site-cms-pending", 1); r.onupgradeneeded = function () { r.result.createObjectStore("p"); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { res(null); }; } catch (e) { res(null); } });
+    return IDB;
+  }
+  function idbDo(fn) { idb().then(function (db) { if (db) try { fn(db.transaction("p", "readwrite").objectStore("p")); } catch (e) {} }); }
+  function idbAll() {
+    return idb().then(function (db) {
+      if (!db) return {};
+      return new Promise(function (res) { var o = {}; try { var rq = db.transaction("p").objectStore("p").openCursor(); rq.onsuccess = function () { var c = rq.result; if (c) { o[c.key] = c.value; c.continue(); } else res(o); }; rq.onerror = function () { res(o); }; } catch (e) { res(o); } });
+    });
+  }
+  function addPending(path, b64) { pending[path] = b64; idbDo(function (st) { st.put(b64, path); }); }
+  function mimeOf(p) { return /\.png$/.test(p) ? "image/png" : /\.jpe?g$/.test(p) ? "image/jpeg" : "image/webp"; }
+  var pendingReady = idbAll().then(function (o) {
+    Object.keys(o).forEach(function (p) { if (!(p in pending)) pending[p] = o[p]; if (p.indexOf("/sm/") < 0 && !previews[p]) previews[p] = "data:" + mimeOf(p) + ";base64," + o[p]; });
+  });
+  /* pictures kept on disk that no project uses any more (removed before they were published) are let go */
+  function prunePending() {
+    var body0 = JSON.stringify(snap(S.data));
+    Object.keys(pending).forEach(function (p) { if (body0.indexOf(p.replace("uploads/sm/", "uploads/")) < 0) dropPending(p); });
+  }
+  function dropPending(path) { delete pending[path]; idbDo(function (st) { st.delete(path); }); }
   function snap(d) { return { items: d && Array.isArray(d.items) ? d.items : null, about: (d && d.about) || {}, site: (d && d.site) || {} }; }
   function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
   function clone(x) { return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
@@ -87,7 +118,7 @@
       cur.items.length = 0; Array.prototype.push.apply(cur.items, list);
     }
     ["about", "site"].forEach(function (k) { var o = cur[k] || (cur[k] = {}); Object.keys(o).forEach(function (q) { if (!(q in next[k])) delete o[q]; }); Object.assign(o, next[k]); });
-    try { localStorage.setItem(KEY, JSON.stringify(cur)); } catch (e) {}
+    saveLocal(cur);
     window.dispatchEvent(new Event("cms-change"));
     var a = document.activeElement; if (!(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.closest && a.closest("#cp"))) render();
   }
@@ -95,7 +126,6 @@
      Every commit makes the host (Vercel) build and deploy the site, and it allows only so many deploys a day: publishing every few seconds, and every
      picture as two commits of its own, used the whole allowance in one editing session (348 commits in a day), after which nothing reached the live
      site for 24 hours. So pictures wait in the editor until the next publish, and a publish sends the content and all its new pictures in ONE commit. */
-  var pending = {};   /* path -> base64 of pictures added since the last publish */
   function ghJSON(path, method, body) {
     return ghApi("/repos/" + GHC.repo + path, { method: method || "GET", body: body ? JSON.stringify(body) : undefined }).then(function (r) {
       if (r.status === 401 || r.status === 403) return ghDeny(r); if (!r.ok) { var e = new Error("gh"); e.status = r.status; throw e; } return r.json();
@@ -109,31 +139,49 @@
     }).then(function (t) { return ghJSON("/git/commits", "POST", { message: msg, tree: t.sha, parents: [head] }); })
       .then(function (nc) { return ghJSON("/git/refs/heads/" + encodeURIComponent(br), "PATCH", { sha: nc.sha, force: false }); });
   }
+  var lostN = 0;
+  /* every file in the repository (one request), to check that the pictures the content points to are really there */
+  function repoFiles() {
+    return ghJSON("/git/trees/" + encodeURIComponent(GHC.branch || "main") + "?recursive=1").then(function (t) {
+      if (!t || t.truncated || !Array.isArray(t.tree)) return null; var o = {}; t.tree.forEach(function (x) { if (x.type === "blob") o[x.path] = 1; }); return o;
+    }).catch(function (e) { if (e === "auth") throw e; return null; });
+  }
   function noStamp(o) { var c = clone(o); if (c && c.site) delete c.site.updated; return c; }
   function ghPush(tries) {
     tries = tries || 0;
     if (pushing && !tries) { pushAgain = true; return; }
     clearTimeout(ghTimer); ghTimer = 0;
     pushing = true; pushAgain = false; setStatus("Publishing…");
-    var sent = [];
-    ghFile("content.json").then(function (f) {
+    var sent = [], have = null;
+    pendingReady.then(function () { return Promise.all([ghFile("content.json"), repoFiles()]); }).then(function (v) {
+      var f = v[0]; have = v[1];
       var live = null; try { live = f && f.content ? snap(JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(f.content.replace(/\s/g, "")), function (c) { return c.charCodeAt(0); })))) : null; } catch (e) {}
       var mine = snap(S.data);
       if (live && BASE && !same(live, BASE)) {
         var merged = { items: mergeItems(BASE.items, mine.items, live.items), about: mergeObj(BASE.about, mine.about, live.about), site: mergeObj(BASE.site, mine.site, live.site) };
         if (!same(merged, mine)) adopt(merged);
       }
+      /* a picture the content points to that is neither on GitHub nor waiting here (lost before it was ever sent) would show as an empty frame on
+         the site: it is left out of the detail gallery, and the editor says so */
+      var lost = 0;
+      if (have) (S.data.items || []).forEach(function (it) {
+        var ok = function (u) { return !/^uploads\//.test(u || "") || have[u] || pending[u]; };
+        if (Array.isArray(it.gallery)) { var g = it.gallery.filter(ok); lost += it.gallery.length - g.length; if (g.length !== it.gallery.length) it.gallery = g; }
+        if (it.src && !ok(it.src)) lost++;
+      });
+      lostN = lost;
       var body0 = JSON.stringify(snap(S.data));
       sent = Object.keys(pending).filter(function (p) { var full = p.replace("uploads/sm/", "uploads/"); return body0.indexOf(full) >= 0; });
       if (live && same(noStamp(live), noStamp(snap(S.data))) && !sent.length) return "same";
       S.data.site = S.data.site || {}; S.data.site.updated = Date.now();   /* lets the live site tell which copy of the content is newer */
-      try { localStorage.setItem(KEY, JSON.stringify(S.data)); } catch (e) {}
-      var text = JSON.stringify(snap(S.data), null, 1) + "\n";
+      saveLocal(S.data);
+      var text = JSON.stringify(snap(S.data), null, 1) + "\n", committed = JSON.parse(text);
       var files = [{ path: "content.json", b64: b64utf8(text) }].concat(sent.map(function (p) { return { path: p, b64: pending[p] }; }));
       var n = sent.filter(function (p) { return p.indexOf("/sm/") < 0; }).length;
-      return ghCommit(files, "CMS: publish" + (n ? " (" + n + " new image" + (n > 1 ? "s" : "") + ")" : "")).then(function () { BASE = clone(snap(S.data)); sent.forEach(function (p) { delete pending[p]; }); });
+      return ghCommit(files, "CMS: publish" + (n ? " (" + n + " new image" + (n > 1 ? "s" : "") + ")" : "")).then(function () { setBase(snap(committed)); sent.forEach(dropPending); });   /* the base is what was really sent: edits made while it was on its way are still new, and go with the next publish (taking the editor's state here made the next publish undo them) */
     }).then(function () {
-      pushing = false; if (pushAgain || ghTimer) { if (!ghTimer) ghPush(); } else setStatus("Published. Live within about 5 minutes.");
+      pushing = false; if (pushAgain || ghTimer) { if (!ghTimer) ghPush(); } else setStatus(lostN ? lostN + " picture" + (lostN > 1 ? "s were" : " was") + " missing (never uploaded) and left out: please add " + (lostN > 1 ? "them" : "it") + " again. Everything else is published." : "Published. Live within about 5 minutes.", !!lostN);
+      if (lostN && body) render();
     }).catch(function (e) {
       /* someone else published at the same moment: read again and merge */
       if (e && (e.status === 409 || e.status === 422) && tries < 3) return ghPush(tries + 1);
@@ -147,7 +195,7 @@
   function persist() {
     saveTimer = 0;
     var ok = true;
-    try { localStorage.setItem(KEY, JSON.stringify(S.data)); } catch (e) { ok = false; }
+    ok = saveLocal(S.data);
     if (PAGE && GHM && AUTHED) { clearTimeout(ghTimer); setStatus("Saved. Publishing when you pause (20 s), or press Publish now."); ghTimer = setTimeout(function () { ghTimer = 0; ghPush(); }, 20000); return; }
     if (PAGE && API && AUTHED) { push(); return; }
     if (ok) setStatus(PAGE && !API ? "Saved in this browser only" : "Saved"); else setStatus("Storage is full. Remove a project or use smaller images.", true);
@@ -162,7 +210,7 @@
       .then(function (saved) {
         var fix = false;
         (saved.items || []).forEach(function (s) { (S.data.items || []).forEach(function (x) { if (x.id === s.id && /^data:/.test(x.src || "") && s.src !== x.src) { x.src = s.src; fix = true; } }); });
-        if (fix) { try { localStorage.setItem(KEY, JSON.stringify(S.data)); } catch (e) {} if (tab === "portfolio" && body) render(); }
+        if (fix) { saveLocal(S.data); if (tab === "portfolio" && body) render(); }
         pushing = false; if (pushAgain) push(); else setStatus("Published");
       })
       .catch(function (e) {
@@ -227,7 +275,7 @@
       var m = /^data:(image\/[a-z+.-]+);base64,(.*)$/.exec(dataUrl), ext = m && ({ "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png" })[m[1]];
       if (!m || !ext) { done(dataUrl); return; }
       var path = "uploads/" + Math.random().toString(16).slice(2, 10) + Date.now().toString(16) + "." + ext;
-      previews[path] = dataUrl; pending[path] = m[2];
+      previews[path] = dataUrl; addPending(path, m[2]);
       /* a 720px copy for phones goes with it (uploads/sm/); both are sent with the next publish, in the same commit as the content */
       var im = new Image();
       im.onload = function () {
@@ -235,7 +283,7 @@
           var w = Math.min(720, im.width), c = document.createElement("canvas"); c.width = w; c.height = Math.round(im.height * w / im.width);
           c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
           var out = c.toDataURL(m[1] === "image/png" ? "image/png" : m[1] === "image/webp" ? "image/webp" : "image/jpeg", .8), mm = /^data:[^;]+;base64,(.*)$/.exec(out);
-          if (mm) pending["uploads/sm/" + path.slice(8)] = mm[1];
+          if (mm) addPending("uploads/sm/" + path.slice(8), mm[1]);
         } catch (x) {}
         done(path);
       };
@@ -434,7 +482,7 @@
       } }, "Copy JSON")]),
       el("p", { class: "cp-hint" }, API || GHM ? "Backup of everything on the site. The live copy is content.json in the site." : "Not connected, so changes live in this browser only. Connect GitHub (or run python3 server.py) to publish for every visitor."));
     var rs = el("button", { type: "button", class: "cp-btn cp-danger" }, "Reset all content");
-    ask(rs, "Reset all content", function () { S.data = { items: null, about: {} }; try { localStorage.removeItem(KEY); } catch (e) {} window.dispatchEvent(new Event("cms-change")); sel = null; render(); setStatus("Back to the original content"); });
+    ask(rs, "Reset all content", function () { S.data = { items: null, about: {} }; try { localStorage.removeItem(KEY); localStorage.removeItem(DRAFT); } catch (e) {} window.dispatchEvent(new Event("cms-change")); sel = null; render(); setStatus("Back to the original content"); });
     c2.append(el("div", { class: "cp-label" }, "Import"), imp,
       el("div", { class: "cp-actions" }, [el("button", { type: "button", class: "cp-btn", onclick: function () {
         try { var j = JSON.parse(imp.value); if (!j || typeof j !== "object") throw 0; S.data = { items: Array.isArray(j.items) ? j.items : S.data.items, about: j.about || {}, site: j.site || {} }; changed(true); render(); setStatus("Imported"); } catch (e) { setStatus("That is not valid JSON.", true); }
@@ -528,9 +576,20 @@
                     : fetch("content.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; });
     first.catch(function (e) { if (e === "auth") { AUTHED = false; showConnect(authMsg()); return "stop"; } return null; }).then(function (j) {
       if (j === "stop") return;
-      if (j) { applyRemote(j); BASE = clone(snap(j)); }
+      if (j) {
+        /* edits left from an earlier visit that never reached GitHub: laid over the published copy (only what was really changed) and published */
+        var draft = readLS(DRAFT), oldBase = readLS(BKEY), remoteC = snap(j), left = null;
+        if (draft && oldBase && !same(noStamp(snap(draft)), noStamp(oldBase))) {
+          var d0 = snap(draft);
+          left = { items: mergeItems(oldBase.items, d0.items, remoteC.items), about: mergeObj(oldBase.about, d0.about, remoteC.about), site: mergeObj(oldBase.site, d0.site, remoteC.site) };
+        }
+        applyRemote(j); setBase(clone(remoteC));
+        if (left && !same(noStamp(left), noStamp(remoteC))) { adopt(left); setStatus("Unpublished edits from your last visit were restored."); if (GHM) { ghTimer = setTimeout(function () { ghTimer = 0; ghPush(); }, 1500); } }
+        else saveLocal(S.data);
+      }
       else if (S.data.items || Object.keys(S.data.about || {}).length || Object.keys(S.data.site || {}).length) { if (GHM) ghPush(); else push(); }
-      setStatus(GHM ? "Connected to GitHub" : "Published"); go();
+      if (!ghTimer) setStatus(GHM ? "Connected to GitHub" : "Published"); go();
+      pendingReady.then(prunePending);
     });
   }
   function gate(on) { var r = document.getElementById("cp"); if (r) r.classList.toggle("cp-gate", !!on); }
