@@ -1,11 +1,20 @@
 /* Project info on hover: the name, a short description and the year of the item under the cursor. Twister: top left. Grid: centred right below the
-   card lifted to the centre of the screen, as wide as the card, no background. List: description and year, top left like Twister. Mouse only; hidden while scrolling or dragging (and for one second after), while the cursor is on the mode menu,
+   card lifted to the centre of the screen, as wide as the card, no background. List: description and year, top left like Twister. Mouse only; hidden while scrolling or dragging (and for two seconds after), during a mode change, while the cursor is on the mode menu,
    while the About card is open and during the intro. */
 (function () {
   if (!matchMedia("(pointer: fine)").matches) return;
   var el = null, rows = [], shownKey = "", hideT = 0, down = false, mx = -1, my = -1, pend = false, lastRun = 0, quietAt = 0, recheck = 0;
-  /* hover states stay off while the visitor scrolls or drags, and for one second after (the gallery shares this with the liquid hover) */
-  window.__hoverLock = function () { return down || performance.now() < quietAt; };
+  /* hover states stay off while the visitor scrolls or drags and for 2 seconds after, while the mode changes or a project opens or closes, and for a moment
+     after the new mode has settled (the gallery and the liquid hover share this) */
+  var settleAt = 0, wasMoving = false, QUIET = 2000;
+  window.__hoverLock = function () { var t = performance.now(); return down || t < quietAt || t < settleAt || !!window.__modeMove || !!window.__wkMove; };
+  /* when the lock ends the card under a resting cursor takes the hover at once (no pointer event would tell the gallery) */
+  function wake() {
+    sched(); if (window.__hoverLock() || mx < 0) return;
+    var t = document.elementFromPoint(mx, my); if (!t || !t.closest || !t.closest("#main")) return;
+    try { t.dispatchEvent(new MouseEvent("mouseover", { bubbles: true, clientX: mx, clientY: my, relatedTarget: null })); } catch (e) {}
+  }
+  function quiet(ms) { quietAt = performance.now() + ms; clearTimeout(recheck); recheck = setTimeout(wake, ms + 50); }
   function items() { return (window.__cmsItems && window.__cmsItems()) || window.__cmsDefaults || []; }
   function fname(u) { var m = /([^\/?#]+\.(?:webp|png|jpe?g|avif|gif))/i.exec(u || ""); return m ? m[1].toLowerCase() : ""; }
   function build() {
@@ -94,12 +103,17 @@
     build();
     addEventListener("pointermove", function (e) { if (e.pointerType === "touch") return; mx = e.clientX; my = e.clientY; sched(); }, { passive: true });
     addEventListener("pointerdown", function () { down = true; sched(); }, { passive: true });
-    addEventListener("pointerup", function () { down = false; quietAt = performance.now() + 1000; sched(); clearTimeout(recheck); recheck = setTimeout(sched, 1050); }, { passive: true });
-    addEventListener("wheel", function () { quietAt = performance.now() + 1000; show(null); clearTimeout(recheck); recheck = setTimeout(sched, 1050); }, { passive: true });
+    addEventListener("pointerup", function () { down = false; quiet(QUIET); sched(); }, { passive: true });
+    addEventListener("wheel", function () { quiet(QUIET); show(null); }, { passive: true });
     document.addEventListener("pointerleave", function () { mx = my = -1; sched(); });
     window.addEventListener("ls-active", sched);
     /* Grid: the centre card is lifted a moment after the pointer stops, and drops when it leaves, with no pointer event in between */
-    setInterval(function () { if (mx >= 0 && mode() === "grid") sched(); }, 150);
+    setInterval(function () {
+      var mv = !!(window.__modeMove || window.__wkMove);
+      if (wasMoving && !mv) { settleAt = performance.now() + 350; clearTimeout(recheck); recheck = setTimeout(wake, 400); }
+      wasMoving = mv;
+      if (mx >= 0 && mode() === "grid") sched();
+    }, 150);
   }
   if (document.body) start(); else addEventListener("DOMContentLoaded", start);
 })();

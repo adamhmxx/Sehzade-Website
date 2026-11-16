@@ -248,13 +248,14 @@
     [["Description", it.description, gShort], ["Partner", it.client, gShort], ["Challenge", it.challenge, gLong], ["Approach", it.approach, gLong]].forEach(function (x) {
       if (!x[1]) return; var sec = el("section", "wk-sec"); sec.append(el("h3", "", x[0]), el("p", "", x[1])); x[2].appendChild(put(sec));
     });
-    col.append(gShort, gLong);
-    grid.appendChild(col); body.appendChild(grid);
+    /* "Visit website" sits right under Approach, in the same column, lined up with the texts above it */
     var visit = null;
     if (it.link) { visit = el("a", "wk-visit"); visit.href = it.link; visit.target = "_blank"; visit.rel = "noopener noreferrer"; visit.textContent = "Visit website"; }
+    col.append(gShort, gLong); if (visit) col.append(visit);
+    grid.appendChild(col); body.appendChild(grid);
     var r = el("div", "wk-r"); r.classList.add("wk-in"); r.style.setProperty("--i", 1);
     if (visit) put(visit);
-    l.append(body); if (visit) l.append(visit); l.append(h1);
+    l.append(body); l.append(h1);
     ov.append(l, r, bar); ov.style.setProperty("--n", idx);
     placeBar(bar);
     var urls = [it.image && it.image.src].concat(it.gallery || []).filter(Boolean).map(sm);
@@ -277,7 +278,7 @@
   function stageIn() {
     var cv = document.querySelector("#main canvas"), st = cv && cv.parentElement && cv.parentElement.parentElement;
     if (!st || !st.animate || reduce) return function () {};
-    var a = st.animate([{ transform: "scale(1.06)" }, { transform: "scale(1)" }], { duration: 1600, delay: 150, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" });
+    var a = st.animate([{ transform: "scale(1.06)" }, { transform: "scale(1)" }], { duration: 2200, delay: 150, easing: "cubic-bezier(.22,1,.36,1)", fill: "backwards" });
     return function () { try { a.cancel(); } catch (e) {} };
   }
   function airOff() { root.classList.add("wk-nt"); root.classList.remove("wk-air"); requestAnimationFrame(function () { requestAnimationFrame(function () { root.classList.remove("wk-nt"); }); }); }
@@ -303,7 +304,7 @@
   }
   /* Twist (drawn on the GPU): the gallery itself plays the move */
   function twFlight(card, rect, back, done) {
-    var tok = ++flTok, t0 = 0, D = back ? 1800 : (window.__twD || 1700);   /* every way back from a project takes about 1.8 s */
+    var tok = ++flTok, t0 = 0, D = 2400;   /* every way into and out of a project takes about 2.4 s: calm, never rushed */
     var X = window.__twX = { live: true, hold: !back, sel: card, a: back ? 1 : 0, f: back ? 1 : 0, m: back ? 1 : 0, cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, w: rect.width, h: rect.height };
     window.__twFreeze = false;
     requestAnimationFrame(function f(now) {
@@ -350,14 +351,14 @@
     K = Math.min(K, 14);
     list.forEach(function (it) {
       var d = it.d; d.__wkAway = true; d.__jl = null;
-      d.style.transition = "translate 1.25s " + e; d.style.rotate = "";
+      d.style.transition = "translate 1.5s cubic-bezier(.33,0,.15,1)"; d.style.rotate = "";
       d.style.translate = (it.dx * (K - 1)).toFixed(0) + "px " + (it.dy * (K - 1)).toFixed(0) + "px"; d.style.scale = ""; gridOut.push(d);
     });
   }
   function gridBack(now) {
     var g = gridOut, e = "cubic-bezier(.65,0,.35,1)"; gridOut = [];
-    g.forEach(function (d) { d.style.transition = now ? "none" : "translate 1.3s " + e; d.style.translate = ""; d.style.rotate = ""; });
-    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; d.__wkAway = false; }); }, now ? 0 : 1400);
+    g.forEach(function (d) { d.style.transition = now ? "none" : "translate 1.5s " + e; d.style.translate = ""; d.style.rotate = ""; });
+    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; d.__wkAway = false; }); }, now ? 0 : 1600);
   }
   /* where the chosen card sits in the gallery (measured with the other cards at home) */
   function homeRect(o) {
@@ -404,7 +405,14 @@
     var h1 = ov.querySelector(".wk-name"), sp = h1 && h1.querySelector("span"), r = ov.querySelector(".wk-r"), name = sp ? sp.textContent.trim().toLowerCase() : "", dead = false, clone = null, row = null;
     ov.classList.add("lout"); if (window.__lsLock) window.__lsLock(3200); root.classList.add("lr-out");
     inFlight = function () { dead = true; if (clone) clone.remove(); if (row) row.style.visibility = ""; root.classList.remove("lr-in", "lr-out"); };
-    if (r) r.animate([{ transform: "translateX(0)" }, { transform: "translateX(106%)" }], { duration: 650, easing: "cubic-bezier(.6,0,.85,.35)", fill: "forwards" });
+    /* the pictures of the scroll leave to the right one after the other, from the top down; the scroll's own dark ground goes at once, so nothing
+       covers the list while they leave (the whole scroll used to slide out as one dark block that hid the list and then vanished) */
+    if (r) {
+      r.style.background = "transparent";
+      var its = [].filter.call(r.querySelectorAll(".wk-it"), function (n) { var b = n.getBoundingClientRect(); if (b.bottom > 0 && b.top < innerHeight && b.width) return true; n.style.visibility = "hidden"; return false; })
+        .sort(function (a, z) { return a.getBoundingClientRect().top - z.getBoundingClientRect().top; });
+      its.forEach(function (n, k) { var b = n.getBoundingClientRect(); n.animate([{ translate: "0 0" }, { translate: (innerWidth - b.left + 40) + "px 0" }], { duration: 850, delay: k * 120, easing: "cubic-bezier(.55,0,.7,.35)", fill: "forwards" }); });
+    }
     setTimeout(function () {
       if (dead || shown) return;
       var best = 1e18, cy = listName ? listName.r.top + listName.r.height / 2 : innerHeight / 2;
@@ -420,10 +428,10 @@
       clone = el("div", "", sp.textContent);
       clone.style.cssText = "position:fixed;z-index:4;left:" + sb.left + "px;top:" + sb.top + "px;width:" + (sb.width + 1) + "px;font:400 " + fs2 + 'px/.92 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;color:#f2f2f2;overflow-wrap:anywhere;pointer-events:none;transform-origin:0 0;will-change:transform';
       document.body.appendChild(clone); h1.style.visibility = "hidden"; row.style.visibility = "hidden"; ov.classList.add("air");
-      var a = clone.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (tr.left - sb.left) + "px," + (tr.top + tr.height / 2 - clone.offsetHeight * k2 / 2 - sb.top) + "px,0) scale(" + k2 + ")" }], { duration: 1150, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+      var a = clone.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (tr.left - sb.left) + "px," + (tr.top + tr.height / 2 - clone.offsetHeight * k2 / 2 - sb.top) + "px,0) scale(" + k2 + ")" }], { duration: 1500, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
       var fin = 0, end = function () { if (fin || dead) return; fin = 1; row.style.visibility = ""; clone.remove(); clone = null; gone(); setTimeout(function () { root.classList.remove("lr-in"); }, 400); };
-      a.onfinish = end; setTimeout(end, 1900);
-    }, 650);
+      a.onfinish = end; setTimeout(end, 2300);
+    }, 800);
   }
   function onScreen(r) { return r && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
   function show(i) {
@@ -457,15 +465,16 @@
           if (window.__lsLock) window.__lsLock(2600);
           if (listRow) listRow.style.visibility = "hidden";
           root.classList.add("lr-hold"); void document.body.offsetWidth; root.classList.add("lr-out"); root.classList.remove("lr-hold");
-          setTimeout(function () { root.classList.remove("lr-out"); if (listRow) listRow.style.visibility = ""; }, 1000);
-          var h1 = ov.querySelector(".wk-name"), nm = listName, rmName = nameFly(nm, h1, 1150);
+          setTimeout(function () { root.classList.remove("lr-out"); if (listRow) listRow.style.visibility = ""; }, 1500);
+          /* the other names drift away first; the chosen one sets off once they are clear of its path, and the picture rises last: nothing crosses anything */
+          var h1 = ov.querySelector(".wk-name"), nm = listName, rmName = nameFly(nm, h1, 1350, 600);
           var fin = function () { if (h1 && nm) { h1.classList.add("wk-now"); setTimeout(function () { h1.classList.remove("wk-now"); }, 400); } land(); rmName(); };
-          var killL = fs ? flyBox(big, ff, fs, false, 500, 1350, fin) : (setTimeout(fin, 1250), function () {});
+          var killL = fs ? flyBox(big, ff, fs, false, 1000, 1400, fin) : (setTimeout(fin, 2000), function () {});
           inFlight = function () { killL(); rmName(); };
         }
         else {
           card.classList.add("wk-hide"); if (mode === "grid") gridAway(card);
-          var kill = flyBox(big, ff, fs, false, 350, 1250, land);
+          var kill = flyBox(big, ff, fs, false, 650, 1750, land);   /* the other cards are mostly out of the way before the picture starts to grow: it never spreads over them */
           inFlight = function () { kill(); card.classList.remove("wk-hide"); gridBack(true); };
         }
       });
@@ -492,7 +501,7 @@
     var soft = function (grid) {
       if (reduce) { if (grid) gridBack(true); gone(); return; }
       window.__wkMove = true; ov.classList.add("air");
-      var stop = grid ? (gridBack(), function () {}) : stageIn(), tm = setTimeout(gone, 1800);
+      var stop = grid ? (gridBack(), function () {}) : stageIn(), tm = setTimeout(gone, 2400);
       inFlight = function () { clearTimeout(tm); stop(); if (grid) gridBack(true); };
     };
     if (!o || !slot) { window.__twX = null; window.__twFreeze = false; if (o && !o.tw) { o.card.classList.remove("wk-hide"); soft(true); } else if (!lb) soft(false); }
@@ -506,9 +515,10 @@
         var to = homeRect(o);
         if (!onScreen(to)) { o.card.classList.remove("wk-hide"); soft(o.mode === "grid"); }
         else {
-          if (o.mode === "grid") setTimeout(function () { gridBack(); }, 500);
-          var kill = flyBox({ left: slot.left, top: slot.top, width: slot.width, height: slot.height }, to, o.src, true, 0, 1400, function () { o.card.classList.remove("wk-hide"); gone(); });
-          inFlight = function () { kill(); o.card.classList.remove("wk-hide"); gridBack(true); };
+          /* the picture goes home first; the other cards close in behind it and arrive only after it has landed, so they never pass over it */
+          var gb = o.mode === "grid" ? setTimeout(function () { gridBack(); }, 900) : 0, gt2 = 0;
+          var kill = flyBox({ left: slot.left, top: slot.top, width: slot.width, height: slot.height }, to, o.src, true, 0, 1700, function () { o.card.classList.remove("wk-hide"); gt2 = setTimeout(gone, o.mode === "grid" ? 700 : 0); });
+          inFlight = function () { clearTimeout(gb); clearTimeout(gt2); kill(); o.card.classList.remove("wk-hide"); gridBack(true); };
         }
       }
     }
@@ -581,7 +591,8 @@
     else if (row) { var c = listName.r; flyFrom = { left: c.left + c.width / 2 - 2, top: c.top + c.height / 2 - 1.5, width: 4, height: 3 }; flyCard = row; flyMode = "list"; flySrc = sm((it.image && it.image.src) || ""); }
   }
   /* List: the clicked name travels to where the project's name stands */
-  function nameFly(nm, h1, dur) {
+  function nameFly(nm, h1, dur, delay) {
+    delay = delay || 0;
     var sp = h1.querySelector("span"); if (!sp || !nm) return function () {};
     var rg = document.createRange(); rg.selectNodeContents(sp); var rs = rg.getClientRects(), t = rs[0]; if (!t) return function () {};
     var fs2 = parseFloat(getComputedStyle(h1).fontSize) || 120, k = fs2 / nm.fs, tops = {}, c = el("div", "", nm.text);
@@ -593,11 +604,11 @@
       c.style.cssText = base + "left:" + nm.r.left + "px;top:0;width:" + (sb.width / k + 1) + "px;font-size:" + nm.fs + "px;line-height:.92;white-space:normal;overflow-wrap:anywhere;transform-origin:0 0";
       document.body.appendChild(c);
       var top = nm.r.top + nm.r.height / 2 - c.offsetHeight / 2; c.style.top = top + "px";
-      c.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (sb.left - nm.r.left) + "px," + (sb.top - top) + "px,0) scale(" + k + ")" }], { duration: dur, delay: 320, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+      c.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (sb.left - nm.r.left) + "px," + (sb.top - top) + "px,0) scale(" + k + ")" }], { duration: dur, delay: Math.max(320, delay), easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
     } else {
       c.style.cssText = base + "left:" + nm.r.left + "px;top:" + nm.r.top + "px;height:" + nm.r.height + "px;font-size:" + nm.fs + "px;line-height:" + nm.r.height + "px;white-space:nowrap;transform-origin:0 50%";
       document.body.appendChild(c);
-      c.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (t.left - nm.r.left) + "px," + (t.top + t.height / 2 - (nm.r.top + nm.r.height / 2)) + "px,0) scale(" + k + ")" }], { duration: dur, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+      c.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (t.left - nm.r.left) + "px," + (t.top + t.height / 2 - (nm.r.top + nm.r.height / 2)) + "px,0) scale(" + k + ")" }], { duration: dur, delay: delay, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
     }
     return function () { c.remove(); };
   }
@@ -629,7 +640,8 @@
         if (z >= 8000 && z < 10000 && d.style.position === "absolute" && d.style.top === "50%" && d.querySelector("img")) c = d; }   /* the highlighted project opens, wherever on the grid the click is */
     }
     if (!c) return;
-    var g = window.__galK && window.__galK.current; if (g && g.moved > 6) { e.preventDefault(); return; }
+    /* a drag is not a click: measured from this press (the gallery's own drag counter can be left over from an earlier drag in another mode) */
+    if (Math.hypot(e.clientX - lastP[0], e.clientY - lastP[1]) > 8) { e.preventDefault(); return; }
     var im = c.querySelector("img"), f = fname(c.dataset.src || (im && (im.currentSrc || im.src)) || ""), list = data(), it = null;
     for (var i = 0; i < list.length; i++) if (list[i].image && fname(list[i].image.src) === f) { it = list[i]; break; }
     if (!it) return;
