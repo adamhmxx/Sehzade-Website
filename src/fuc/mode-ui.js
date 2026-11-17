@@ -11,6 +11,28 @@
   function idx() { return tabs().findIndex(function (t) { return t.getAttribute("aria-selected") === "true"; }); }
   function data() { var a = (window.__cmsItems && window.__cmsItems()) || window.__cmsDefaults || []; return [].filter.call(a, function (it) { return it && it.name; }); }
   function sm(u) { return window.__sms ? window.__sms(u) : u; }
+  /* the List's pictures are backgrounds, which never retry: each is loaded through an Image first, and one that fails or stalls is asked for again
+     (the phone-size copy missing: the full picture), then shown from the address that worked */
+  var PRE = {};
+  function pre(u) {
+    var e = PRE[u]; if (e) return e; e = PRE[u] = { base: u, u: u, ok: 0, n: 0 };
+    var get = function () {
+      var im = new Image(), done = 0, tm = setTimeout(function () { fin(0); }, 12000);
+      function fin(ok) {
+        if (done) return; done = 1; clearTimeout(tm); im.onload = im.onerror = null;
+        if (ok) { e.ok = 1; if (e.u !== e.base) repaint(); return; }
+        if (++e.n > 5) return;
+        setTimeout(function () { e.u = e.n === 1 && /uploads\/sm\//.test(e.base) ? e.base.replace("uploads/sm/", "uploads/") : e.base + (e.base.indexOf("?") < 0 ? "?r=" : "&r=") + e.n; get(); }, 1500 * e.n);
+      }
+      im.onload = function () { fin(1); }; im.onerror = function () { fin(0); }; im.src = e.u;
+    };
+    get(); return e;
+  }
+  function bg(it) { return it && it.image && it.image.src ? "url(" + pre(sm(it.image.src)).u + ")" : ""; }
+  function repaint() {
+    if (typeof act === "number" && act >= 0 && items[act] && pv) pv.style.backgroundImage = bg(items[act]);
+    if (typeof mK === "number" && mK >= 0 && mN && lcur) lcur.style.backgroundImage = bg(items[mK % mN]);
+  }
   function live() { return !root.classList.contains("intro-on") && !root.classList.contains("intro-ui"); }
 
   function css() {
@@ -189,7 +211,7 @@
     }
   }
   function showImg(i) {
-    var it = items[i], u = it && it.image && it.image.src ? "url(" + sm(it.image.src) + ")" : "", nx = lcur === la ? lb : la;
+    var it = items[i], u = bg(it), nx = lcur === la ? lb : la;
     nx.style.backgroundImage = u; nx.style.opacity = 1; lcur.style.opacity = 0; lcur = nx;
   }
   function layoutTouch() {
@@ -216,7 +238,7 @@
     inner.appendChild(frag);
     var w = Math.round(vw * .65), h = Math.round(w * .75);       /* the picture is 65% of the screen width */
     mpv.style.width = w + "px"; mpv.style.height = h + "px"; mpv.style.transform = "translate3d(" + Math.round((vw - w) / 2) + "px," + Math.round(CY - h / 2) + "px,0)";
-    items.forEach(function (it) { if (it.image && it.image.src) { var im = new Image(); im.src = sm(it.image.src); } });
+    items.forEach(function (it) { if (it.image && it.image.src) pre(sm(it.image.src)); });
     mPlace();
   }
 
@@ -243,7 +265,7 @@
     if (i === act || !items[i]) { if (e) follow(); return; }
     if (act >= 0 && rows[act]) rows[act].classList.remove("act");
     var first = act < 0; act = i; rows[i].classList.add("act");
-    var it = items[i]; pv.style.backgroundImage = it.image && it.image.src ? "url(" + sm(it.image.src) + ")" : "";
+    pv.style.backgroundImage = bg(items[i]);
     if (first) { px = mx; py = my; }
     pv.classList.add("on"); follow(); told();
   }

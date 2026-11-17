@@ -104,13 +104,21 @@
   function Strip(box, urls, vertical, held, onFirst) {
     var org = null, GAP = 12, PAD = 12, slots = [], C = 0, maxS = 0, view = 0, pos = 0, tgt = 0, vel = 0, drag = null, raf = 0, last = 0, idle = 0, alive = true, metrics = [];
     var imgs = urls.map(function (u) { var im = new Image(); im.decoding = "async"; im.src = u; return im; });
-    var ready = Promise.all(imgs.map(function (im) { return im.decode ? im.decode().catch(function () {}) : new Promise(function (r) { im.onload = im.onerror = r; }); }));
+    var dec = imgs.map(function (im) { return im.decode ? im.decode().catch(function () {}) : new Promise(function (r) { im.onload = im.onerror = r; }); });
+    var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+    /* the scroll is laid out once every picture is in, or soon after the first one, or after 2.5 s at the latest: one slow or stalled picture
+       (a weak mobile network) used to keep the whole scroll empty. A picture that comes in later takes its own shape (see late()) */
+    var ready = Promise.race([Promise.all(dec), dec[0].then(function () { return wait(700); }), wait(2500)]);
+    var shapeOf = function (im) { return (im.naturalWidth && im.naturalHeight) ? im.naturalWidth / im.naturalHeight : 4 / 3; }, used = [], lateT = 0;
+    function late() { if (!alive || !used.length) return; for (var q = 0; q < imgs.length; q++) if (Math.abs(shapeOf(imgs[q]) - used[q]) > .01) { clearTimeout(lateT); lateT = setTimeout(layout, 150); return; } }
+    dec.forEach(function (d) { d.then(late); });
     function wrapv(v, t) { return ((v % t) + t) % t; }
     function layout() {
       if (!alive) return;
       var W = box.clientWidth, H = box.clientHeight; if (!W || !H) return;
       view = vertical ? H : W;
-      metrics = imgs.map(function (im) { var r = (im.naturalWidth && im.naturalHeight) ? im.naturalWidth / im.naturalHeight : 4 / 3; return vertical ? Math.round((W - PAD * 2) / r) : Math.round((H - PAD * 2) * r); });
+      used = imgs.map(shapeOf);
+      metrics = imgs.map(function (im) { var r = shapeOf(im); return vertical ? Math.round((W - PAD * 2) / r) : Math.round((H - PAD * 2) * r); });
       var L = 0; maxS = 0; metrics.forEach(function (s) { L += s + GAP; maxS = Math.max(maxS, s); });
       var copies = Math.max(1, Math.ceil((view + maxS * 2 + GAP) / L)); C = copies * L;
       /* the pictures live in a layer that reaches 90px beyond the pane on every side (the pane clips it): the hover's melt works on that layer, so its own edges are out of sight and nothing tears along the pane's border */

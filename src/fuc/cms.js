@@ -132,12 +132,33 @@
     var im = e.target; if (!im || im.tagName !== "IMG" || !/uploads\//.test(im.getAttribute("src") || "")) return;
     var n = (im.__rt || 0) + 1; if (n > 6) return; im.__rt = n;
     var src0 = im.getAttribute("src") || "";
-    /* the first retry asks GitHub for it at once (a picture the host has not deployed yet), later ones try again with growing pauses */
-    if (n === 1 && src0.indexOf(RAW) < 0) { im.src = RAW + src0.replace(/^\.?\//, "").replace(/[?&]r=\d+$/, ""); return; }
-    /* the phone-size copy is missing: the full picture is shown instead */
-    if (n === 2 && /uploads\/sm\//.test(src0)) { im.src = src0.replace("uploads/sm/", "uploads/").replace(/[?&]r=\d+$/, ""); return; }
-    setTimeout(function () { if (!im.isConnected) return; var base = (im.getAttribute("src") || "").replace(/[?&]r=\d+$/, ""); im.src = base + (base.indexOf("?") < 0 ? "?r=" : "&r=") + n; }, 3000 * Math.min(n, 5));
+    /* the address as a path of this site: the project page's pictures carry full addresses (https://site/uploads/..), and GitHub's copy was then
+       asked for at "raw.githubusercontent.com/../https://site/uploads/..", which never exists: one brief failure left the picture empty for good */
+    var clean = src0.replace(/[?&][rs]=\d+$/, "");
+    try { var U = new URL(clean, location.href); if (U.origin === location.origin) clean = U.pathname.replace(/^\//, "") + U.search; } catch (x) {}
+    /* the phone-size copy is missing: the full picture from the site itself first (it is always deployed with it) */
+    if (/uploads\/sm\//.test(clean) && !im.__full) { im.__full = 1; im.src = clean.replace("uploads/sm/", "uploads/"); return; }
+    /* then GitHub at once (a picture the host has not deployed yet), later tries again with growing pauses */
+    if (!im.__raw && clean.indexOf(RAW) < 0) { im.__raw = 1; im.src = RAW + clean.replace(/^\.?\//, ""); return; }
+    /* the later tries go back to the site's own address (GitHub may be what is out of reach) */
+    var site = clean.indexOf(RAW) === 0 ? clean.slice(RAW.length) : clean;
+    setTimeout(function () { if (!im.isConnected) return; im.src = site + (site.indexOf("?") < 0 ? "?r=" : "&r=") + n; }, 3000 * Math.min(n, 5));
   }, true);
+
+  /* a picture whose request stalls (no answer and no error: it happens on weak mobile networks) never fires the error above and stayed empty
+     for good: one still not in after 12 s is asked for again (up to 4 times) */
+  var stall = new WeakMap();
+  setInterval(function () {
+    var now = Date.now();
+    [].forEach.call(document.querySelectorAll('img[src*="uploads/"]'), function (im) {
+      if (im.complete) { stall.delete(im); return; }
+      var src = im.getAttribute("src") || "", s0 = stall.get(im);
+      if (!s0 || s0.src !== src) { stall.set(im, { src: src, t: now, n: s0 ? s0.n : 0 }); return; }
+      if (now - s0.t < 12000 || s0.n >= 4) return;
+      var base = src.replace(/[?&]s=\d+$/, ""), n = s0.n + 1, next = base + (base.indexOf("?") < 0 ? "?s=" : "&s=") + n;
+      stall.set(im, { src: next, t: now, n: n }); im.src = next;
+    });
+  }, 3000);
 
   if (PAGE) {
     window.__cms = { KEY: KEY, DKEY: DKEY, SOCIALS: SOCIALS, site: site, about: about, savedModes: savedModes, applyRemote: applyRemote,
