@@ -50,8 +50,8 @@
       'html.g2l #ls-root.on .ls-row,html.t2l #ls-root.on .ls-row{clip-path:none;translate:0 0;opacity:1;transition:color .22s ease,translate 1.2s cubic-bezier(.22,1,.36,1) var(--ld,.2s),opacity .7s ease var(--ld,.2s)}html.t2l{--ld:.1s}html.t2l .ls-layer.ls-hide{transition:visibility 0s 8s}' +
       'html.lr-hold #ls-root{opacity:1;visibility:visible}html.lr-hold #ls-root .ls-row{clip-path:none!important;translate:0 0!important;opacity:1!important;transition:none!important}' +
       /* List -> Twist: the names scatter to the left and the right, all at once, before the list goes */
-      'html.lr-out #ls-root{opacity:1;visibility:visible}html.lr-out #ls-root .ls-row{pointer-events:none;transition:translate .85s cubic-bezier(.6,0,.85,.4),opacity .6s ease .2s}html.lr-out #ls-pv,html.lr-out #ls-mpv{opacity:0!important}' +
-      (function () { var o = ""; for (var k = 1; k <= 40; k++) o += "html.lr-seq #ls-root .ls-row:nth-child(" + k + "){transition-delay:" + (k * .05).toFixed(2) + "s," + (k * .05 + .15).toFixed(2) + "s}"; return o; })() +
+      'html.lr-out #ls-root{opacity:1;visibility:visible}html.lr-out #ls-root .ls-row{pointer-events:none;transition:translate .6s cubic-bezier(.6,0,.85,.4),opacity .42s ease .14s}html.lr-out #ls-pv,html.lr-out #ls-mpv{opacity:0!important}' +
+      (function () { var o = ""; for (var k = 1; k <= 40; k++) o += "html.lr-seq #ls-root .ls-row:nth-child(" + k + "){transition-delay:" + (k * .035).toFixed(3) + "s," + (k * .035 + .105).toFixed(3) + "s}"; return o; })() +
       /* from the Grid the names arrive one after the other, top to bottom, alternately from the left and the right (the grid's rows have left the same way) */
       'html.g2l{--ld:.1s}html.lr-wait #ls-root .ls-row{opacity:0!important;transition:none!important}html.lr-wait #ls-pv,html.lr-wait #ls-mpv{opacity:0!important;transition:none!important}html.g2l .ls-layer.ls-hide{transition:visibility 0s 6s}' + (function () { var o = ""; for (var k = 1; k <= 40; k++) o += "html.g2l #ls-root.on .ls-row:nth-last-child(" + k + "){transition-delay:0s,calc(var(--ld) + " + (k * .05).toFixed(2) + "s),calc(var(--ld) + " + (k * .05).toFixed(2) + "s)}"; return o; })() +
       '.ls-layer{transition:none}' +
@@ -242,7 +242,8 @@
     mPlace();
   }
 
-  function openLink(i) { var it = items[i]; if (!it) return; if (window.__wkGo) { window.__wkGo(it); return; } if (it.link) { try { window.open(it.link, "_blank", "noopener"); } catch (e) {} } }
+  /* a name opens its project page; the project's website is reached only through "Visit website" there */
+  function openLink(i) { var it = items[i]; if (it && window.__wkGo) window.__wkGo(it); }
 
   /* one big line per project, together exactly as tall as the free space between the navbar and the mode menu */
   function layout() {
@@ -310,7 +311,9 @@
   function sync() {
     if (!tabs().length) return;
     build();
-    var i = idx(), ok = live() && !window.__abOpen && !window.__wkOpen;
+    /* the names stay in place behind the About card (they used to vanish when it opened and come in again when it closed); only hover and the
+       preview rest while it is open */
+    var i = idx(), ok = live() && !window.__wkOpen, calm = !window.__abOpen;
     /* Grid -> List has its own change: the grid sinks into the black page while the names come in from the left and the right, all at once, out of a liquid ripple */
     if (i !== sync.prev) {
       var g2l = sync.prev === 1 && i === LIST, t2l = sync.prev === 0 && i === LIST, l2t = sync.prev === LIST && i === 0, l2g = sync.prev === LIST && i === 1;
@@ -318,11 +321,11 @@
       sync.g = g2l ? "__glDone" : t2l ? "__tlDone" : ""; if (sync.g) window[sync.g] = 0; else root.classList.remove("lr-wait"); sync.stage = g2l || t2l;   /* the names must first stand in their starting places (off to the sides, unseen) before they are sent in */
       if (l2t) {   /* two steps, so the names start from their places and then leave */
         root.classList.add("lr-hold"); void box.offsetWidth; root.classList.add("lr-out"); root.classList.remove("lr-hold"); liquidRows(0, true);
-        sync.o = setTimeout(function () { root.classList.remove("lr-out"); }, 950);
+        sync.o = setTimeout(function () { root.classList.remove("lr-out"); }, 665);
       }
       if (l2g) {   /* the names leave line by line, top to bottom, alternately to the left and the right; the grid waits for them */
         root.classList.add("lr-hold"); void box.offsetWidth; root.classList.add("lr-out", "lr-seq"); root.classList.remove("lr-hold");
-        sync.o = setTimeout(function () { root.classList.remove("lr-out", "lr-seq"); }, 1500);
+        sync.o = setTimeout(function () { root.classList.remove("lr-out", "lr-seq"); }, 1050);
       }
       if (!(g2l || t2l)) sync.lock = 0;
       sync.prev = i;
@@ -332,7 +335,11 @@
     root.classList.toggle("ls-on", touchUI && i === LIST && ok);
     cardsHidden(i === LIST && live());
     if (i !== LIST) { clearTimeout(hideT); deactivate(); told(); }
-    else if (!(sync.lock > performance.now())) { layout(); if (sync.stage && ok) {
+    else if (!(sync.lock > performance.now())) {
+      /* the About card opening or closing changes nothing in the list: it is not rebuilt (a rebuilt list sends every name in again) */
+      var key = ok + "|" + innerWidth + "|" + innerHeight + "|" + JSON.stringify(data().map(function (x) { return x.name; }));
+      if (key !== sync.key || sync.stage || !rows.length && !mRows.length) { sync.key = key; layout(); }
+      if (sync.stage && ok) {
       sync.stage = 0; sync.lock = performance.now() + 7000;
       var go = function () { root.classList.remove("lr-wait"); box.classList.remove("on"); void box.offsetWidth; box.classList.add("on"); sync.lock = performance.now() + 3200; if (sync.g) liquidRows(0, false); };
       /* from the Grid: the names wait, unseen, until the last card has really left the screen (measured, not timed), so the two are never on screen together */
@@ -340,7 +347,8 @@
       else go();
     } }   /* (while the names are on their way in, the list is not rebuilt: new rows would simply pop up in place) */   /* the list has just been rebuilt: its names first stand off to the sides, then they are sent in */
     placeHint(); clearTimeout(sync.t); sync.t = setTimeout(placeHint, 1100);
-    hint.classList.toggle("on", ok && i >= 0 && i < LIST);
+    hint.classList.toggle("on", ok && calm && i >= 0 && i < LIST);
+    if (!calm && i === LIST) { clearTimeout(hideT); deactivate(); }
   }
 
   window.__lsLock = function (ms) { sync.lock = performance.now() + ms; };   /* the project page asks the list not to rebuild itself while its names are moving */

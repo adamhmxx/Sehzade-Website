@@ -249,7 +249,10 @@
     f.setAttribute("id", id); f.setAttribute("x", "-30%"); f.setAttribute("y", "-60%"); f.setAttribute("width", "160%"); f.setAttribute("height", "220%");
     f.setAttribute("color-interpolation-filters", "sRGB");
     /* wavelength follows the size of the element, so small text ripples as clearly as a large card */
-    var fq = Math.max(ABOUT ? .0025 : .004, Math.min(.05, (ABOUT ? 1.7 : 2.3) / Math.max(60, Math.max(b.width, b.height))));   /* About: longer, softer waves (big text on a flat card looked torn with the short ones) */
+    var fq = Math.max(ABOUT ? .0025 : .004, Math.min(.05, (ABOUT ? 1.7 : 2.3) / Math.max(60, Math.max(b.width, b.height))));
+    /* text: the waves are a few letters long (they follow the type size, not the box), so the glyphs bend and flow together like ink on water
+       instead of trembling one by one */
+    if (!el.querySelector || !el.querySelector("img")) { var fs0 = parseFloat(getComputedStyle(el.__fxt || el).fontSize) || 16; fq = Math.max(.004, Math.min(fq, 1 / (fs0 * (ABOUT ? 3.8 : 3.2)))); }   /* About: longer, softer waves (big text on a flat card looked torn with the short ones) */
     f.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="' + fq.toFixed(4) + ' ' + (fq * 1.5).toFixed(4) + '" numOctaves="1" seed="' + (fid % 7 + 2) + '" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="o"/>' +
       '<feDisplacementMap in="SourceGraphic" in2="o" scale="0" xChannelSelector="R" yChannelSelector="G" result="w"/>' +
@@ -314,8 +317,13 @@
       /* depth: the component under the cursor comes a little towards the viewer (it grows by up to 3.5% and lifts by a pixel or two), softly, like a
          surface rising out of liquid; the ones around it stay where they are */
       spring(st, "z", f, .07, .8);
-      var zz = Math.max(0, Math.min(1, st.z)), dep = zz > .004;
-      if (dep || st.zs) { if (dep) { var big_ = Math.max(b.width, b.height), amp = big_ > 160 ? .0216 : .042; tgt.style.scale = (1 + amp * zz).toFixed(4); if (!tgt.classList.contains("ls-row")) tgt.style.translate = "0 " + (-1.92 * zz).toFixed(2) + "px"; st.zs = 1; if (!tgt.style.transformOrigin) tgt.style.transformOrigin = "50% 60%"; active++; }
+      /* ...and it is pushed like a drop of liquid: it stretches a little along the way the cursor moves and slims across it (keeping its volume),
+         then settles back as the cursor slows. Small text used to only grow, which read as a zoom rather than as liquid */
+      var spd = Math.hypot(cvx, cvy), ux = spd > .01 ? cvx / spd : 0, uy = spd > .01 ? cvy / spd : 0, str = f * Math.min(1, spd / 30) * .045;
+      spring(st, "ex", str * (ux * ux - uy * uy), .1, .8);
+      var zz = Math.max(0, Math.min(1, st.z)), dep = zz > .004 || Math.abs(st.ex || 0) > .0008;
+      if (dep || st.zs) { if (dep) { var big_ = Math.max(b.width, b.height), amp = big_ > 160 ? .0216 : .024, base = 1 + amp * zz, e_ = st.ex || 0;
+          tgt.style.scale = (base * (1 + e_)).toFixed(4) + " " + (base / (1 + e_)).toFixed(4); if (!tgt.classList.contains("ls-row")) tgt.style.translate = "0 " + (-1.92 * zz).toFixed(2) + "px"; st.zs = 1; if (!tgt.style.transformOrigin) tgt.style.transformOrigin = "50% 60%"; active++; }
         else { tgt.style.scale = tgt.style.translate = ""; st.zs = 0; } }
       var warp = st.d > .15;
       if (warp || st.b > .03) {
@@ -329,7 +337,9 @@
           /* never cut off: the ripple (it pushes the glyphs by up to half its scale) and the depth growth must stay inside whatever clips this text
              (a scrolling box, a card, the screen edge). The room is measured on the glyphs themselves and re-measured twice a second */
           if (!st.roomT || now - st.roomT > 500) { st.roomT = now; st.room = roomOf(tgt, b); }
-          st.warp.map.setAttribute("scale", Math.max(0, Math.min(st.d * st.warp.k, Math.max(2, b.height * .49), Math.max(2, st.fs * .36), (st.room - Math.max(b.width, b.height) * .0216 - 3) * 2)).toFixed(2));
+          /* a single line has no neighbour line to slide into: it may bend further (about 60% of the type size) than the lines of a paragraph (36%) */
+          var one = b.height < st.fs * 1.7;
+          st.warp.map.setAttribute("scale", Math.max(0, Math.min(st.d * st.warp.k * (one ? 1.35 : 1), Math.max(2, b.height * (one ? .62 : .49)), Math.max(2, st.fs * (one ? .62 : .36)), (st.room - Math.max(b.width, b.height) * .0216 - 3) * 2)).toFixed(2));
           /* the noise flows on its own clock, like the loading screen. It flows by morphing (a slow change of its frequency) plus a small sway that stays
              inside the filter margin: sliding the whole noise field by hundreds of pixels left an empty strip in it, which showed up as a hard tear
              through the text (lines cut and printed twice) */

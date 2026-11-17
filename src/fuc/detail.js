@@ -29,6 +29,7 @@
       /* while the picture travels (in or out) the page is only a transparent layer: no fade, no wipe. It becomes the page the moment the picture has landed */
       '#wk.air:not(.lv){background:transparent}#wk.air:not(.lv) .wk-in{opacity:0!important;transition:none!important}#wk.air:not(.lv) .wk-bar{visibility:hidden}' +
       /* leaving a project (Back): the text goes the way it came, block after block from the bottom up, while the dark page clears and the pictures fade; nothing is cut off at once */
+      '#main div.wk-dzt{transition:opacity .6s cubic-bezier(.4,0,.2,1)!important}#main div.wk-dz{opacity:0!important;pointer-events:none!important}html.wk-dzn #main div.wk-dzt{transition:none!important}' +
       '#wk.lv{background-color:rgba(11,11,11,0)!important;transition:background-color .7s cubic-bezier(.4,0,.2,1)}' +
       '#wk.lv:not(.lout) .wk-in:not(.wk-r),#wk.lv.lout .wk-in:not(.wk-r):not(.wk-name){opacity:0!important;transform:translateY(10px)!important;transition:opacity .4s cubic-bezier(.4,0,.2,1),transform .4s cubic-bezier(.4,0,.2,1)!important;transition-delay:calc((var(--n,8) - 1 - var(--i,0)) * 40ms)!important}' +
       '#wk.lv .wk-bar{opacity:0;visibility:visible;transition:opacity .35s ease}#wk.lv:not(.lout) .wk-r{opacity:0!important;transition:opacity .55s cubic-bezier(.4,0,.2,1) .12s!important}' +
@@ -102,7 +103,7 @@
 
   /* ---------- the endless scroll of pictures ---------- */
   function Strip(box, urls, vertical, held, onFirst) {
-    var org = null, GAP = 12, PAD = 12, slots = [], C = 0, maxS = 0, view = 0, pos = 0, tgt = 0, vel = 0, drag = null, raf = 0, last = 0, idle = 0, alive = true, metrics = [];
+    var hom = false, org = null, GAP = 12, PAD = 12, slots = [], C = 0, maxS = 0, view = 0, pos = 0, tgt = 0, vel = 0, drag = null, raf = 0, last = 0, idle = 0, alive = true, metrics = [];
     var imgs = urls.map(function (u) { var im = new Image(); im.decoding = "async"; im.src = u; return im; });
     var dec = imgs.map(function (im) { return im.decode ? im.decode().catch(function () {}) : new Promise(function (r) { im.onload = im.onerror = r; }); });
     var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
@@ -148,7 +149,7 @@
         if (Math.abs(vel) > .02) { tgt += vel * dt; vel *= Math.exp(-dt / 320); } else vel = 0;
         idle += dt; if (!held && !reduce && idle > 1400 && Math.abs(vel) < .02) tgt += (vertical ? 22 : 30) * dt / 1000;
       }
-      pos += (tgt - pos) * (1 - Math.exp(-dt / (drag ? 45 : 120)));
+      pos += (tgt - pos) * (1 - Math.exp(-dt / (drag ? 45 : hom ? 55 : 120)));
       place(); raf = requestAnimationFrame(tick);
     }
     function kick() { if (!raf && alive) { last = performance.now(); raf = requestAnimationFrame(tick); } }
@@ -175,7 +176,12 @@
     box.addEventListener("wheel", onWheel, { passive: false });
     box.addEventListener("pointerdown", down); box.addEventListener("pointermove", move); box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
     ready.then(layout);
-    return { release: function () { held = false; idle = 0; }, stop: function () { held = true; drag = null; vel = 0; tgt = pos; }, relayout: layout, destroy: function () { alive = false; cancelAnimationFrame(raf); box.removeEventListener("wheel", onWheel); box.removeEventListener("pointerdown", down); box.removeEventListener("pointermove", move); box.removeEventListener("pointerup", up); box.removeEventListener("pointercancel", up); box.textContent = ""; } };
+    return { release: function () { held = false; idle = 0; }, stop: function () { held = true; drag = null; vel = 0; tgt = pos; },
+      /* scrolls back (the short way round) until the project's first picture rests in its starting place, then calls back */
+      off: function () { return C ? Math.abs(pos - Math.round(pos / C) * C) : 0; },
+      home: function (cb) { held = true; hom = true; drag = null; vel = 0; tgt = Math.round(pos / C) * C; kick(); var t0 = performance.now();
+        (function w() { if (!alive) return cb(); if (Math.abs(pos - tgt) < .6 || performance.now() - t0 > 900) { pos = tgt; place(); cb(); } else requestAnimationFrame(w); })(); },
+      relayout: layout, destroy: function () { alive = false; cancelAnimationFrame(raf); box.removeEventListener("wheel", onWheel); box.removeEventListener("pointerdown", down); box.removeEventListener("pointermove", move); box.removeEventListener("pointerup", up); box.removeEventListener("pointercancel", up); box.textContent = ""; } };
   }
 
   /* ---------- the name, as big as the column allows ---------- */
@@ -341,35 +347,28 @@
     a.onfinish = end; var tm = setTimeout(end, dur + (delay || 0) + 1500);
     return function () { fin = 1; clearTimeout(tm); try { a.cancel(); } catch (e) {} d.remove(); };
   }
-  /* Grid: the cards that were not chosen scatter straight outward, away from the chosen card, with no tilt (and come back the same way, converging on it).
-     Every card moves by the same factor at every moment (one scaling of the whole layout about the chosen card), so the gaps between them only grow:
-     nothing ever overlaps, crosses or piles up */
+  /* Grid: the cards that were not chosen (and the project caption) dissolve where they stand, softly, while the chosen picture waits; only then does
+     the picture travel to its place in the project page, and the text comes last. Going back, the picture returns first and the others fade in
+     around it. (They used to fly off the screen, which crossed the hover state's lifted, blurred cards and glitched) */
   var gridOut = [];
   function isCard(d) { return d.style && d.style.position === "absolute" && d.style.top === "50%" && d.style.left === "50%" && d.style.zIndex && d.querySelector("img"); }
-  function gridAway(card) {
-    var W = innerWidth, H = innerHeight, e = "cubic-bezier(.65,0,.35,1)"; gridOut = [];
-    var cr = card.getBoundingClientRect(), ox = cr.left + cr.width / 2, oy = cr.top + cr.height / 2, list = [], K = 1;
+  function gridAway(card, now) {
+    gridOut.forEach(function (d) { if (d === card) d.classList.remove("wk-dz"); });
+    gridOut = [];
+    if (now) root.classList.add("wk-dzn");
     [].forEach.call(document.querySelectorAll("#main div"), function (d) {
-      if (d === card || !isCard(d)) return;
-      var r = d.getBoundingClientRect(); if (r.width < 20) return;
-      var dx = r.left + r.width / 2 - ox, dy = r.top + r.height / 2 - oy;
-      /* how far the layout must be scaled for this card to be fully off screen */
-      var kx = dx > 0 ? (W - r.left + 40) / dx + 1 : dx < 0 ? (r.right + 40) / -dx + 1 : 1e9,
-          ky = dy > 0 ? (H - r.top + 40) / dy + 1 : dy < 0 ? (r.bottom + 40) / -dy + 1 : 1e9;
-      if (r.right > 0 && r.left < W && r.bottom > 0 && r.top < H) K = Math.max(K, Math.min(kx, ky));
-      list.push({ d: d, dx: dx, dy: dy });
+      var cap = d.style && d.style.zIndex === "7000";
+      if (d === card || !(cap || isCard(d))) return;
+      d.__wkAway = true; d.__jl = null; d.style.translate = d.style.rotate = d.style.scale = "";
+      d.classList.add("wk-dzt", "wk-dz"); gridOut.push(d);
     });
-    K = Math.min(K, 14);
-    list.forEach(function (it) {
-      var d = it.d; d.__wkAway = true; d.__jl = null;
-      d.style.transition = "translate 1.5s cubic-bezier(.33,0,.15,1)"; d.style.rotate = "";
-      d.style.translate = (it.dx * (K - 1)).toFixed(0) + "px " + (it.dy * (K - 1)).toFixed(0) + "px"; d.style.scale = ""; gridOut.push(d);
-    });
+    if (now) requestAnimationFrame(function () { requestAnimationFrame(function () { root.classList.remove("wk-dzn"); }); });
   }
   function gridBack(now) {
-    var g = gridOut, e = "cubic-bezier(.65,0,.35,1)"; gridOut = [];
-    g.forEach(function (d) { d.style.transition = now ? "none" : "translate 1.5s " + e; d.style.translate = ""; d.style.rotate = ""; });
-    setTimeout(function () { g.forEach(function (d) { d.style.transition = ""; d.__wkAway = false; }); }, now ? 0 : 1600);
+    var g = gridOut; gridOut = [];
+    if (now) root.classList.add("wk-dzn");
+    g.forEach(function (d) { d.classList.remove("wk-dz"); });
+    setTimeout(function () { g.forEach(function (d) { if (!d.classList.contains("wk-dz")) d.classList.remove("wk-dzt"); d.__wkAway = false; }); root.classList.remove("wk-dzn"); }, now ? 40 : 1000);
   }
   /* where the chosen card sits in the gallery (measured with the other cards at home) */
   function homeRect(o) {
@@ -421,18 +420,26 @@
   /* the names leave at once, unseen (while the project page still covers them), so they never show under the pictures as these go */
   function namesOut() { root.classList.add("lr-snap", "lr-x"); void document.body.offsetWidth; requestAnimationFrame(function () { root.classList.remove("lr-snap"); }); }
   /* ... and come back in from the sides once nothing else is moving over them */
+  /* the line of the project that was open: once its title has flown home it simply stays there (it only changes from the title's white back to the
+     list's grey); the other names come in around it */
+  function stay(i, white) {
+    var s = document.getElementById("wk-stay"); if (!s) { s = el("style"); s.id = "wk-stay"; document.head.appendChild(s); }
+    s.textContent = i == null ? "" : ':root:root #ls-root .ls-row[data-i="' + i + '"]{translate:0 0!important;opacity:1!important;visibility:visible!important;clip-path:none!important;transition:color .7s cubic-bezier(.4,0,.2,1)!important' + (white ? ";color:#f2f2f2!important" : "") + "}";
+  }
   function namesIn() { pick(null); root.classList.add("lr-in"); root.classList.remove("lr-x", "lr-out"); clearTimeout(namesIn.t); namesIn.t = setTimeout(function () { root.classList.remove("lr-in"); }, 1300); }
   function listBack(gone) {
     var h1 = ov.querySelector(".wk-name"), sp = h1 && h1.querySelector("span"), r = ov.querySelector(".wk-r"), name = sp ? sp.textContent.trim().toLowerCase() : "", dead = false, clone = null, row = null;
     ov.classList.add("lout"); if (window.__lsLock) window.__lsLock(3400); namesOut();
-    inFlight = function () { dead = true; if (clone) clone.remove(); pick(null); root.classList.remove("lr-in", "lr-out", "lr-x"); };
+    inFlight = function () { dead = true; if (clone) clone.remove(); pick(null); stay(null); root.classList.remove("lr-in", "lr-out", "lr-x"); };
     /* the pictures of the scroll leave to the right one after the other, from the top down; the scroll's own dark ground goes at once, so nothing
        covers the list while they leave (the whole scroll used to slide out as one dark block that hid the list and then vanished) */
     if (r) {
       r.style.background = "transparent"; if (strip && strip.stop) strip.stop();   /* the strip stops turning by itself, or the pictures drift back into view as they go */
       var its = [].filter.call(r.querySelectorAll(".wk-it"), function (n) { var b = n.getBoundingClientRect(); if (b.bottom > 0 && b.top < innerHeight && b.width) return true; n.style.visibility = "hidden"; return false; })
         .sort(function (a, z) { var A = a.getBoundingClientRect(), Z = z.getBoundingClientRect(); return Math.abs(A.top - Z.top) > 4 ? A.top - Z.top : Z.left - A.left; });   /* top first; side by side (the phone's strip), the one nearest the right edge first, so none passes over another */
-      its.forEach(function (n, k) { var b = n.getBoundingClientRect(); n.animate([{ translate: "0 0" }, { translate: (innerWidth - b.left + 40) + "px 0" }], { duration: 850, delay: k * 120, easing: "cubic-bezier(.55,0,.7,.35)", fill: "forwards" }); });
+      /* all travel the same distance at the same pace (enough for the leftmost to leave), so one that sets off later never catches up with the one ahead */
+      var far = innerWidth + 40 - Math.min.apply(Math, its.map(function (n) { return n.getBoundingClientRect().left; }).concat([innerWidth]));
+      its.forEach(function (n, k) { n.animate([{ translate: "0 0" }, { translate: far + "px 0" }], { duration: 850, delay: k * 120, easing: "cubic-bezier(.55,0,.7,.35)", fill: "forwards" }); });
     }
     setTimeout(function () {
       if (dead || shown) return;
@@ -450,7 +457,8 @@
       clone.style.cssText = "position:fixed;z-index:4;left:" + sb.left + "px;top:" + sb.top + "px;width:" + (sb.width + 1) + "px;font:400 " + fs2 + 'px/.92 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;color:#f2f2f2;overflow-wrap:anywhere;pointer-events:none;transform-origin:0 0;will-change:transform';
       document.body.appendChild(clone); h1.style.visibility = "hidden"; pick(row.dataset.i); ov.classList.add("air");
       var a = clone.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (tr.left - sb.left) + "px," + (tr.top + tr.height / 2 - clone.offsetHeight * k2 / 2 - sb.top) + "px,0) scale(" + k2 + ")" }], { duration: 1300, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
-      var fin = 0, end = function () { if (fin || dead) return; fin = 1; clone.remove(); clone = null; gone(); namesIn(); };
+      var fin = 0, end = function () { if (fin || dead) return; fin = 1; var ri = row.dataset.i; stay(ri, true); pick(null); clone.remove(); clone = null; gone(); namesIn();
+        requestAnimationFrame(function () { requestAnimationFrame(function () { stay(ri, false); }); }); setTimeout(function () { stay(null); }, 1400); };
       a.onfinish = end; setTimeout(end, 2100);
     }, 800);
   }
@@ -475,7 +483,9 @@
         ov.classList.remove("air"); airOff(); if (strip) strip.release(); rvLand = true; rvTry(); liquidIn();
         requestAnimationFrame(function () { requestAnimationFrame(function () { if (shown && origin === o) window.__twFreeze = true; }); });
       };
-      inFlight = function () { flTok++; };
+      inFlight = function () { flTok++; if (mode === "grid") gridBack(true); };
+      /* Grid: the other cards start to dissolve at the click itself (they used to wait for the picture to load, half a second of nothing) */
+      if (mode === "grid" && !o.tw) gridAway(card);
       target(fs, function (big) {
         if (!shown || origin !== o) return;
         if (!big) { land(); return; }
@@ -494,7 +504,7 @@
           inFlight = function () { killL(); rmName(); };
         }
         else {
-          card.classList.add("wk-hide"); if (mode === "grid") gridAway(card);
+          card.classList.add("wk-hide");
           var kill = flyBox(big, ff, fs, false, 650, 1750, land);   /* the other cards are mostly out of the way before the picture starts to grow: it never spreads over them */
           inFlight = function () { kill(); card.classList.remove("wk-hide"); gridBack(true); };
         }
@@ -540,8 +550,10 @@
         if (!onScreen(to)) { o.card.classList.remove("wk-hide"); soft(o.mode === "grid"); }
         else {
           /* the picture goes home first; the other cards close in behind it and arrive only after it has landed, so they never pass over it */
-          var gb = o.mode === "grid" ? setTimeout(function () { gridBack(); }, 900) : 0, gt2 = 0;
-          var kill = flyBox({ left: slot.left, top: slot.top, width: slot.width, height: slot.height }, to, o.src, true, 0, 1700, function () { o.card.classList.remove("wk-hide"); gt2 = setTimeout(gone, o.mode === "grid" ? 700 : 0); });
+          /* the picture goes home first, over an empty page; the other cards fade in around it only once it has landed (fading in under the moving
+             picture, they were crossed by it, and its card showed twice for a moment) */
+          var gb = 0, gt2 = 0;
+          var kill = flyBox({ left: slot.left, top: slot.top, width: slot.width, height: slot.height }, to, o.src, true, 0, 1700, function () { o.card.classList.remove("wk-hide"); if (o.mode === "grid") gridBack(); gt2 = setTimeout(gone, o.mode === "grid" ? 650 : 0); });
           inFlight = function () { clearTimeout(gb); clearTimeout(gt2); kill(); o.card.classList.remove("wk-hide"); gridBack(true); };
         }
       }
@@ -573,10 +585,14 @@
     if (!best) { if (o.mode === "grid") gridOut = []; origin = null; return; }
     var im2 = best.querySelector("img");
     o.card = best; o.rect = best.getBoundingClientRect(); o.src = (im2 && (im2.currentSrc || im2.src)) || best.dataset.src || sm(it.image.src);
-    if (o.mode === "grid") { best.classList.add("wk-hide"); gridAway(best); gridOut.forEach(function (d) { var t = d.style.transition; d.style.transition = "none"; void d.offsetWidth; d.style.transition = t; }); var g2 = gridOut; setTimeout(function () { g2.forEach(function (d) { d.__wkAway = true; }); }, 0); }
+    if (o.mode === "grid") { best.classList.add("wk-hide"); gridAway(best, true); }
   }
   function close() {
     if (!shown) return;
+    /* Back with the pictures scrolled along: the scroll first glides back until the first picture (the one that goes home) is in its place, and
+       only then does the page leave, so the picture always flies home from where it arrived */
+    if (strip && strip.home && strip.off() > 2 && !close.homing && !reduce) { close.homing = 1; strip.home(function () { close.homing = 0; close(); }); return; }
+    if (close.homing) return;
     if (ownPush) { ownPush = false; history.back(); }
     else { history.replaceState(null, "", location.pathname + location.search); hide(); }
   }
