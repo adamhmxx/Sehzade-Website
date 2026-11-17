@@ -322,7 +322,7 @@
       var spd = Math.hypot(cvx, cvy), ux = spd > .01 ? cvx / spd : 0, uy = spd > .01 ? cvy / spd : 0, str = f * Math.min(1, spd / 30) * .045;
       spring(st, "ex", str * (ux * ux - uy * uy), .1, .8);
       var zz = Math.max(0, Math.min(1, st.z)), dep = zz > .004 || Math.abs(st.ex || 0) > .0008;
-      if (dep || st.zs) { if (dep) { var big_ = Math.max(b.width, b.height), amp = big_ > 160 ? .0216 : .024, base = 1 + amp * zz, e_ = st.ex || 0;
+      if (dep || st.zs) { if (dep) { var big_ = Math.max(b.width, b.height), amp = big_ > 160 ? .0216 : .042,   /* (the depth asked for: +20%, 4.2% / 2.16%) */ base = 1 + amp * zz, e_ = st.ex || 0;
           tgt.style.scale = (base * (1 + e_)).toFixed(4) + " " + (base / (1 + e_)).toFixed(4); if (!tgt.classList.contains("ls-row")) tgt.style.translate = "0 " + (-1.92 * zz).toFixed(2) + "px"; st.zs = 1; if (!tgt.style.transformOrigin) tgt.style.transformOrigin = "50% 60%"; active++; }
         else { tgt.style.scale = tgt.style.translate = ""; st.zs = 0; } }
       var warp = st.d > .15;
