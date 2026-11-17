@@ -53,6 +53,9 @@
   function yMin(cy) { return Math.min(-cy, innerHeight - 16 - H - cy); }
   function restY() { return TALL ? 16 - (innerHeight - H) / 2 : 0; }
   function hiddenPose() { return { x: 0, y: innerHeight / 2 + H / 2 + 70, r: -3, s: .9, rx: 42, ry: 0 }; }
+  function bounds() { var cx = (innerWidth - W) / 2, cy = (innerHeight - H) / 2; return { minX: -(W - 110) - cx, maxX: innerWidth - 110 - cx, minY: yMin(cy), maxY: innerHeight - 60 - cy }; }
+  /* pulled past an edge, the card follows the finger less and less (it never leaves its bounds by more than ~110px) */
+  function rubber(v, lo, hi) { var D = 110; return v < lo ? lo - D * (1 - Math.exp(-(lo - v) / D)) : v > hi ? hi + D * (1 - Math.exp(-(v - hi) / D)) : v; }
   function clampT() {
     var cx = (innerWidth - W) / 2, cy = (innerHeight - H) / 2;
     T.x = clamp(T.x, -(W - 110) - cx, innerWidth - 110 - cx); T.y = clamp(T.y, yMin(cy), innerHeight - 60 - cy);
@@ -85,10 +88,15 @@
       /* after a throw the sheet coasts and slows down with friction; it never bounces or springs back */
       var fr = Math.exp(-dt * 4.6), cx = (innerWidth - W) / 2, cy = (innerHeight - H) / 2;
       V.x *= fr; V.y *= fr; S.x += V.x * dt; S.y += V.y * dt;
-      var minX = -(W - 110) - cx, maxX = innerWidth - 110 - cx, minY = yMin(cy), maxY = innerHeight - 60 - cy;
-      if (S.x < minX) { S.x = minX; V.x = 0; } else if (S.x > maxX) { S.x = maxX; V.x = 0; }
-      if (S.y < minY) { S.y = minY; V.y = 0; } else if (S.y > maxY) { S.y = maxY; V.y = 0; }
-      if (Math.hypot(V.x, V.y) < 14) { glide = false; V.x = V.y = 0; T.x = S.x; T.y = S.y; }
+      var B = bounds(), ease = 1 - Math.exp(-dt * 11), px0 = S.x - V.x * dt, py0 = S.y - V.y * dt, back = false;
+      /* a card that reaches an edge while coasting stops there; one let go beyond an edge (pulled past it) slides back to it
+         (it used to jump back in a single frame) */
+      [["x", px0, B.minX, B.maxX], ["y", py0, B.minY, B.maxY]].forEach(function (a) {
+        var k = a[0], lo = a[2], hi = a[3], was = a[1];
+        if (S[k] < lo) { V[k] = Math.max(0, V[k]); if (was >= lo) S[k] = lo; else { S[k] += (lo - S[k]) * ease; back = back || lo - S[k] > .4; } }
+        else if (S[k] > hi) { V[k] = Math.min(0, V[k]); if (was <= hi) S[k] = hi; else { S[k] += (hi - S[k]) * ease; back = back || S[k] - hi > .4; } }
+      });
+      if (Math.hypot(V.x, V.y) < 14 && !back) { glide = false; V.x = V.y = 0; S.x = clamp(S.x, B.minX, B.maxX); S.y = clamp(S.y, B.minY, B.maxY); T.x = S.x; T.y = S.y; }
     }
     PROPS.forEach(function (k) {
       var tilt = k === "rx" || k === "ry", K = k === "r" ? 80 : k === "s" ? 120 : tilt ? 70 : open_ ? 62 : 70, D = 2 * Math.sqrt(K) * 1.05;   /* critically damped (a touch over): it settles without ever overshooting or bouncing back */
@@ -248,9 +256,10 @@
   }
 
   /* dragging: from the title strip, or from anywhere on the page inside the card (it reports its own coordinates) */
-  function begin(px, py, grab) { window.__abDragging = true; glide = false; drag = { px: px, py: py, x0: S.x, y0: S.y, t: performance.now(), vx: 0, vy: 0 }; card.classList.add("dragging"); if (grab) card.classList.add("grip-drag"); V.x = V.y = 0; run(); }
+  function begin(px, py, grab) { window.__abDragging = true; glide = false; drag = { px: px, py: py, x0: S.x, y0: S.y, rx: S.x, ry: S.y, t: performance.now(), vx: 0, vy: 0 }; card.classList.add("dragging"); if (grab) card.classList.add("grip-drag"); V.x = V.y = 0; run(); }
   function move(px, py) {
     if (!drag) return; var now = performance.now(), dt = Math.max(8, now - drag.t), nx = drag.x0 + px - drag.px, ny = drag.y0 + py - drag.py;
+    var B = bounds(); nx = rubber(nx, B.minX, B.maxX); ny = rubber(ny, B.minY, B.maxY);
     drag.vx = drag.vx * .55 + ((nx - S.x) / dt * 1000) * .45; drag.vy = drag.vy * .55 + ((ny - S.y) / dt * 1000) * .45;
     S.x = nx; S.y = ny; V.x = drag.vx; V.y = drag.vy; drag.t = now;
   }
@@ -258,14 +267,15 @@
      so absolute coordinates measured inside it would feed back into the motion and shake it; movement deltas cannot */
   function moveBy(dx, dy) {
     if (!drag || (!dx && !dy)) return; var now = performance.now(), dt = Math.max(8, now - drag.t);
-    S.x += dx; S.y += dy; drag.vx = drag.vx * .55 + (dx / dt * 1000) * .45; drag.vy = drag.vy * .55 + (dy / dt * 1000) * .45; V.x = drag.vx; V.y = drag.vy; drag.t = now;
+    var B = bounds(), ox = S.x, oy = S.y; drag.rx += dx; drag.ry += dy; S.x = rubber(drag.rx, B.minX, B.maxX); S.y = rubber(drag.ry, B.minY, B.maxY); dx = S.x - ox; dy = S.y - oy;
+    drag.vx = drag.vx * .55 + (dx / dt * 1000) * .45; drag.vy = drag.vy * .55 + (dy / dt * 1000) * .45; V.x = drag.vx; V.y = drag.vy; drag.t = now;
   }
   function end() {
     window.__abDragging = false;
     if (!drag) return; var v = drag, idle = performance.now() - v.t; drag = null; card.classList.remove("dragging", "grip-drag");
     /* released while still moving: coast; released after a pause: just stay where it is */
     var live = Math.exp(-idle / 1000 * 9);
-    if (idle < 140 && Math.hypot(v.vx, v.vy) * live > 120) { glide = true; V.x = clamp(v.vx * live, -4000, 4000); V.y = clamp(v.vy * live, -4000, 4000); } else { V.x = V.y = 0; T.x = S.x; T.y = S.y; }
+    if (idle < 140 && Math.hypot(v.vx, v.vy) * live > 120) { glide = true; V.x = clamp(v.vx * live, -4000, 4000); V.y = clamp(v.vy * live, -4000, 4000); } else { V.x = V.y = 0; var B = bounds(); T.x = clamp(S.x, B.minX, B.maxX); T.y = clamp(S.y, B.minY, B.maxY); }   /* let go beyond an edge: the spring takes it back to the edge, without overshooting */
     run();
   }
   function open() {
