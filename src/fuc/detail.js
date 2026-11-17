@@ -35,6 +35,9 @@
       'html.wk-fadein [role="tablist"]{transition:opacity .6s cubic-bezier(.4,0,.2,1)!important}.wk-logo{transition:opacity .6s cubic-bezier(.4,0,.2,1)}.wk-hide{visibility:hidden!important}' +
       /* the text rises in, one piece after the other */
       /* the text arrives the way everything on this site does: it dissolves in out of a liquid ripple that calms down (see liquidIn), one block after the other */
+      /* the names leave to the sides while a project opens or closes (lr-x outranks the mode classes g2l / t2l, which stay on in the List and used to pin the names in place) */
+      'html.lr-x #ls-root{opacity:1;visibility:visible}html.lr-x #ls-root .ls-row{clip-path:none!important;translate:-46vw 0!important;opacity:0!important;pointer-events:none!important;transition:translate .85s cubic-bezier(.6,0,.85,.4),opacity .6s ease .2s!important}html.lr-x #ls-root .ls-row:nth-child(even){translate:46vw 0!important}html.lr-x #ls-pv,html.lr-x #ls-mpv{opacity:0!important}' +
+      'html.lr-x.lr-snap #ls-root .ls-row{transition:none!important}' +
       'html.lr-in #ls-root{opacity:1!important;visibility:visible!important}html.lr-in #ls-root .ls-row{clip-path:none!important;translate:0 0!important;opacity:1!important;transition:translate 1.2s cubic-bezier(.22,1,.36,1),opacity .8s ease!important}html.lr-in #ls-pv,html.lr-in #ls-mpv{opacity:0!important}' +
       '#wk.lout:not(.lv) .wk-in:not(.wk-r):not(.wk-name){opacity:0!important;transition:none!important}#wk.lout:not(.lv) .wk-bar{visibility:hidden}' +
       '#wk .wk-in{opacity:0;transform:translateY(18px);transition:opacity .9s ease,transform 1.1s cubic-bezier(.22,1,.36,1)}' +
@@ -164,7 +167,7 @@
     box.addEventListener("wheel", onWheel, { passive: false });
     box.addEventListener("pointerdown", down); box.addEventListener("pointermove", move); box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
     ready.then(layout);
-    return { release: function () { held = false; idle = 0; }, relayout: layout, destroy: function () { alive = false; cancelAnimationFrame(raf); box.removeEventListener("wheel", onWheel); box.removeEventListener("pointerdown", down); box.removeEventListener("pointermove", move); box.removeEventListener("pointerup", up); box.removeEventListener("pointercancel", up); box.textContent = ""; } };
+    return { release: function () { held = false; idle = 0; }, stop: function () { held = true; drag = null; vel = 0; tgt = pos; }, relayout: layout, destroy: function () { alive = false; cancelAnimationFrame(raf); box.removeEventListener("wheel", onWheel); box.removeEventListener("pointerdown", down); box.removeEventListener("pointermove", move); box.removeEventListener("pointerup", up); box.removeEventListener("pointercancel", up); box.textContent = ""; } };
   }
 
   /* ---------- the name, as big as the column allows ---------- */
@@ -401,16 +404,26 @@
   var rvLand = false, rvLay = false;
   function rvTry() { if (rvLand && rvLay && ov) requestAnimationFrame(function () { requestAnimationFrame(function () { if (ov) ov.classList.remove("rv", "fl"); }); }); }
   /* project -> List: the picture scroll slides away to the right, then the project's name flies back to its line in the list */
+  /* the chosen name is hidden in the list by its index, not by its element: the list may redraw its rows meanwhile, and a hidden element
+     that was replaced left the name on screen twice (the original one drifting under the flying copy) */
+  function pick(i) {
+    var s = document.getElementById("wk-pick"); if (!s) { s = el("style"); s.id = "wk-pick"; document.head.appendChild(s); }
+    s.textContent = i == null ? "" : '#ls-root .ls-row[data-i="' + i + '"]{visibility:hidden!important}';
+  }
+  /* the names leave at once, unseen (while the project page still covers them), so they never show under the pictures as these go */
+  function namesOut() { root.classList.add("lr-snap", "lr-x"); void document.body.offsetWidth; requestAnimationFrame(function () { root.classList.remove("lr-snap"); }); }
+  /* ... and come back in from the sides once nothing else is moving over them */
+  function namesIn() { pick(null); root.classList.add("lr-in"); root.classList.remove("lr-x", "lr-out"); clearTimeout(namesIn.t); namesIn.t = setTimeout(function () { root.classList.remove("lr-in"); }, 1300); }
   function listBack(gone) {
     var h1 = ov.querySelector(".wk-name"), sp = h1 && h1.querySelector("span"), r = ov.querySelector(".wk-r"), name = sp ? sp.textContent.trim().toLowerCase() : "", dead = false, clone = null, row = null;
-    ov.classList.add("lout"); if (window.__lsLock) window.__lsLock(3200); root.classList.add("lr-out");
-    inFlight = function () { dead = true; if (clone) clone.remove(); if (row) row.style.visibility = ""; root.classList.remove("lr-in", "lr-out"); };
+    ov.classList.add("lout"); if (window.__lsLock) window.__lsLock(3400); namesOut();
+    inFlight = function () { dead = true; if (clone) clone.remove(); pick(null); root.classList.remove("lr-in", "lr-out", "lr-x"); };
     /* the pictures of the scroll leave to the right one after the other, from the top down; the scroll's own dark ground goes at once, so nothing
        covers the list while they leave (the whole scroll used to slide out as one dark block that hid the list and then vanished) */
     if (r) {
-      r.style.background = "transparent";
+      r.style.background = "transparent"; if (strip && strip.stop) strip.stop();   /* the strip stops turning by itself, or the pictures drift back into view as they go */
       var its = [].filter.call(r.querySelectorAll(".wk-it"), function (n) { var b = n.getBoundingClientRect(); if (b.bottom > 0 && b.top < innerHeight && b.width) return true; n.style.visibility = "hidden"; return false; })
-        .sort(function (a, z) { return a.getBoundingClientRect().top - z.getBoundingClientRect().top; });
+        .sort(function (a, z) { var A = a.getBoundingClientRect(), Z = z.getBoundingClientRect(); return Math.abs(A.top - Z.top) > 4 ? A.top - Z.top : Z.left - A.left; });   /* top first; side by side (the phone's strip), the one nearest the right edge first, so none passes over another */
       its.forEach(function (n, k) { var b = n.getBoundingClientRect(); n.animate([{ translate: "0 0" }, { translate: (innerWidth - b.left + 40) + "px 0" }], { duration: 850, delay: k * 120, easing: "cubic-bezier(.55,0,.7,.35)", fill: "forwards" }); });
     }
     setTimeout(function () {
@@ -420,17 +433,17 @@
         if (n.textContent.trim().toLowerCase() !== name) return; var b = n.getBoundingClientRect(); if (!b.height || b.bottom < 0 || b.top > innerHeight) return;
         var dd = Math.abs(b.top + b.height / 2 - cy); if (dd < best) { best = dd; row = n; }
       });
-      if (!row || !sp) { gone(); return; }
+      if (!row || !sp) { gone(); namesIn(); return; }
       var sb = sp.getBoundingClientRect(), fs2 = parseFloat(getComputedStyle(h1).fontSize) || 120, rg = document.createRange(); rg.selectNodeContents(row);
       var tr0 = rg.getBoundingClientRect(), tx0 = parseFloat(getComputedStyle(row).translate) || 0, tr = { left: tr0.left - tx0, top: tr0.top, height: tr0.height };
-      root.classList.add("lr-in"); root.classList.remove("lr-out");   /* the other names come back in from the sides while the title travels home */
+      /* the title travels home alone; the other names come back in from the sides once it has landed, so it never passes over them */
       var k2 = (parseFloat(getComputedStyle(row).fontSize) || 40) / fs2;
       clone = el("div", "", sp.textContent);
       clone.style.cssText = "position:fixed;z-index:4;left:" + sb.left + "px;top:" + sb.top + "px;width:" + (sb.width + 1) + "px;font:400 " + fs2 + 'px/.92 "Anton","Inter Display",Impact,sans-serif;text-transform:uppercase;letter-spacing:0;color:#f2f2f2;overflow-wrap:anywhere;pointer-events:none;transform-origin:0 0;will-change:transform';
-      document.body.appendChild(clone); h1.style.visibility = "hidden"; row.style.visibility = "hidden"; ov.classList.add("air");
-      var a = clone.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (tr.left - sb.left) + "px," + (tr.top + tr.height / 2 - clone.offsetHeight * k2 / 2 - sb.top) + "px,0) scale(" + k2 + ")" }], { duration: 1500, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
-      var fin = 0, end = function () { if (fin || dead) return; fin = 1; row.style.visibility = ""; clone.remove(); clone = null; gone(); setTimeout(function () { root.classList.remove("lr-in"); }, 400); };
-      a.onfinish = end; setTimeout(end, 2300);
+      document.body.appendChild(clone); h1.style.visibility = "hidden"; pick(row.dataset.i); ov.classList.add("air");
+      var a = clone.animate([{ transform: "translate3d(0,0,0) scale(1)" }, { transform: "translate3d(" + (tr.left - sb.left) + "px," + (tr.top + tr.height / 2 - clone.offsetHeight * k2 / 2 - sb.top) + "px,0) scale(" + k2 + ")" }], { duration: 1300, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" });
+      var fin = 0, end = function () { if (fin || dead) return; fin = 1; clone.remove(); clone = null; gone(); namesIn(); };
+      a.onfinish = end; setTimeout(end, 2100);
     }, 800);
   }
   function onScreen(r) { return r && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
@@ -463,9 +476,9 @@
           /* the name goes to its place first, then the picture rises into the scroll, then the text comes */
           /* the other names drift away to the left and the right while the chosen one travels */
           if (window.__lsLock) window.__lsLock(2600);
-          if (listRow) listRow.style.visibility = "hidden";
-          root.classList.add("lr-hold"); void document.body.offsetWidth; root.classList.add("lr-out"); root.classList.remove("lr-hold");
-          setTimeout(function () { root.classList.remove("lr-out"); if (listRow) listRow.style.visibility = ""; }, 1500);
+          if (listRow) pick(listRow.dataset.i);
+          root.classList.add("lr-hold"); void document.body.offsetWidth; root.classList.add("lr-x"); root.classList.remove("lr-hold");
+          setTimeout(function () { root.classList.remove("lr-x"); pick(null); }, 1500);
           /* the other names drift away first; the chosen one sets off once they are clear of its path, and the picture rises last: nothing crosses anything */
           var h1 = ov.querySelector(".wk-name"), nm = listName, rmName = nameFly(nm, h1, 1350, 600);
           var fin = function () { if (h1 && nm) { h1.classList.add("wk-now"); setTimeout(function () { h1.classList.remove("wk-now"); }, 400); } land(); rmName(); };
@@ -490,7 +503,7 @@
       inFlight = null; window.__wkMove = false; pin = null; if (shown) return;
       /* the Twist starts turning again from still, gently picking up speed (it used to jump straight to full speed) */
       var gk = window.__galK && window.__galK.current; if (gk) gk.factor = 0;
-      ov.classList.remove("on", "air", "lout", "lv"); root.classList.remove("lr-hold", "lr-out"); airFade(); if (strip) { strip.destroy(); strip = null; }
+      ov.classList.remove("on", "air", "lout", "lv"); root.classList.remove("lr-hold", "lr-out", "lr-x"); airFade(); if (strip) { strip.destroy(); strip = null; }
     };
     if (inFlight) { inFlight(); o = null; window.__twX = null; }   /* Back while the picture was still on its way in: everything snaps home */
     var lb = o && o.mode === "list" && !reduce && !!ov.animate;
@@ -501,8 +514,11 @@
     var soft = function (grid) {
       if (reduce) { if (grid) gridBack(true); gone(); return; }
       window.__wkMove = true; ov.classList.add("air");
-      var stop = grid ? (gridBack(), function () {}) : stageIn(), tm = setTimeout(gone, 2400);
-      inFlight = function () { clearTimeout(tm); stop(); if (grid) gridBack(true); };
+      var lsOn = !grid && (window.__galMode === "list" || (function (n) { return n && n.classList.contains("on"); })(document.getElementById("ls-root"))), ti = 0;   /* the list is switched off under an open page, so the mode tells */
+      /* back to the List: the names wait until the page has cleared, then come in from the sides (they used to show through the fading page) */
+      if (lsOn) { namesOut(); ti = setTimeout(namesIn, 700); }
+      var stop = grid ? (gridBack(), function () {}) : lsOn ? function () {} : stageIn(), tm = setTimeout(gone, 2400);
+      inFlight = function () { clearTimeout(tm); clearTimeout(ti); stop(); if (grid) gridBack(true); if (lsOn) { root.classList.remove("lr-x", "lr-in"); pick(null); } };
     };
     if (!o || !slot) { window.__twX = null; window.__twFreeze = false; if (o && !o.tw) { o.card.classList.remove("wk-hide"); soft(true); } else if (!lb) soft(false); }
     else {
@@ -586,7 +602,7 @@
       var dd = Math.abs(r.top + r.height / 2 - lastP[1]); if (dd < bd) { bd = dd; row = n; }
     });
     listRow = row;
-    if (row) { var rg = document.createRange(); rg.selectNodeContents(row); var tr = rg.getBoundingClientRect(); listName = { text: row.textContent.trim(), r: tr, fs: parseFloat(getComputedStyle(row).fontSize) || 40 }; }
+    if (row) { var rg = document.createRange(); rg.selectNodeContents(row); var tr = rg.getBoundingClientRect(); var rcs = getComputedStyle(row); listName = { text: row.textContent.trim(), r: tr, fs: (parseFloat(rcs.fontSize) || 40) * (parseFloat(rcs.scale) || 1) };   /* the hover swell included: the copy matches the name exactly */ }
     if (pic && it.image && it.image.src) { flyFrom = pic.r; flyCard = pic.el; flyMode = "list"; flySrc = sm(it.image.src); }
     else if (row) { var c = listName.r; flyFrom = { left: c.left + c.width / 2 - 2, top: c.top + c.height / 2 - 1.5, width: 4, height: 3 }; flyCard = row; flyMode = "list"; flySrc = sm((it.image && it.image.src) || ""); }
   }
