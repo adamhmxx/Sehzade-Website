@@ -48,15 +48,21 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
     for(var q=0;q<4;q++){var r0=o[q*4],r1=o[q*4+1];o[q*4]=a*r0+c*r1;o[q*4+1]=b*r0+d*r1}
     o[12]+=ox+tx-(a*ox+c*oy);o[13]+=oy+ty-(b*ox+d*oy);
   }
-  var fbo=null,px4=new Uint8Array(4);
-  function texOk(x,w,h){
+  var fbo=null,px4=new Uint8Array(4),refC=null;
+  /* what the picture itself looks like at the same nine points (the browser's own drawing of it, shrunk): an upload that came out black on the GPU
+     while the picture is not dark there is caught, not only an upload that came out clear */
+  function refLum(im){try{refC=refC||document.createElement("canvas");refC.width=refC.height=20;var c=refC.getContext("2d",{willReadFrequently:true});c.clearRect(0,0,20,20);c.drawImage(im,0,0,20,20);var d=c.getImageData(0,0,20,20).data,L=0;
+    for(var q=0;q<9;q++){var k=(Math.floor(20*(.2+.3*Math.floor(q/3)))*20+Math.floor(20*(.2+.3*(q%3))))*4;L+=d[k]*.3+d[k+1]*.59+d[k+2]*.11}return L/9}catch(e){return -1}}
+  function texOk(x,w,h,im){
     if(gl.getError()!==gl.NO_ERROR||!(w>0&&h>0))return 0;
     try{
       fbo=fbo||gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,x,0);
       if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE){gl.bindFramebuffer(gl.FRAMEBUFFER,null);return true}
-      var seen=0;
-      for(var q=0;q<9;q++){gl.readPixels(Math.floor(w*(.2+.3*(q%3))),Math.floor(h*(.2+.3*Math.floor(q/3))),1,1,gl.RGBA,gl.UNSIGNED_BYTE,px4);if(px4[3]>0){seen++;break}}
-      gl.bindFramebuffer(gl.FRAMEBUFFER,null);return seen>0;
+      var seen=0,L=0;
+      for(var q=0;q<9;q++){gl.readPixels(Math.floor(w*(.2+.3*(q%3))),Math.floor(h*(.2+.3*Math.floor(q/3))),1,1,gl.RGBA,gl.UNSIGNED_BYTE,px4);if(px4[3]>0)seen++;L+=px4[0]*.3+px4[1]*.59+px4[2]*.11}
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null);if(!seen)return false;
+      L/=9;if(L<14&&im){var R=refLum(im);if(R>40)return false}
+      return true;
     }catch(e){try{gl.bindFramebuffer(gl.FRAMEBUFFER,null)}catch(x){}return true}
   }
   function getTex(src){
@@ -76,7 +82,7 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,bm);
         /* a picture can arrive empty on the GPU (an image bitmap that decoded to nothing, or the GPU short of memory): drawn, it was a black hole in
            the ribbon. Every upload is checked (three points must be opaque); an empty one is sent again straight from the picture, then retried later */
-        var good=texOk(x,bm.width||im.naturalWidth,bm.height||im.naturalHeight);
+        var good=texOk(x,bm.width||im.naturalWidth,bm.height||im.naturalHeight,im);t.chk=(t.chk||"")+(good===0?"E":good?"ok":"blank")+(bm===im?"(img) ":" ");
         if(good===0){gl.deleteTexture(x);t.failed=true;t.ft=performance.now();t.n++;window.__twGLpend=Math.max(0,(window.__twGLpend||1)-1);return}
         /* an empty bitmap: the picture is decoded in full and sent straight from it. Still empty (no cover is transparent): the upload failed, so it
            counts as failed and is asked for again, never kept as a hole in the ribbon */
@@ -104,6 +110,11 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
   /* every Twister picture is on the GPU and checked (the loader waits for this, not just for every picture to have been tried) */
   function allReady(){if(!texs.size)return false;var r=true;texs.forEach(function(t){if(!t.ready)r=false});return r}
   window.__twGLall=function(){return !ok||allReady()};
+  /* ?twdebug: what the ribbon's pictures did on this very device (to send back when a card shows up empty) */
+  if(/[?&]twdebug/.test(location.search)){var dbg=document.createElement("pre"),mx=0;dbg.style.cssText="position:fixed;left:8px;bottom:8px;z-index:2147483647;max-width:96vw;max-height:70vh;overflow:auto;margin:0;padding:8px;background:rgba(0,0,0,.85);color:#7f7;font:10px/1.35 monospace;white-space:pre-wrap;pointer-events:auto";
+    var gi=(function(){try{var e=gl&&gl.getExtension("WEBGL_debug_renderer_info");return e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):gl?gl.getParameter(gl.RENDERER):"no webgl"}catch(x){return "?"}})();
+    setInterval(function(){if(!dbg.parentNode&&document.body)document.body.appendChild(dbg);mx=Math.max(mx,window.__twGLmiss||0);var l=[navigator.userAgent.slice(0,120),"gpu: "+gi,"gl ok: "+ok+"  view: "+innerWidth+"x"+innerHeight+" dpr "+devicePixelRatio+"  mode: "+window.__galMode,"pending: "+(window.__twGLpend||0)+"  cards without picture now: "+(window.__twGLmiss||0)+" (max "+mx+")"];
+      texs.forEach(function(t,src){l.push((t.ready?"READY ":t.failed?"FAIL  ":"wait  ")+"n"+t.n+" "+(t.chk||"")+" "+String(src).split("/").pop())});dbg.textContent=l.join("\n")},500)}
   window.__twGL={
     mount:function(e){if(e&&cv.parentNode!==e)e.appendChild(cv)},
     off:function(){if(!shown)return;shown=false;window.__twGLon=0;cv.style.display="none";if(ok){gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT)}},
