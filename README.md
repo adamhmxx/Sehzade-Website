@@ -14,8 +14,8 @@ Run:  python3 server.py   ->  http://localhost:8000   (CMS: http://localhost:800
 - build.py        makes build/page.html for the Claude artifact and lists the files to publish with it
 
 ## Interaction scripts (src/fuc/ -> fuc/)
-- The readable sources are in src/fuc/*.js: edit those. The pages load fuc/*.js, the same scripts minified; rebuild them with `python3 build.py js` (needs Node), then bump the `?v=` of every changed script in index.html / about.html / studio-*.html (the scripts are cached by browsers for a year: a new ?v= is what makes visitors load the new copy). liquid-panel.js is loaded with liquid.js's ?v=, so a change to the panel needs a new ?v= on liquid.js.
-- Framer chunks in fuc/sites/ are cached for a day: rename a chunk you edit (as the gallery chunk QHQX….vNN.mjs) and update its references.
+- The readable sources are in src/fuc/*.js: edit those. The pages load fuc/*.js, the same scripts minified; rebuild them with `python3 build.py js` (needs Node). The build also stamps the versions, so nothing is bumped by hand: every `fuc/<name>.js?v=` in index.html / about.html / studio-*.html becomes the hash of the built file (the scripts are cached by browsers for a year, a new ?v= is what makes visitors load the new copy; liquid.js's hash covers liquid-panel.js, which it loads with its own ?v=).
+- Framer chunks in fuc/sites/ are cached for a day. The hand-edited ones are listed in EDITED in build.py (the gallery chunk QHQX… and script_main, which imports it): `python3 build.py js` (or `python3 build.py stamp` after editing a chunk) renames them `<base>.h<hash>.mjs` and updates every reference, so a change reaches visitors at once.
 - liquid.js   liquid hover: a soft blob, the text ripple with its soft depth rise, and the melt of the gallery picture under the cursor (no wobble, no bounce, no scale on the cards). Shared by index.html and about.html. Its control panel (Shift+L; settings kept in localStorage) is liquid-panel.js, loaded only when it is opened.
 - linkfx.js   one hover effect for every text link, tab and button: letters slide in from both edges with a motion blur.
 - cms.js   small, loaded on every page: reads the saved content (content.json, cached in localStorage) and applies it (gallery items, navbar texts, About text, social links).
@@ -45,6 +45,6 @@ Run:  python3 server.py   ->  http://localhost:8000   (CMS: http://localhost:800
 
 
 ## Weight and caching
-- vercel.json: fonts (fuc/assets), project pictures (fuc/images) and CMS uploads (uploads/) are cached for a year (their file names never change when the content does). Scripts keep the default revalidation; bump the ?v= number in index.html / about.html when you edit one.
+- vercel.json: fonts (fuc/assets), project pictures (fuc/images) and CMS uploads (uploads/) are cached for a year (their file names never change when the content does). Versioned scripts (?v=) are cached for a year and the Framer chunks for a day; build.py stamps both (see above).
 - .vercelignore: the original Framer exports, the loading sandbox, build.py, server.py and README.md are not deployed.
 - fuc/perf-probe.js is only requested when the address ends in #perf. mode-ui.js reacts to the About card through the "ab-toggle" event (about-card.js), no polling.

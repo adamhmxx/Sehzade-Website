@@ -166,7 +166,9 @@
     return;
   }
 
-  if (ABOUT) { if (document.body) watch(); else addEventListener("DOMContentLoaded", watch); loadRemote(); return; }
+  /* inside the About card the main page has already fetched the content and shares it through localStorage (a change arrives as a storage
+     event), so the card does not fetch it again; opened on its own, or without storage, it fetches it itself */
+  if (ABOUT) { if (document.body) watch(); else addEventListener("DOMContentLoaded", watch); if (window.parent === window || !read()) loadRemote(); return; }
 
   /* ---------- main page: keeps a copy of the original projects for the editor ---------- */
   {

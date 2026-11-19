@@ -16,7 +16,7 @@
   var root = document.documentElement;
   if (!root.classList.contains("intro-on")) return;
   var intro = document.getElementById("intro");
-  window.__twRise = 1; window.__twSp = 0; window.__twAll = 0; /* the ribbon waits folded up below the screen until its entrance */
+  window.__twRise = 1; window.__twSp = 0; /* the ribbon waits folded up below the screen until its entrance */
   if (!intro) { root.classList.remove("intro-on", "intro-ui"); return; }
   /* from the very first frame every Twister card is switched off by the gallery itself (not only the page hidden by CSS), so nothing of the
      ribbon can show before its entrance and the hidden cards cost the GPU nothing; reveal() then brings them in one by one */
@@ -255,7 +255,7 @@
     /* the ribbon's entrance belongs to the first arrival on the works page only. Opening the site straight onto a project page (its own address)
        shows that page as the loader leaves: the works page is already in place behind it, with no entrance */
     if (/^#\/work\//.test(location.hash)) {
-      window.__twRise = 0; window.__twSp = 1; window.__twAll = 1; window.__twRev = null; window.__twRevK = null;
+      window.__twRise = 0; window.__twSp = 1; window.__twRev = null; window.__twRevK = null;
       root.classList.remove("intro-on", "intro-ui"); window.dispatchEvent(new Event("intro-done"));
       return;
     }
@@ -279,10 +279,10 @@
       s0 = performance.now(); root.classList.remove("intro-on");
       (function step(now) {
         var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
-        window.__twSp = er; window.__twAll = Math.max(0, Math.min(1, (k - .38) / .42)); /* the rest of the coil grows in, all together, while the band is on its way up */
+        window.__twSp = er;
         if (gk) { gk.ox = v; gk.tx = v; }
         if (k < 1) return requestAnimationFrame(step);
-        window.__twRise = 0; window.__twSp = 1; window.__twAll = 1;
+        window.__twRise = 0; window.__twSp = 1;
       })(performance.now());
     }); });
     setTimeout(function () { root.classList.remove("intro-ui"); window.dispatchEvent(new Event("intro-done")); }, CFG.itui);
