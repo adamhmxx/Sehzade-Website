@@ -55,10 +55,11 @@
     if (performance.now() - T0 > (all ? 9000 : 16000)) stage(100); /* never hang (a slow connection gets longer) */
   }, 120);
 
-  var exitT0 = 0, wiping = false, wipeActive = false, liqAmp = 0;
+  var exitT0 = 0, wiping = false, wipeActive = false, liqAmp = 0, meltK = 0;
   function liquid(now) {
     var t = now - T0, pulse = reduce ? 0 : Math.max(0, 1 - t / CFG.iliqd), ek = 0;
     if (exitT0) { ek = Math.max(0, Math.min(1, (now - exitT0) / CFG.ioutd)); ek *= ek; }
+    meltK = reduce ? 0 : ek;
     liqAmp = reduce ? 0 : CFG.iliq + CFG.iliqp * pulse + 4 * Math.sin(t / 700) + CFG.ioutl * ek;
     uiAmp = reduce ? 0 : CFG.iliq * .42 + CFG.iliqp * pulse * .3 + CFG.ioutl * ek * .45;
     if (!gl && !TOUCH) { setA(liqD, "scale", liqAmp.toFixed(1)); setA(liqO, "dx", (Math.sin(t / 900) * 90).toFixed(1)); setA(liqO, "dy", (t / 18 % 400).toFixed(1)); }
@@ -83,9 +84,10 @@
      red, smoky ember) sit at different depths; each is eaten by its own slowly drifting noise field, so patches go at different times
      and the deeper layers linger below the surface. Drawn with a small WebGL shader. */
   var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
-  var FS = "precision highp float;uniform vec2 res,tAmp,uAmp;uniform sampler2D tex,tex2;uniform float time,front,soft,lag,scale,flow,bias,rim,grain,tOn;" +
+  var FS = "precision highp float;uniform vec2 res,tAmp,uAmp;uniform vec4 tR,uR;uniform vec4 mel;uniform sampler2D tex,tex2;uniform float time,front,soft,lag,scale,flow,bias,rim,grain,tOn;" +
     "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}" +
     "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*f*(f*(f*6.-15.)+10.);float a=hash(i),b=hash(i+vec2(1.,0.)),c=hash(i+vec2(0.,1.)),d=hash(i+vec2(1.,1.));return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}" +
+    "float lay(sampler2D t,vec4 R,vec2 q){vec2 s=(q-R.xy)/R.zw;return (s.x<0.||s.y<0.||s.x>1.||s.y>1.)?0.:texture2D(t,s).a;}" +
     "float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,-.6,.6,.8);for(int i=0;i<3;i++){v+=a*noise(p);p=r*p*2.03+11.7;a*=.48;}return v;}" +
     "void main(){vec2 uv=gl_FragCoord.xy/res;vec2 p=vec2(uv.x*res.x/res.y,uv.y)*scale;float tm=time*flow*.05;" +
     "vec2 q=vec2(fbm(p+vec2(0.,tm)),fbm(p+vec2(5.2,1.3)-vec2(tm,0.)));float n1=fbm(p+1.8*q);" +
@@ -98,7 +100,14 @@
     "r=vec4(vec3(.55,.09,.06)*aB+r.rgb*(1.-aB),aB+r.a*(1.-aB));" +
     "r=vec4(vec3(1.,.176,.125)*aA+r.rgb*(1.-aA),aA+r.a*(1.-aA));" +
     "float edge=aA*(1.-aA)*4.;r.rgb=mix(r.rgb,vec3(1.,.42,.22)*r.a,edge*rim);" +
-    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(noise(p2+vec2(0.,t2)),noise(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;float ta=texture2D(tex,uv+w*tAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ta);float ua=texture2D(tex2,uv+w*uAmp).a;r.rgb=mix(r.rgb,vec3(.043)*r.a,ua);}" +
+    /* the liquid ripple (its strength is kept below the point where the text would fold over itself, so the letters ripple instead of tearing into stripes) */
+    "if(tOn>.5){vec2 p2=vec2(uv.x*res.x/res.y,uv.y)*7.;float t2=time*.35;vec2 w=vec2(noise(p2+vec2(0.,t2)),noise(p2+vec2(7.1,3.3)-vec2(t2,0.)))-.5;" +
+    /* the melt: a broad, slow flow (low enough that the letters stretch and run without folding) and a pull downwards that grows as the red drains */
+    /* (carried along the flow in eight small steps, like ink in water: each step is too small to fold, so the text can be dragged far and stretch
+       into long liquid shapes without ever tearing into stripes) */
+    "float t3=time*.6;vec2 q=gl_FragCoord.xy;for(int i=0;i<8;i++){vec2 g=q/mel.w;q+=(vec2(noise(g+vec2(1.3,t3)),noise(g+vec2(4.7,2.1)-t3))-.5)*mel.y*.125;}" +
+    "float dr=(.7+.3*noise(vec2(uv.x*res.x/res.y*1.5,5.3)+t3))*.22;vec2 mo=(q-gl_FragCoord.xy)/res+vec2(0.,dr*mel.x*mel.x);" +
+    "float ta=lay(tex,tR,uv+w*tAmp+mo);r.rgb=mix(r.rgb,vec3(.043)*r.a,ta);float ua=lay(tex2,uR,uv+w*uAmp+mo*mel.z);r.rgb=mix(r.rgb,vec3(.043)*r.a,ua);}" +
     "r.rgb+=(hash(gl_FragCoord.xy+fract(time)*97.)-.5)*grain*r.a;gl_FragColor=r;}";
   var gl = null, prog = null, U = {}, seepT = 0, tc = document.createElement("canvas"), tx = tc.getContext("2d"), uc = document.createElement("canvas"), ux = uc.getContext("2d"), tex = null, tex2 = null, sc = 1, uiAmp = 0;
   try {
@@ -108,7 +117,7 @@
       prog = gl.createProgram(); gl.attachShader(prog, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
       var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
       var loc = gl.getAttribLocation(prog, "a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-      ["res", "tAmp", "uAmp", "tex", "tex2", "tOn", "time", "front", "soft", "lag", "scale", "flow", "bias", "rim", "grain"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+      ["res", "tAmp", "uAmp", "tR", "uR", "mel", "tex", "tex2", "tOn", "time", "front", "soft", "lag", "scale", "flow", "bias", "rim", "grain"].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
       tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -127,8 +136,21 @@
       { duration: reduce ? 1 : CFG.iltr, delay: (reduce ? 0 : CFG.ildl) + i * CFG.ilst, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
   });
   var bigDirty = true, uiDirty = true, lastUIKey = "";
+  /* each text layer is drawn into a canvas the size of its own area only (at the screen's real resolution, so it stays sharp), and placed by the shader */
+  var bR = [0, 0, 1, 1], uR = [0, 0, 1, 1], PAD = 6;
+  function area(cn, cx, R, els, drop) {
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, hmax = 0;
+    els.forEach(function (el) { if (!el) return; var r = el.getBoundingClientRect(); if (!(r.width > 0)) return; x0 = Math.min(x0, r.left); y0 = Math.min(y0, r.top); x1 = Math.max(x1, r.right); y1 = Math.max(y1, r.bottom); hmax = Math.max(hmax, r.height); });
+    if (x0 > x1) { x0 = 0; y0 = 0; x1 = 2; y1 = 2; }
+    x0 -= PAD; y0 -= PAD; x1 += PAD; y1 += hmax * drop + PAD;
+    var w = Math.max(2, Math.ceil((x1 - x0) * sc)), h = Math.max(2, Math.ceil((y1 - y0) * sc));
+    if (cn.width !== w || cn.height !== h) { cn.width = w; cn.height = h; }
+    R[0] = x0; R[1] = y0; R[2] = w / sc; R[3] = h / sc;
+    cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, w, h); cx.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc);
+  }
+  function rectU(loc, R) { gl.uniform4f(loc, R[0] / innerWidth, 1 - (R[1] + R[3]) / innerHeight, R[2] / innerWidth, R[3] / innerHeight); }
   function renderBig(now) {
-    tx.setTransform(1, 0, 0, 1, 0, 0); tx.clearRect(0, 0, tc.width, tc.height); tx.setTransform(sc, 0, 0, sc, 0, 0);
+    area(tc, tx, bR, [].slice.call(big.children), 1.05);
     var fs = parseFloat(big.style.fontSize) || 100; tx.font = fs + 'px "Anton", Impact, sans-serif'; tx.textBaseline = "alphabetic"; tx.fillStyle = "#fff";
     var m = tx.measureText("H"), asc = m.fontBoundingBoxAscent || fs * .9, desc = m.fontBoundingBoxDescent || fs * .2, t = now - T0;
     [].forEach.call(big.children, function (sp, i) {
@@ -143,7 +165,7 @@
   function renderUI(now) {
     var t = now - T0;
     /* percentage, "Loading" and the loading line live in their own layer, so they ripple and dissolve exactly like the word but at their own, smaller scale */
-    ux.setTransform(1, 0, 0, 1, 0, 0); ux.clearRect(0, 0, uc.width, uc.height); ux.setTransform(sc, 0, 0, sc, 0, 0);
+    area(uc, ux, uR, [intro.querySelector(".in-welcome"), pct, line], 1.4);
     ux.textBaseline = "alphabetic"; ux.fillStyle = "#fff";
     /* "LOADING" with three dots that light up one after another, and the percentage on the right; each rises letter by letter like the word (same ease, stagger and fade, a little later); the line fades in the same way */
     var base = reduce ? 0 : CFG.ildl + 350, wel = intro.querySelector(".in-welcome");
@@ -177,14 +199,24 @@
     if (uiDirty || key !== lastUIKey || (!reduce && tt < CFG.ildl + 350 + 12 * CFG.ilst + CFG.iltr + 150)) {
       renderUI(now_); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex2); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, uc); gl.activeTexture(gl.TEXTURE0); uiDirty = false; lastUIKey = key;
     }
-    var ua2 = uiAmp * 2.2 * sc; gl.uniform2f(U.uAmp, ua2 / cv.width, ua2 / cv.height);
-    var ta = liqAmp * 2.2 * sc; gl.uniform2f(U.tAmp, ta / cv.width, ta / cv.height); gl.uniform1f(U.tOn, 1);
+    /* the ripple's flow field bends at most about 13 times its strength per screen height: kept under that, no part of the text is pulled over another */
+    var fold = cv.height * .7 / 13.1, cap = function (v) { return fold * Math.tanh(v / fold); };
+    var ua2 = cap((uiAmp - CFG.ioutl * meltK * .45) * 2.2 * sc) * (1 - meltK); gl.uniform2f(U.uAmp, ua2 / cv.width, ua2 / cv.height);
+    var ta = cap((liqAmp - CFG.ioutl * meltK) * 2.2 * sc) * (1 - meltK); gl.uniform2f(U.tAmp, ta / cv.width, ta / cv.height); gl.uniform1f(U.tOn, 1);
+    /* the melt: its currents are as wide as the letters are tall, on every screen (a phone's small word melts like the desktop's big one); at full
+       strength the text is carried about two letter heights; the ripple hands over to it */
+    var wl = (parseFloat(big.style.fontSize) || 100) * .9 * sc;
+    gl.uniform4f(U.mel, meltK, 2.13 * wl * meltK * Math.min(1, CFG.ioutl / 200), .45, wl);
+    rectU(U.tR, bR); rectU(U.uR, uR);
     gl.uniform2f(U.res, cv.width, cv.height); gl.uniform1f(U.time, (performance.now() - T0) / 1000); gl.uniform1f(U.front, f0 + (f1 - f0) * seepT);
     gl.uniform1f(U.soft, soft); gl.uniform1f(U.lag, lag); gl.uniform1f(U.scale, CFG.iseepd / 10); gl.uniform1f(U.flow, CFG.iseepf / 100);
     gl.uniform1f(U.bias, CFG.iseepb / 100); gl.uniform1f(U.rim, CFG.iseepr / 100); gl.uniform1f(U.grain, CFG.iseepg / 100);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
-  function sizeCv() { uiFs = []; uiR0 = uiLr = null; sc = Math.min(1, 1500 / innerWidth) * .65; bigDirty = uiDirty = true; cv.width = tc.width = uc.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = tc.height = uc.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
+  function sizeCv() { uiFs = []; uiR0 = uiLr = null;
+    /* drawn at the screen's own resolution (a retina screen too), so the word and the small texts are as sharp as the page; capped for the GPU */
+    var px = innerWidth * innerHeight, B = TOUCH ? 1.4e6 : 3.6e6; sc = Math.min(window.devicePixelRatio || 1, 2); if (px * sc * sc > B) sc = Math.sqrt(B / px);
+    bigDirty = uiDirty = true; cv.width = Math.max(2, Math.round(innerWidth * sc)); cv.height = Math.max(2, Math.round(innerHeight * sc)); if (gl) gl.viewport(0, 0, cv.width, cv.height); draw(); }
   sizeCv(); window.__introSize = sizeCv;
 
   /* the loader is finished for good: give the GPU its memory back (the shader context, the textures and the full-screen canvases) and drop the loader's markup and listeners */
