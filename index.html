@@ -12,7 +12,7 @@
 html.intro-on #main,html.intro-on #main *{visibility:hidden!important;pointer-events:none}/* a truly blank page behind the loader: a faint copy of the Twister used to show through on some browsers (opacity does not reach 3D layers there) */
 html.intro-on body{background:#0b0b0b}
 #intro{position:fixed;inset:0;z-index:2147483646;pointer-events:none;display:none;color:#0b0b0b}
-html.intro-on #intro{display:block}
+html.intro-on #intro{display:block;background:#ff2d20}#intro.out,html.intro-on #intro.out{display:block;background:transparent}
 #intro canvas.in-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
 #intro .in-ui{position:absolute;inset:0}
 #intro .in-pct,#intro .in-welcome,#intro .in-line{transition:opacity .7s ease}
@@ -155,7 +155,7 @@ if(matchMedia("(pointer:coarse)").matches){window.__twEff=8;window.__twMg=1}</sc
 (function(){var keep=[];function go(){var a=(window.__cmsItems&&window.__cmsItems())||window.__cmsDefaults||[],q=[];a.forEach(function(it){var u=it&&it.image&&it.image.src;if(u)q.push(window.__sms?window.__sms(u):u)});q=q.filter(function(u,i){return q.indexOf(u)===i});
 (function next(){var u=q.shift();if(!u)return;var im=new Image();im.decoding="async";im.src=u;keep.push(im);(im.decode?im.decode():Promise.resolve()).catch(function(){}).then(function(){(window.requestIdleCallback||setTimeout)(next,{timeout:400})})})();window.__galDecoded=keep;}
 if(document.documentElement.classList.contains("intro-ui"))addEventListener("intro-done",function(){setTimeout(go,300)},{once:true});else addEventListener("load",function(){setTimeout(go,800)});})();</script>
-<script src="fuc/intro.js?v=20261119b" defer></script>
+<script src="fuc/intro.js?v=20261119c" defer></script>
 <script src="fuc/linkfx.js?v=20261115m" defer></script>
 <script src="fuc/cms.js?v=20261117d" defer></script>
 <script src="fuc/liquid.js?v=20261117h" defer></script>

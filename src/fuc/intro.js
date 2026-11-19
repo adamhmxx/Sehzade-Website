@@ -106,7 +106,7 @@
     /* (carried along the flow in eight small steps, like ink in water: each step is too small to fold, so the text can be dragged far and stretch
        into long liquid shapes without ever tearing into stripes) */
     "float t3=time*.6;vec2 q=gl_FragCoord.xy;for(int i=0;i<8;i++){vec2 g=q/mel.w;q+=(vec2(noise(g+vec2(1.3,t3)),noise(g+vec2(4.7,2.1)-t3))-.5)*mel.y*.125;}" +
-    "float dr=(.7+.3*noise(vec2(uv.x*res.x/res.y*1.5,5.3)+t3))*.22;vec2 mo=(q-gl_FragCoord.xy)/res+vec2(0.,dr*mel.x*mel.x);" +
+    "float dr=(.7+.3*noise(vec2(uv.x*res.x/res.y*1.5,5.3)+t3))*.07;vec2 mo=(q-gl_FragCoord.xy)/res+vec2(0.,dr*mel.x*mel.x);" +
     "float ta=lay(tex,tR,uv+w*tAmp+mo);r.rgb=mix(r.rgb,vec3(.043)*r.a,ta);float ua=lay(tex2,uR,uv+w*uAmp+mo*mel.z);r.rgb=mix(r.rgb,vec3(.043)*r.a,ua);}" +
     "r.rgb+=(hash(gl_FragCoord.xy+fract(time)*97.)-.5)*grain*r.a;gl_FragColor=r;}";
   var gl = null, prog = null, U = {}, seepT = 0, tc = document.createElement("canvas"), tx = tc.getContext("2d"), uc = document.createElement("canvas"), ux = uc.getContext("2d"), tex = null, tex2 = null, sc = 1, uiAmp = 0;
@@ -240,9 +240,11 @@
       var k = Math.min(1, (now - s0) / D);
       seepT = .5 - .5 * Math.cos(Math.PI * k); /* sine in-out: slow start, steady soak, soft tail */
       draw(); liquid(now);
-      /* the red is already gone well before the drain formally ends: the Twister starts at 86%, so the empty black is short */
-      /* ...and the shader stops right there: the red is invisible by then, so the GPU is free for the Twister */
-      if (!go && k >= .86) { go = true; k = 1; reveal(); }
+      /* the red is already gone well before the drain formally ends: the Twister sets off at half way (it rises from below the screen, so it
+         comes into view just as the last of the red goes, with no empty black in between) */
+      if (!go && k >= .5) { go = true; reveal(); }
+      /* ...and the shader stops at 86%: the red is invisible by then, so the GPU is free for the Twister */
+      if (k >= .86) k = 1;
       if (k < 1) return requestAnimationFrame(step);
       wipeActive = false; cv.style.display = "none"; intro.style.display = "none"; /* the heavy GPU release (losing the WebGL context blocks the main thread) waits until the Twister has landed and the page is idle */ window.addEventListener("intro-done", function () { setTimeout(teardown, 1200); }, { once: true }); if (!go) { go = true; reveal(); }
     })(performance.now());
