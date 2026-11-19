@@ -78,7 +78,10 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
            the ribbon. Every upload is checked (three points must be opaque); an empty one is sent again straight from the picture, then retried later */
         var good=texOk(x,bm.width||im.naturalWidth,bm.height||im.naturalHeight);
         if(good===0){gl.deleteTexture(x);t.failed=true;t.ft=performance.now();t.n++;window.__twGLpend=Math.max(0,(window.__twGLpend||1)-1);return}
-        if(!good&&bm!==im){gl.deleteTexture(x);if(bm.close)bm.close();up(im);return}   /* (straight from the picture and still clear: the picture itself is transparent there) */
+        /* an empty bitmap: the picture is decoded in full and sent straight from it. Still empty (no cover is transparent): the upload failed, so it
+           counts as failed and is asked for again, never kept as a hole in the ribbon */
+        if(!good){gl.deleteTexture(x);if(bm!==im){if(bm.close)bm.close();var dc=im.decode?im.decode():Promise.resolve();dc.then(function(){up(im)},function(){up(im)});return}
+          t.failed=true;t.ft=performance.now();t.n++;window.__twGLpend=Math.max(0,(window.__twGLpend||1)-1);return}
         gl.generateMipmap(gl.TEXTURE_2D);
         gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -98,6 +101,9 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
     return null;
   }
   var F32=new Float32Array(16),seen=-1,seenOk=0,lastB=null;
+  /* every Twister picture is on the GPU and checked (the loader waits for this, not just for every picture to have been tried) */
+  function allReady(){if(!texs.size)return false;var r=true;texs.forEach(function(t){if(!t.ready)r=false});return r}
+  window.__twGLall=function(){return !ok||allReady()};
   window.__twGL={
     mount:function(e){if(e&&cv.parentNode!==e)e.appendChild(cv)},
     off:function(){if(!shown)return;shown=false;window.__twGLon=0;cv.style.display="none";if(ok){gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT)}},
@@ -110,6 +116,8 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
       window.__twGLmiss=0;gl.viewport(0,0,pw,ph);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
       var bw=bwO||m.bw,bh=bw*3/4,sc=m.scaleMode*window.__twS(),R=window.__twR(m),bt=window.__twG(m.viewW,m.cardW).bt;/* the bend is always the Twist's own (kept while the cards travel to or from another mode) */if(m.mode==="twister")lastB=[sc,R,bt];else if(lastB){sc=lastB[0];R=lastB[1];bt=lastB[2]}var P=Math.max(900,m.persp*4),i,u,el,src;
       if(seen!==els.length||!seenOk){seen=els.length;seenOk=1;for(i=0;i<els.length;i++){el=els[i];src=el&&el.dataset.src;if(src&&!texs.has(src))getTex(src)}}   /* every picture starts loading on the first frame */
+      /* a picture that failed is asked for again on time even while its card is hidden (behind the loader, out of view) */
+      else if(!allReady()){for(i=0;i<els.length;i++){el=els[i];src=el&&el.dataset.src;if(src)getTex(src)}}
       gl.uniform2f(U.uCard,bw,bh);gl.uniform4f(U.uBend,sc,R,bt,flat);gl.uniform3f(U.uVP,W/2,H/2,P);
       /* opening / closing a project: the cards that were not chosen turn and sink away (up or down, by where they are); the chosen card is drawn
          last, straightens out (no bend, no turn) and travels to the picture slot of the project page. X.a, X.f, X.m run 0..1 (away, flat, move) */

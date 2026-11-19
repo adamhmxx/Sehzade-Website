@@ -49,8 +49,10 @@
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { stage(45); });
   if (document.readyState === "complete") stage(75); else addEventListener("load", function () { stage(75); });
   var seenGal = 0, poll = setInterval(function () {
-    if (window.__galK && window.__galK.current) { if (!seenGal) seenGal = performance.now(); stage(92); if (performance.now() - seenGal > 500 && !(window.__twGLpend > 0)) stage(100); }   /* the Twister pictures are on the GPU before the reveal, so no card can show up empty */
-    if (performance.now() - T0 > (window.__twGLpend > 0 ? 16000 : 9000)) stage(100); /* never hang (a slow connection gets longer, so no Twister card shows up empty) */
+    /* every Twister picture is on the GPU and checked: one that failed is asked for again and still waited for, so no card can show up empty */
+    var all = window.__twGLall ? window.__twGLall() : !(window.__twGLpend > 0);
+    if (window.__galK && window.__galK.current) { if (!seenGal) seenGal = performance.now(); stage(92); if (performance.now() - seenGal > 500 && all) stage(100); }
+    if (performance.now() - T0 > (all ? 9000 : 16000)) stage(100); /* never hang (a slow connection gets longer) */
   }, 120);
 
   var exitT0 = 0, wiping = false, wipeActive = false, liqAmp = 0;
