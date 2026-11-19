@@ -100,7 +100,7 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
     setTimeout(function(){if(t.loaded||t.ready||t.failed||texs.get(src)!==t)return;im.onload=im.onerror=null;try{im.src=""}catch(x){}t.failed=true;t.ft=performance.now();t.n++;window.__twGLpend=Math.max(0,(window.__twGLpend||1)-1)},12000);
     return null;
   }
-  var F32=new Float32Array(16),seen=-1,seenOk=0,lastB=null;
+  var F32=new Float32Array(16),TR=[],seen=-1,seenOk=0,lastB=null;
   /* every Twister picture is on the GPU and checked (the loader waits for this, not just for every picture to have been tried) */
   function allReady(){if(!texs.size)return false;var r=true;texs.forEach(function(t){if(!t.ready)r=false});return r}
   window.__twGLall=function(){return !ok||allReady()};
@@ -127,14 +127,23 @@ import{t as e}from"./rolldown-runtime.Dh6celcD.mjs";import{A as t,C as n,D as r,
         if(tx){gl.bindTexture(gl.TEXTURE_2D,tx);gl.uniform1f(U.uHas,1)}else{gl.uniform1f(U.uHas,0);window.__twGLmiss++}
         gl.uniform1f(U.uA,Math.min(1,u.op));gl.drawArrays(gl.TRIANGLE_STRIP,0,(NX+1)*2);
       }
+      /* a card still fading in (the entrance, a mode change) must not hide the cards behind it: drawn with depth, a nearly clear card left a
+         black window in the ribbon the size of that card. Solid cards are drawn first; the fading ones after them, farthest first, without depth */
+      var fade=TR;fade.length=0;
+      function one(i){
+        u=poses[i];el=els[i];
+        my0=u.y;mr0=u.ry;
+        if(X&&X.a>0){var xd=u.y<0?-1:1;u.y+=xd*X.a*H*1.35;u.ry+=xd*X.a*110;if(Math.abs(u.y)>H*1.3){u.y=my0;u.ry=mr0;return}}
+        compose(u,F32,el,bw,bh);/* while the ribbon straightens, each card leans exactly as much as the line of cards does, so neighbours stay edge to edge */SA&&SA[i]&&(F32[1]+=SA[i]*u.sc);gl.uniformMatrix4fv(U.uF,false,F32);card1();u.y=my0;u.ry=mr0;
+      }
       for(i=0;i<poses.length;i++){
         u=poses[i];el=els[i];if(!u||!el)continue;
         if(X&&el===X.sel){selI=i;continue}
         if(u.op<=.004)continue;
-        my0=u.y;mr0=u.ry;
-        if(X&&X.a>0){var xd=u.y<0?-1:1;u.y+=xd*X.a*H*1.35;u.ry+=xd*X.a*110;if(Math.abs(u.y)>H*1.3){u.y=my0;u.ry=mr0;continue}}
-        compose(u,F32,el,bw,bh);/* while the ribbon straightens, each card leans exactly as much as the line of cards does, so neighbours stay edge to edge */SA&&SA[i]&&(F32[1]+=SA[i]*u.sc);gl.uniformMatrix4fv(U.uF,false,F32);card1();u.y=my0;u.ry=mr0;
+        if(u.op<.995){fade.push(i);continue}
+        one(i);
       }
+      if(fade.length){fade.sort(function(p,q){return poses[p].z-poses[q].z});gl.depthMask(false);for(var fi=0;fi<fade.length;fi++)one(fade[fi]);gl.depthMask(true)}
       if(X&&selI>=0){
         u=poses[selI];el=els[selI];
         var cr=cv.getBoundingClientRect(),o0=[u.x,u.y,u.z,u.rx,u.ry,u.rz,u.sc];/* going in, the card leaves from where it was clicked (the ribbon may keep turning under it) */if(X.hold){var h0=X.p0||(X.p0=o0.slice());u.x=h0[0];u.y=h0[1];u.z=h0[2];u.rx=h0[3];u.ry=h0[4];u.rz=h0[5];u.sc=h0[6]}var fl=X.f,mv=X.m,ts=X.w/bw,ky=1+((X.h/bh)/ts-1)*mv;
