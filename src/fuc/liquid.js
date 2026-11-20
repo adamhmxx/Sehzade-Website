@@ -14,7 +14,7 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 130, softness: 1, brightness: 0.05, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, twr: 40, twp: 160, twsc: 105, twg: 100, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, ggap: 16, gstag: 15, gpar: 20 };
+  var DEF = { radius: 130, softness: 1, brightness: 0.05, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, twr: 40, twp: 160, twsc: 105, twg: 100, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 70, gdis: 40, gmsz: 100, gnz: 80, ggap: 16, gstag: 15, gpar: 20 };
   if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
@@ -22,8 +22,9 @@
       var sv = JSON.parse(localStorage.getItem(KEY) || "{}");
       /* link hover defaults were retuned (slower, softer): drop link values saved by older versions once */
       /* defaults were retuned: drop values saved by older versions once */
-      /* (version 10: every saved value is dropped once, the on/off switch too: a switch left off in a browser kept the hover off there for good) */
-      if (sv.lv !== 10) sv = { lv: 10 };
+      /* (version 10: every saved value is dropped once, the on/off switch too: a switch left off in a browser kept the hover off there for good;
+         version 11: once more, for the stronger picture melt) */
+      if (sv.lv !== 11) sv = { lv: 11 };
       if (sv.twg === 101) delete sv.twg;   /* the old default spacing (a 1% gap): the cards of the Twist now touch */
       return Object.assign({}, DEF, sv);
     }
@@ -136,7 +137,7 @@
   /* The gallery's hover liquid: the cards near the cursor behave like blobs of wet paint. Dragging the cursor through them shoves them along and they
      slosh back and forth on a soft, springy rhythm; arriving on a card gives it a squashy jolt away from the cursor, and a card that is stretched one way
      is squeezed the other (it keeps its volume). It is pure motion of the card as a whole, so every edge stays perfectly smooth in every mode. */
-  var galR = [], galBR = null, gzN = -1, gzSig = "", gzT = 0;
+  var galR = [], gzN = -1, gzSig = "", gzT = 0;
   function jellyFx(c, sp, on, now, dtf) {
     var k = Math.max(0, c.jel / 100), kp = c.jpush / 100, kj = c.jjolt / 100, ksq = c.jsq / 100, ktw = c.jtw / 100, any = 0, reach = (c.reach + 160) * c.jrng / 100 / KS(), aks = 1 / KS();
     var damp = .8 + (c.jbnc / 100) * .16;
@@ -155,7 +156,7 @@
         if (r0 && r0.width >= 40 && r0.bottom > 0 && r0.top < innerHeight && r0.right > 0 && r0.left < innerWidth && galCards[n].style.visibility !== "hidden") gzN++;
       }
     } else if (!on) gzSig = "";
-    galR = rects; galBR = rects.length && galCards[0].parentElement ? galCards[0].parentElement.getBoundingClientRect() : null;   /* shared with the picture layer, which runs right after */
+    galR = rects;   /* shared with the picture layer, which runs right after */
     /* a project page: the pictures of the endless scroll are one continuous column, so they do not wobble one by one (their seams would open and close); the melt alone carries the hover there */
     if (galCards.length && galCards[0].classList && galCards[0].classList.contains("wk-it")) return 0;
     /* Twist: the cards form one unbroken ribbon, edge to edge. A wobble of single cards would open thin gaps between neighbours, so the ribbon is left whole and the melt alone carries the hover */
@@ -206,36 +207,45 @@
     return gal;
   }
   function galFx(c, sp, on, now, dtf) {
-    var box = galCards.length && galCards[0].isConnected ? galCards[0].parentElement : null;
-    /* Twister drawn on the GPU: its canvas sits next to the card boxes, so the melt goes on their common parent */
-    if (box && window.__twGLon && !box.closest("#wk") && box.parentElement) box = box.parentElement;
-    if (box && box.closest(".wk-rs")) box = box.closest(".wk-rs");   /* a project page: the oversized picture layer */
-    if (galBox && galBox !== box) { galBox.style.filter = ""; galBox = null; galS = galV = 0; }
-    if (!box) return 0;
-    /* which card is under the cursor: arriving on a new one fires the opening burst */
-    var hover = null, halo = false;
     on = on && mx >= 0 && my >= 0 && mx <= innerWidth && my <= innerHeight;
-    if (on) for (var i = 0; i < galCards.length; i++) {
-      var r = galR[i]; if (!r || r.width < 40) continue;   /* measured once per frame by jellyFx (nothing measured = no card on screen) */ if (galCards[i].style.visibility === "hidden") continue;
-      if (mx > r.left && mx < r.right && my > r.top && my < r.bottom) hover = galCards[i];
-      else if (mx > r.left - 90 && mx < r.right + 90 && my > r.top - 90 && my < r.bottom + 90) halo = true;
+    var box = galCards.length && galCards[0].isConnected ? galCards[0].parentElement : null, el = null, hover = null, halo = false, wkBox = false, grid = false, i, r;
+    if (window.__galMode === "list" && !window.__wkOpen) {
+      /* List: the picture that shows behind the name under the cursor melts */
+      var pv = document.getElementById("ls-pv");
+      if (pv && on) { r = pv.getBoundingClientRect(); if (r.width > 40 && +getComputedStyle(pv).opacity > .2) { el = pv; if (mx > r.left && mx < r.right && my > r.top && my < r.bottom) hover = pv; else halo = true; } }
+      if (!el && galBox === pv) el = pv;
+    } else if (box) {
+      wkBox = !!box.closest("#wk");
+      /* which card is under the cursor: arriving on a new one fires the opening burst */
+      if (on) for (i = 0; i < galCards.length; i++) {
+        r = galR[i]; if (!r || r.width < 40) continue;   /* measured once per frame by jellyFx (nothing measured = no card on screen) */ if (galCards[i].style.visibility === "hidden") continue;
+        if (mx > r.left && mx < r.right && my > r.top && my < r.bottom) hover = galCards[i];
+        else if (mx > r.left - 90 && mx < r.right + 90 && my > r.top - 90 && my < r.bottom + 90) halo = true;
+      }
+      if (wkBox) el = box.closest(".wk-rs") || box;   /* a project page: the oversized picture layer */
+      else if (window.__twGLon) el = box.parentElement || box;   /* Twist: the flat layer holding the GPU canvas and the card boxes */
+      else {
+        /* Grid: the cards stand on a 3D stage (perspective, preserve-3d), and an SVG filter on the stage or on anything around it is not drawn at
+           all (the Grid had no melt). It goes on the picture inside the card under the cursor, which is flat; it stays on the last card while it calms */
+        grid = true; halo = false;
+        el = hover ? (hover.firstElementChild || hover) : (galBox && galBox.isConnected && galBox.__galGrid ? galBox : null);
+      }
     }
-    var wkBox = !!box.closest("#wk");
+    if (galBox && galBox !== el) { galBox.style.filter = ""; if (!(grid && galBox.__galGrid && el)) galS = galV = 0; galBox = null; }
+    if (!el) return 0;
     /* in the scroll of a project page the pictures drift under a resting cursor: only a cursor that really moves onto a picture fires the opening burst */
     if (hover && hover !== galHover && !(wkBox && sp < .03)) galPulse = 1;
     galHover = hover; galPulse *= Math.exp(-dtf / 1.1);
     if (c.gmelt <= .5) { if (galBox) { galBox.style.filter = ""; galBox = null; galS = 0; } return 0; }
-    /* Twist: the ribbon must stay calm under the cursor (a strong, flowing melt read as the whole ribbon trembling up and down), so the melt is gentler there and its noise barely drifts */
-    /* one recipe everywhere (Twist, Grid, project page): the same strength, the same soft opening swell and the same slow drift, so the hover feels the same on every page */
-    /* the after effect (the ripple that stays once the opening burst has passed) is 20% stronger; the burst itself is unchanged */
+    /* one recipe everywhere (Twist, Grid, List, project page): the same strength, the same soft opening swell and the same slow drift */
     var target = (hover || halo) ? c.gmelt * .72 * (1.2 * (1 + sp * .35) + 1.1 * galPulse) * (hover ? 1 : .35) : 0;
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
     galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 6.5 : 4)));   /* it swells in and settles slowly, like liquid, instead of snapping */
     if (galS < 1 && target === 0) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
-    var g = galFilter(), br = galBR || box.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100;
-    /* the gallery re-renders its own inline "filter: blur(0px)" now and then (hover blur), which would silently wipe ours: keep it on every frame */
-    if (box.style.filter !== "url(#lq-gal)") box.style.filter = "url(#lq-gal)"; galBox = box;
-    g.map.setAttribute("scale", galS.toFixed(2)); 
+    var g = galFilter(), br = el.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100;
+    /* the gallery re-renders its own inline filters now and then (hover blur), which would silently wipe ours: keep it on every frame */
+    if (el.style.filter !== "url(#lq-gal)") el.style.filter = "url(#lq-gal)"; galBox = el; el.__galGrid = grid;
+    g.map.setAttribute("scale", galS.toFixed(2));
     g.turb.setAttribute("baseFrequency", (.0048 * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.0072 * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
     var fl = 16, fs_ = 2.2; g.off.setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
     g.light.setAttribute("x", (mx - br.left).toFixed(1)); g.light.setAttribute("y", (my - br.top).toFixed(1)); g.light.setAttribute("z", (R * .7).toFixed(1));
