@@ -200,10 +200,16 @@
       '<feDiffuseLighting in="flat" surfaceScale="0" diffuseConstant="1" lighting-color="#fff" result="lit"><fePointLight x="-9999" y="-9999" z="60"/></feDiffuseLighting>' +
       '<feComponentTransfer in="lit" result="m"><feFuncR type="gamma" amplitude="1.25" exponent="2.2" offset="-.25"/><feFuncG type="gamma" amplitude="1.25" exponent="2.2" offset="-.25"/><feFuncB type="gamma" amplitude="1.25" exponent="2.2" offset="-.25"/></feComponentTransfer>' +
       '<feComposite in="n1" in2="m" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="map"/>' +
-      '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G" result="dm"/>';
+      '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G" result="dm"/>' +
+      /* only the square around the cursor is worked out (noise, light and displacement are the costly steps, and on the Twist the layer is the whole
+         screen: every frame of a hover used to cost ~100 ms of main thread). Outside it the layer is passed through untouched, through a hole the
+         size of the square, so nothing shows twice at its edge (the melt has faded to nothing well inside it) */
+      '<feFlood flood-color="#000" flood-opacity="1" result="sq"/>' +
+      '<feComposite in="SourceGraphic" in2="sq" operator="out" result="rest"/>' +
+      '<feMerge><feMergeNode in="rest"/><feMergeNode in="dm"/></feMerge>';
     svg.appendChild(f); document.body.appendChild(svg);
     var ch = f.children;
-    gal = { turb: ch[0], off: ch[1], light: ch[4].firstElementChild, map: ch[7] };
+    gal = { turb: ch[0], off: ch[1], light: ch[4].firstElementChild, map: ch[7], area: [ch[0], ch[1], ch[2], ch[3], ch[4], ch[5], ch[6], ch[7], ch[8]] };
     return gal;
   }
   function galFx(c, sp, on, now, dtf) {
@@ -249,6 +255,9 @@
     g.turb.setAttribute("baseFrequency", (.0048 * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.0072 * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
     var fl = 16, fs_ = 2.2; g.off.setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
     g.light.setAttribute("x", (mx - br.left).toFixed(1)); g.light.setAttribute("y", (my - br.top).toFixed(1)); g.light.setAttribute("z", (R * .7).toFixed(1));
+    /* the light fades to nothing at about 1.3 R from the cursor; the square adds the furthest a pixel can be pushed */
+    var hs = R * 1.4 + galS, ax = (mx - br.left - hs).toFixed(0), ay = (my - br.top - hs).toFixed(0), aw = (hs * 2).toFixed(0);
+    for (var q = 0; q < g.area.length; q++) { var e = g.area[q]; e.setAttribute("x", ax); e.setAttribute("y", ay); e.setAttribute("width", aw); e.setAttribute("height", aw); }
     return 1;
   }
   var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
