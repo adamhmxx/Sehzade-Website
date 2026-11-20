@@ -14,7 +14,7 @@
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 130, softness: 1, brightness: 0.07, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, twr: 40, twp: 160, twsc: 105, twg: 100, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, ggap: 16, gstag: 15, gpar: 20 };
+  var DEF = { radius: 130, softness: 1, brightness: 0.05, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, twr: 40, twp: 160, twsc: 105, twg: 100, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, ggap: 16, gstag: 15, gpar: 20 };
   if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
