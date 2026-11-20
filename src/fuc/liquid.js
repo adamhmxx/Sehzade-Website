@@ -180,7 +180,6 @@
   }
   /* ---- the picture layer of the hover: the loading screen's "disappear" (melt + dissolve), laid over the wobble ---- */
   var gal = null, galBox = null, galS = 0, galV = 0, galPulse = 0, galHover = null;
-  var MASK = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><defs><radialGradient id="g"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#999"/><stop offset="1" stop-color="#000"/></radialGradient></defs><rect width="256" height="256" fill="url(#g)"/></svg>');
   function galFilter() {
     if (gal) return gal;
     var svg = document.createElementNS(NS, "svg");
@@ -194,14 +193,16 @@
       '<feTurbulence type="fractalNoise" baseFrequency="0.0048 0.0072" numOctaves="1" seed="3" result="n"/>' +
       '<feOffset in="n" dx="0" dy="0" result="no"/>' +
       '<feColorMatrix in="no" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 1" result="n1"/>' +
-      '<feFlood flood-color="#000" flood-opacity="1" result="black"/>' +
-      '<feImage href="' + MASK + '" x="-999" y="-999" width="256" height="256" preserveAspectRatio="none" result="spot"/>' +
-      '<feComposite in="spot" in2="black" operator="over" result="m"/>' +
+      /* the spot under the cursor (bright in the middle, fading out to its edge) is the light of a lamp over a flat surface: no picture inside the
+         filter (Safari dropped the whole filter over the data: picture it used to load, so the cards had no melt there) */
+      '<feFlood flood-color="#fff" flood-opacity="1" result="flat"/>' +
+      '<feDiffuseLighting in="flat" surfaceScale="0" diffuseConstant="1" lighting-color="#fff" result="lit"><fePointLight x="-9999" y="-9999" z="60"/></feDiffuseLighting>' +
+      '<feComponentTransfer in="lit" result="m"><feFuncR type="gamma" amplitude="1.25" exponent="2.2" offset="-.25"/><feFuncG type="gamma" amplitude="1.25" exponent="2.2" offset="-.25"/><feFuncB type="gamma" amplitude="1.25" exponent="2.2" offset="-.25"/></feComponentTransfer>' +
       '<feComposite in="n1" in2="m" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="map"/>' +
       '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G" result="dm"/>';
     svg.appendChild(f); document.body.appendChild(svg);
     var ch = f.children;
-    gal = { turb: ch[0], off: ch[1], img: ch[4], map: ch[7] };
+    gal = { turb: ch[0], off: ch[1], light: ch[4].firstElementChild, map: ch[7] };
     return gal;
   }
   function galFx(c, sp, on, now, dtf) {
@@ -237,7 +238,7 @@
     g.map.setAttribute("scale", galS.toFixed(2)); 
     g.turb.setAttribute("baseFrequency", (.0048 * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.0072 * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
     var fl = 16, fs_ = 2.2; g.off.setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
-    g.img.setAttribute("x", (mx - br.left - R).toFixed(1)); g.img.setAttribute("y", (my - br.top - R).toFixed(1)); g.img.setAttribute("width", (R * 2).toFixed(1)); g.img.setAttribute("height", (R * 2).toFixed(1));
+    g.light.setAttribute("x", (mx - br.left).toFixed(1)); g.light.setAttribute("y", (my - br.top).toFixed(1)); g.light.setAttribute("z", (R * .7).toFixed(1));
     return 1;
   }
   var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
