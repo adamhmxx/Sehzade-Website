@@ -201,9 +201,13 @@
       '<feComponentTransfer in="lit" result="m"><feFuncR type="gamma" amplitude="1.25" exponent="2.2" offset="-.25"/><feFuncG type="gamma" amplitude="1.25" exponent="2.2" offset="-.25"/><feFuncB type="gamma" amplitude="1.25" exponent="2.2" offset="-.25"/></feComponentTransfer>' +
       '<feComposite in="n1" in2="m" operator="arithmetic" k1="1" k2="0" k3="-0.5" k4="0.5" result="map"/>' +
       '<feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G" result="dm"/>';
-    svg.appendChild(f); document.body.appendChild(svg);
-    var ch = f.children;
-    gal = { turb: ch[0], off: ch[1], light: ch[4].firstElementChild, map: ch[7] };
+    /* a second copy for a picture that stands on its own (the List preview): its region reaches past the picture, so its edges ripple like the
+       rest of it. With the region ending at the picture's edge (right for the gallery layers, which fill the screen) the melt was cut off there
+       in straight, torn lines */
+    var f2 = f.cloneNode(true); f2.setAttribute("id", "lq-galp"); f2.setAttribute("x", "-25%"); f2.setAttribute("y", "-25%"); f2.setAttribute("width", "150%"); f2.setAttribute("height", "150%");
+    svg.appendChild(f); svg.appendChild(f2); document.body.appendChild(svg);
+    var ch = f.children, c2 = f2.children;
+    gal = { turb: [ch[0], c2[0]], off: [ch[1], c2[1]], light: [ch[4].firstElementChild, c2[4].firstElementChild], map: [ch[7], c2[7]] };
     return gal;
   }
   function galFx(c, sp, on, now, dtf) {
@@ -242,13 +246,17 @@
     /* plain exponential approach (a spring here wobbled below zero and back, which attached and removed the filter over and over) */
     galS += (target - galS) * (1 - Math.exp(-dtf * (target > galS ? 6.5 : 4)));   /* it swells in and settles slowly, like liquid, instead of snapping */
     if (galS < 1 && target === 0) { if (galBox) { galBox.style.filter = ""; galBox = null; } return 0; }
-    var g = galFilter(), br = el.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100;
+    var g = galFilter(), br = el.getBoundingClientRect(), R = c.reach * 1.7 * c.gmsz / 100, solo = el.id === "ls-pv", w = solo ? 1 : 0, fu = solo ? "url(\"#lq-galp\")" : "url(\"#lq-gal\")";
     /* the gallery re-renders its own inline filters now and then (hover blur), which would silently wipe ours: keep it on every frame */
-    if (el.style.filter !== "url(#lq-gal)") el.style.filter = "url(#lq-gal)"; galBox = el; el.__galGrid = grid;
-    g.map.setAttribute("scale", galS.toFixed(2));
-    g.turb.setAttribute("baseFrequency", (.0048 * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.0072 * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
-    var fl = 16, fs_ = 2.2; g.off.setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off.setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
-    g.light.setAttribute("x", (mx - br.left).toFixed(1)); g.light.setAttribute("y", (my - br.top).toFixed(1)); g.light.setAttribute("z", (R * .7).toFixed(1));
+    if (el.style.filter !== fu) el.style.filter = fu; galBox = el; el.__galGrid = grid;
+    /* (the picture is scaled while it pops in: the light is placed in its own, unscaled pixels) */
+    var ks = solo && el.offsetWidth ? el.offsetWidth / br.width : 1;
+    g.map[w].setAttribute("scale", galS.toFixed(2));
+    /* (the preview is much smaller than a gallery layer: its waves are shorter, so it ripples like liquid instead of bending as one piece) */
+    var fk = solo ? 2 : 1;
+    g.turb[w].setAttribute("baseFrequency", (.0048 * fk * c.gnz / 100 * (1 + .12 * Math.sin(now / 1300))).toFixed(5) + " " + (.0072 * fk * c.gnz / 100 * (1 + .12 * Math.cos(now / 1700))).toFixed(5));
+    var fl = 16, fs_ = 2.2; g.off[w].setAttribute("dx", (Math.sin(now / (900 * fs_)) * fl).toFixed(1)); g.off[w].setAttribute("dy", (Math.cos(now / (1100 * fs_)) * fl).toFixed(1));
+    g.light[w].setAttribute("x", ((mx - br.left) * ks).toFixed(1)); g.light[w].setAttribute("y", ((my - br.top) * ks).toFixed(1)); g.light[w].setAttribute("z", (R * .7).toFixed(1));
     return 1;
   }
   var NS = "http://www.w3.org/2000/svg", defs = null, fid = 0;
