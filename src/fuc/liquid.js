@@ -6,13 +6,15 @@
 (function () {
   if (window.__liquid) return;
   window.__liquid = 1;
-  var ENABLED = !matchMedia("(prefers-reduced-motion: reduce)").matches && matchMedia("(pointer: fine)").matches;
+  /* any mouse or trackpad. Not switched off by the system's "reduce motion" (many Macs have it on): the hover only follows the visitor's own
+     cursor, it never moves by itself */
+  var ENABLED = matchMedia("(pointer: fine)").matches || matchMedia("(any-pointer: fine)").matches;
   var ABOUT = !!document.getElementById("about-overrides");
   /* the main page owns the settings. The About page follows it when it is shown inside the main page; the main
      page may itself be embedded by a host (such as the artifact viewer), so "has a parent" is not enough */
   var TOP = !ABOUT;
   if (ABOUT) { try { TOP = !parent.__liquidCfg; } catch (e) { TOP = true; } }
-  var DEF = { radius: 130, softness: 1, brightness: 0.02, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, twr: 40, twp: 160, twsc: 105, twg: 100, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, ggap: 16, gstag: 15, gpar: 20 };
+  var DEF = { radius: 130, softness: 1, brightness: 0.07, trail: 0.7, blur: 0, distort: 30, reach: 120, on: 1, ldur: 900, ldist: 8, lblur: 1.5, lstag: 100, pliq: 95, twr: 40, twp: 160, twsc: 105, twg: 100, twn: 40, asp: 110, jel: 10, jpush: 150, jjolt: 100, jbnc: 25, jsq: 140, jtw: 160, jrng: 160, gmelt: 30, gdis: 40, gmsz: 100, gnz: 80, ggap: 16, gstag: 15, gpar: 20 };
   if (window.__introDef) Object.keys(window.__introDef).forEach(function (k) { DEF[k] = window.__introDef[k]; });   /* loading-sequence defaults live in intro.js */
   var KEY = "liquid-cfg-v1";
   function load() {
@@ -20,7 +22,8 @@
       var sv = JSON.parse(localStorage.getItem(KEY) || "{}");
       /* link hover defaults were retuned (slower, softer): drop link values saved by older versions once */
       /* defaults were retuned: drop values saved by older versions once */
-      if (sv.lv !== 9) sv = sv.on === undefined ? { lv: 9 } : { on: sv.on, lv: 9 };
+      /* (version 10: every saved value is dropped once, the on/off switch too: a switch left off in a browser kept the hover off there for good) */
+      if (sv.lv !== 10) sv = { lv: 10 };
       if (sv.twg === 101) delete sv.twg;   /* the old default spacing (a 1% gap): the cards of the Twist now touch */
       return Object.assign({}, DEF, sv);
     }
@@ -360,6 +363,19 @@
   function kick() { if (!run) { run = true; requestAnimationFrame(step); } }
   addEventListener("wk-render", function () { lastScan = 0; kick(); });
 
+  /* #lqdebug: what the hover is doing on this very browser (to send back when it does not show) */
+  if (TOP && /lqdebug/.test(location.hash)) {
+    var dbg = document.createElement("pre");
+    dbg.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:2147483647;margin:0;padding:8px;background:rgba(0,0,0,.85);color:#7f7;font:11px/1.4 monospace;white-space:pre-wrap;max-width:92vw;pointer-events:none";
+    setInterval(function () {
+      if (!dbg.parentNode && document.body) document.body.appendChild(dbg);
+      var c = C(), fl = 0; states.forEach(function (st) { if (st.set) fl++; });
+      dbg.textContent = [navigator.userAgent, "pointer fine: " + matchMedia("(pointer: fine)").matches + "  any-pointer fine: " + matchMedia("(any-pointer: fine)").matches + "  reduce motion: " + matchMedia("(prefers-reduced-motion: reduce)").matches,
+        "enabled: " + ENABLED + "  switch on: " + !!c.on + "  cursor inside: " + inside + "  loop running: " + run,
+        "blob: " + (blank ? "hidden" : "shown") + " (opacity " + c.brightness + ")  text ripples now: " + fl + "  picture melt: " + (galBox ? galBox.style.filter : "off") + " (" + galS.toFixed(1) + ")",
+        "cards found: " + galCards.length + "  texts found: " + els.length].join("\n");
+    }, 300);
+  }
   function start() {
     if (!ENABLED) { if (TOP) lazyPanel(); return; }
     document.body.appendChild(cv);
