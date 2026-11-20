@@ -29,10 +29,15 @@
       /* while the picture travels (in or out) the page is only a transparent layer: no fade, no wipe. It becomes the page the moment the picture has landed */
       '#wk.air:not(.lv){background:transparent}#wk.air:not(.lv) .wk-in{opacity:0!important;transition:none!important}#wk.air:not(.lv) .wk-bar{visibility:hidden}' +
       /* leaving a project (Back): the text goes the way it came, block after block from the bottom up, while the dark page clears and the pictures fade; nothing is cut off at once */
+      '#main div.wk-dzw{clip-path:inset(100% 0 0 0)!important;transition:none!important}#main div.wk-dzu{clip-path:inset(0 0 0 0)!important;transition:clip-path .85s cubic-bezier(.22,1,.36,1) var(--wd,0ms)!important}' +
       '#main div.wk-dzt{transition:opacity .6s cubic-bezier(.4,0,.2,1)!important}#main div.wk-dz{opacity:0!important;pointer-events:none!important}html.wk-dzn #main div.wk-dzt{transition:none!important}' +
       '#wk.lv{background-color:rgba(11,11,11,0)!important;transition:background-color .7s cubic-bezier(.4,0,.2,1)}' +
       '#wk.lv:not(.lout) .wk-in:not(.wk-r),#wk.lv.lout .wk-in:not(.wk-r):not(.wk-name){opacity:0!important;transform:translateY(10px)!important;transition:opacity .4s cubic-bezier(.4,0,.2,1),transform .4s cubic-bezier(.4,0,.2,1)!important;transition-delay:calc((var(--n,8) - 1 - var(--i,0)) * 40ms)!important}' +
       '#wk.lv .wk-bar{opacity:0;visibility:visible;transition:opacity .35s ease}#wk.lv:not(.lout) .wk-r{opacity:0!important;transition:opacity .55s cubic-bezier(.4,0,.2,1) .12s!important}' +
+      /* leaving towards a gallery card: no fade on the pictures. The other pictures sink out of their frames (the way they rose in), the one that goes
+         home stays put until the flight takes it */
+      '#wk.lv.lsink .wk-r{opacity:1!important;transition:none!important;background:transparent!important}#wk.lsink .wk-it:not(.wk-keep){background:transparent!important}' +
+      '#wk.lsink .wk-it:not(.wk-keep) img{transform:translateY(102%)!important;transition:transform .75s cubic-bezier(.65,0,.35,1)!important;transition-delay:calc(var(--j,0) * 50ms)!important}' +
       'html.wk-fadein [role="tablist"]{transition:opacity .6s cubic-bezier(.4,0,.2,1)!important}.wk-logo{transition:opacity .6s cubic-bezier(.4,0,.2,1)}.wk-hide{visibility:hidden!important}' +
       /* the text rises in, one piece after the other */
       /* the text arrives the way everything on this site does: it dissolves in out of a liquid ripple that calms down (see liquidIn), one block after the other */
@@ -149,7 +154,7 @@
         if (Math.abs(vel) > .02) { tgt += vel * dt; vel *= Math.exp(-dt / 320); } else vel = 0;
         idle += dt; if (!held && !reduce && idle > 1400 && Math.abs(vel) < .02) tgt += (vertical ? 22 : 30) * dt / 1000;
       }
-      pos += (tgt - pos) * (1 - Math.exp(-dt / (drag ? 45 : hom ? 55 : 120)));
+      if (hom !== 2) pos += (tgt - pos) * (1 - Math.exp(-dt / (drag ? 45 : 120)));
       place(); raf = requestAnimationFrame(tick);
     }
     function kick() { if (!raf && alive) { last = performance.now(); raf = requestAnimationFrame(tick); } }
@@ -179,8 +184,11 @@
     return { release: function () { held = false; idle = 0; }, stop: function () { held = true; drag = null; vel = 0; tgt = pos; },
       /* scrolls back (the short way round) until the project's first picture rests in its starting place, then calls back */
       off: function () { return C ? Math.abs(pos - Math.round(pos / C) * C) : 0; },
-      home: function (cb) { held = true; hom = true; drag = null; vel = 0; tgt = Math.round(pos / C) * C; kick(); var t0 = performance.now();
-        (function w() { if (!alive) return cb(); if (Math.abs(pos - tgt) < .6 || performance.now() - t0 > 900) { pos = tgt; place(); cb(); } else requestAnimationFrame(w); })(); },
+      /* a timed glide on a soft ease in and out (longer for a longer way, 0.75 to 1.3 s), then a short rest before the page leaves: it used to rush
+         there on a fast ease and jump the last bit after 0.9 s */
+      home: function (cb) { held = true; hom = 2; drag = null; vel = 0; var p0 = pos, p1 = Math.round(pos / C) * C, D = Math.min(1300, 750 + 550 * Math.min(1, Math.abs(p1 - p0) / Math.max(1, C))), t0 = performance.now(); tgt = p1; kick();
+        (function w() { if (!alive) return cb(); var k = Math.min(1, (performance.now() - t0) / D), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; pos = p0 + (p1 - p0) * e; place();
+          if (k < 1) requestAnimationFrame(w); else { pos = tgt = p1; setTimeout(cb, 160); } })(); },
       relayout: layout, destroy: function () { alive = false; cancelAnimationFrame(raf); box.removeEventListener("wheel", onWheel); box.removeEventListener("pointerdown", down); box.removeEventListener("pointermove", move); box.removeEventListener("pointerup", up); box.removeEventListener("pointercancel", up); box.textContent = ""; } };
   }
 
@@ -312,22 +320,23 @@
   }
   /* the slot that shows the project's first picture right now (the scroll may have moved) */
   function slotRect(src) {
-    var r = ov.querySelector(".wk-r"), hit = null, any = null, f = fname(src);
+    var r = ov.querySelector(".wk-r"), hit = null, any = null, hitEl = null, anyEl = null, f = fname(src);
     [].forEach.call(r ? r.querySelectorAll(".wk-it") : [], function (n) {
       var b = n.getBoundingClientRect(); if (!(b.width > 20 && b.right > 40 && b.left < innerWidth - 40 && b.bottom > 40 && b.top < innerHeight - 40)) return;
-      var im = n.querySelector("img"); if (!any) any = b; if (!hit && im && fname(im.currentSrc || im.src) === f) hit = b;
+      var im = n.querySelector("img"); if (!any) { any = b; anyEl = n; } if (!hit && im && fname(im.currentSrc || im.src) === f) { hit = b; hitEl = n; }
     });
+    slotRect.el = hit ? hitEl : anyEl;
     return hit || any;
   }
   /* Twist (drawn on the GPU): the gallery itself plays the move */
-  function twFlight(card, rect, back, done) {
+  function twFlight(card, rect, back, done, wait) {
     var tok = ++flTok, t0 = 0, D = 2400;   /* every way into and out of a project takes about 2.4 s: calm, never rushed */
     var X = window.__twX = { live: true, hold: !back, sel: card, a: back ? 1 : 0, f: back ? 1 : 0, m: back ? 1 : 0, cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, w: rect.width, h: rect.height };
     window.__twFreeze = false;
     requestAnimationFrame(function f(now) {
       if (tok !== flTok) return;
-      if (!t0) t0 = now;
-      var k = Math.min(1, (now - t0) / D), t = back ? 1 - k : k;
+      if (!t0) t0 = now + (wait || 0);
+      var k = Math.max(0, Math.min(1, (now - t0) / D)), t = back ? 1 - k : k;
       X.a = seg(t, 0, .55); X.f = seg(t, .12, .55); X.m = seg(t, .45, 1);
       if (k < 1) requestAnimationFrame(f); else { requestAnimationFrame(function () { requestAnimationFrame(function () { if (tok === flTok) X.live = false; }); }); done && done(); }
     });
@@ -364,8 +373,16 @@
     });
     if (now) requestAnimationFrame(function () { requestAnimationFrame(function () { root.classList.remove("wk-dzn"); }); });
   }
-  function gridBack(now) {
+  function gridBack(now, from) {
     var g = gridOut; gridOut = [];
+    /* coming back: the other cards are not faded in, they open up in their places from the bottom edge, nearest to the landed picture first */
+    if (!now && !reduce) {
+      var fx = from ? from.left + from.width / 2 : innerWidth / 2, fy = from ? from.top + from.height / 2 : innerHeight / 2;
+      g.forEach(function (d) { var r = d.getBoundingClientRect(); d.style.setProperty("--wd", Math.min(320, Math.hypot(r.left + r.width / 2 - fx, r.top + r.height / 2 - fy) * .3).toFixed(0) + "ms"); d.classList.add("wk-dzw"); d.classList.remove("wk-dz", "wk-dzt"); });
+      requestAnimationFrame(function () { requestAnimationFrame(function () { g.forEach(function (d) { d.classList.add("wk-dzu"); d.classList.remove("wk-dzw"); }); }); });
+      setTimeout(function () { g.forEach(function (d) { d.classList.remove("wk-dzu"); d.style.removeProperty("--wd"); d.__wkAway = false; }); }, 1400);
+      return;
+    }
     if (now) root.classList.add("wk-dzn");
     g.forEach(function (d) { d.classList.remove("wk-dz"); });
     setTimeout(function () { g.forEach(function (d) { if (!d.classList.contains("wk-dz")) d.classList.remove("wk-dzt"); d.__wkAway = false; }); root.classList.remove("wk-dzn"); }, now ? 40 : 1000);
@@ -521,7 +538,7 @@
       inFlight = null; window.__wkMove = false; pin = null; if (shown) return;
       /* the Twist starts turning again from still, gently picking up speed (it used to jump straight to full speed) */
       var gk = window.__galK && window.__galK.current; if (gk) gk.factor = 0;
-      ov.classList.remove("on", "air", "lout", "lv"); root.classList.remove("lr-hold", "lr-out", "lr-x"); airFade(); if (strip) { strip.destroy(); strip = null; }
+      ov.classList.remove("on", "air", "lout", "lv", "lsink"); root.classList.remove("lr-hold", "lr-out", "lr-x"); airFade(); if (strip) { strip.destroy(); strip = null; }
     };
     if (inFlight) { inFlight(); o = null; window.__twX = null; }   /* Back while the picture was still on its way in: everything snaps home */
     var lb = o && o.mode === "list" && !reduce && !!ov.animate;
@@ -541,9 +558,13 @@
     if (!o || !slot) { window.__twX = null; window.__twFreeze = false; if (o && !o.tw) { o.card.classList.remove("wk-hide"); soft(true); } else if (!lb) soft(false); }
     else {
       ov.classList.add("air"); root.classList.add("wk-air"); window.__wkMove = true;
+      /* first the text and the other pictures leave (about 0.7 s), the picture going home staying where it is; only then does it fly, over a clear page,
+         so nothing crosses it and nothing fades under it */
+      var keep = !reduce && slotRect.el, LEAVE = keep ? 700 : 0, kt = 0;
+      if (keep) { keep.classList.add("wk-keep"); ov.classList.add("lsink"); kt = setTimeout(function () { keep.style.visibility = "hidden"; }, LEAVE); }
       if (o.tw && window.__twGLon && o.card.isConnected) {
-        twFlight(o.card, slot, true, function () { window.__twX = null; gone(); });
-        inFlight = function () { flTok++; window.__twX = null; };
+        twFlight(o.card, slot, true, function () { window.__twX = null; gone(); }, LEAVE);
+        inFlight = function () { clearTimeout(kt); flTok++; window.__twX = null; };
       } else {
         window.__twX = null; window.__twFreeze = false;
         var to = homeRect(o);
@@ -553,8 +574,8 @@
           /* the picture goes home first, over an empty page; the other cards fade in around it only once it has landed (fading in under the moving
              picture, they were crossed by it, and its card showed twice for a moment) */
           var gb = 0, gt2 = 0;
-          var kill = flyBox({ left: slot.left, top: slot.top, width: slot.width, height: slot.height }, to, o.src, true, 0, 1700, function () { o.card.classList.remove("wk-hide"); if (o.mode === "grid") gridBack(); gt2 = setTimeout(gone, o.mode === "grid" ? 650 : 0); });
-          inFlight = function () { clearTimeout(gb); clearTimeout(gt2); kill(); o.card.classList.remove("wk-hide"); gridBack(true); };
+          var kill = flyBox({ left: slot.left, top: slot.top, width: slot.width, height: slot.height }, to, o.src, true, LEAVE, 1900, function () { o.card.classList.remove("wk-hide"); if (o.mode === "grid") gridBack(false, to); gt2 = setTimeout(gone, o.mode === "grid" ? 650 : 0); });
+          inFlight = function () { clearTimeout(kt); clearTimeout(gb); clearTimeout(gt2); kill(); o.card.classList.remove("wk-hide"); gridBack(true); };
         }
       }
     }
