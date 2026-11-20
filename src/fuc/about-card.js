@@ -314,10 +314,16 @@
   var go = mk("div"); go.id = "grid-overlay"; for (var i = 0; i < 12; i++) go.appendChild(document.createElement("i"));
   function ready() { document.body.appendChild(go); if (/grid/.test(location.hash)) root.classList.add("show-grid"); /* warm up the card when the browser is idle, so it never competes with the first paint */ var quietT = 0, warmed = false, warm = function () {
       /* booting the About page is one long task: it waits for a moment when the visitor is not touching, scrolling or dragging, so it never lands in the middle of an interaction */
-      if (warmed) return; clearTimeout(quietT);
-      quietT = setTimeout(function () { (window.requestIdleCallback || function (f) { setTimeout(f, 50); })(function () { if (!warmed) { warmed = true; build(); } }, { timeout: 1000 }); }, 2500);
+      /* ...but never later than 5 s after it was due: a cursor that kept moving (hovering the gallery) postponed it for good, and the first open
+         then loaded the whole page on the click (an empty card for about 2 s before its content came) */
+      if (warmed) return; clearTimeout(quietT); if (!warm.t0) warm.t0 = performance.now();
+      var go_ = function () { if (!warmed) { warmed = true; build(); } };
+      quietT = setTimeout(function () { (window.requestIdleCallback || function (f) { setTimeout(f, 50); })(go_, { timeout: 1000 }); }, Math.max(0, Math.min(2500, warm.t0 + 5000 - performance.now())));
+      warm.go = go_;
     };
     ["pointerdown", "pointermove", "touchmove", "wheel", "keydown"].forEach(function (t) { addEventListener(t, function () { if (!warmed && quietT) warm(); }, { passive: true }); });
+    /* the cursor on its way to About (or a finger landing on it): the card is prepared right then, before the click */
+    ["pointerover", "focusin", "touchstart"].forEach(function (t) { document.addEventListener(t, function (e) { if (warmed) return; var a = e.target.closest && e.target.closest("a[href]"); if (a && /^(\.?\/)?about(\.html)?\/?$/.test(a.getAttribute("href"))) { warmed = true; clearTimeout(quietT); build(); } }, { passive: true, capture: true }); });
     /* the About page is a second full page (its own copy of the site runtime): it is loaded only after the entrance has finished, never during it */
     if (root.classList.contains("intro-on") || root.classList.contains("intro-ui")) addEventListener("intro-done", function () { setTimeout(warm, 1500); }, { once: true }); else warm(); }
   if (document.readyState === "complete") ready(); else addEventListener("load", ready);
