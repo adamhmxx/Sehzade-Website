@@ -633,7 +633,10 @@
     body.appendChild(form); tok.focus();
   }
   function boot() {
-    fetch("api/session", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    /* the local server (server.py) is only ever on this computer or the local network: on the public site there is no api/, so it is not asked
+       (the request always came back 404 and left an error in the console) */
+    var local = /^(localhost|127\.|0\.0\.0\.0|\[?::1\]?$|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)|\.local$/.test(location.hostname) || location.protocol === "http:";
+    (local ? fetch("api/session", { credentials: "same-origin" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }) : Promise.resolve(null))
       .then(function (s) {
         API = !!(s && s.api);
         if (API) { AUTHED = !!s.authed; if (!AUTHED) { if (logoutEl) logoutEl.style.display = "none"; showLogin(); } else enter(); return; }
