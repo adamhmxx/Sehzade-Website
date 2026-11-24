@@ -221,10 +221,15 @@
   function settle() {
     settled = false; reveal(false); var t0 = performance.now(), lastV = -1, same = 0;
     (function poll() {
-      if (settled) return; var v = needH();
+      if (settled) return;
+      /* while the card itself is measuring the page (it lays it out at another width for a moment) the height read here is the measurement's,
+         not the content's: that pass used to count as "still changing" and start the wait over, so the card stayed empty for ~1.6 s after its
+         content was in. Such moments are skipped; the content counts as settled once its height has held for three checks ~0.36 s apart */
+      if (needBusy || measK) { setTimeout(poll, 60); return; }
+      var v = needH();
       same = v && Math.abs(v - lastV) < 1 ? same + 1 : 0; lastV = v;
       if (same >= 3 || (v && performance.now() - t0 > 3500)) { settled = true; contentVer++; layout(); }
-      else setTimeout(poll, 200);
+      else setTimeout(poll, 120);
     })();
   }
   function layout() {
@@ -325,6 +330,8 @@
     /* the cursor on its way to About (or a finger landing on it): the card is prepared right then, before the click */
     ["pointerover", "focusin", "touchstart"].forEach(function (t) { document.addEventListener(t, function (e) { if (warmed) return; var a = e.target.closest && e.target.closest("a[href]"); if (a && /^(\.?\/)?about(\.html)?\/?$/.test(a.getAttribute("href"))) { warmed = true; clearTimeout(quietT); build(); } }, { passive: true, capture: true }); });
     /* the About page is a second full page (its own copy of the site runtime): it is loaded only after the entrance has finished, never during it */
-    if (root.classList.contains("intro-on") || root.classList.contains("intro-ui")) addEventListener("intro-done", function () { setTimeout(warm, 1500); }, { once: true }); else warm(); }
+    /* the first visit: prepared the moment the Twister has landed (about 1.3 s after the entrance hands over), not after a further quiet moment, so
+       a visitor who goes straight to About after the entrance finds it ready instead of an empty card */
+    if (root.classList.contains("intro-on") || root.classList.contains("intro-ui")) addEventListener("intro-done", function () { setTimeout(function () { if (!warmed) (window.requestIdleCallback || function (f) { setTimeout(f, 1); })(function () { if (!warmed) { warmed = true; clearTimeout(quietT); build(); } }, { timeout: 300 }); }, 1300); }, { once: true }); else warm(); }
   if (document.readyState === "complete") ready(); else addEventListener("load", ready);
 })();
