@@ -23,7 +23,7 @@
    "name": "Beeplus",
    "description": "Jeddah delivery app website",
    "services": "",
-   "year": "2026",
+   "year": "2025",
    "link": "https://beeplus.it.com/",
    "src": "uploads/035f8c291a1d5de2173.webp",
    "srcSet": "",
@@ -66,7 +66,7 @@
    "name": "Sync",
    "description": "Sleeping supplement product website",
    "services": "",
-   "year": "2026",
+   "year": "2025",
    "link": "",
    "src": "uploads/00e62ebb1a1e49e45f2.webp",
    "srcSet": "",
@@ -110,7 +110,7 @@
    "name": "Routeonefi",
    "description": "Solana staking & trading website",
    "services": "",
-   "year": "2026",
+   "year": "2025",
    "link": "",
    "src": "uploads/8e067d151a1d9641290.webp",
    "srcSet": "",
@@ -275,6 +275,6 @@
  ],
  "about": {},
  "site": {
-  "updated": 1795789630326
+  "updated": 1795789692875
  }
 }
