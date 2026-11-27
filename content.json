@@ -1,6 +1,23 @@
 {
  "items": [
   {
+   "id": "pmwyw12ps",
+   "name": "Muammar Faiq ",
+   "description": "2D Motion Designer Website Portfolio",
+   "services": "",
+   "year": "2026",
+   "link": "https://muammarfaiq.com",
+   "src": "uploads/6b272eff1a21cba6822.webp",
+   "srcSet": "",
+   "gallery": [
+    "uploads/8fbe2aaf1a21cba91af.webp",
+    "uploads/a499970a1a21cba9212.webp",
+    "uploads/b66a37c41a21cba927b.webp"
+   ],
+   "client": "Muammar Faiq",
+   "challenge": "The challenge"
+  },
+  {
    "id": "pmw9i0nsi",
    "name": "Beeplus",
    "description": "Jeddah delivery app website",
@@ -256,6 +273,6 @@
  ],
  "about": {},
  "site": {
-  "updated": 1794836967838
+  "updated": 1795778391698
  }
 }
