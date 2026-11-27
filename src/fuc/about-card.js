@@ -224,12 +224,13 @@
       if (settled) return;
       /* while the card itself is measuring the page (it lays it out at another width for a moment) the height read here is the measurement's,
          not the content's: that pass used to count as "still changing" and start the wait over, so the card stayed empty for ~1.6 s after its
-         content was in. Such moments are skipped; the content counts as settled once its height has held for three checks ~0.36 s apart */
-      if (needBusy || measK) { setTimeout(poll, 60); return; }
+         content was in. Such moments are skipped; the content counts as settled once its height has held for three checks in a row. While the
+         card is already open (someone is looking at the empty card) the checks run closer together, so the content appears sooner */
+      if (needBusy || measK) { setTimeout(poll, 40); return; }
       var v = needH();
       same = v && Math.abs(v - lastV) < 1 ? same + 1 : 0; lastV = v;
       if (same >= 3 || (v && performance.now() - t0 > 3500)) { settled = true; contentVer++; layout(); }
-      else setTimeout(poll, 120);
+      else setTimeout(poll, open_ ? 70 : 120);
     })();
   }
   function layout() {
