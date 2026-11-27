@@ -175,7 +175,7 @@
            own height. (Measured at the height of the previous fit, every re-fit came out a little smaller than the last: 0.92, 0.74, 0.67, 0.58 on a phone) */
         needBusy = true; deferred = false; setGeom(meas); measK = base; pushPage();
         requestAnimationFrame(function () { requestAnimationFrame(function () {
-          needBusy = false; var v = needH(); measK = 0; if (!v) { setTimeout(layout, 800); return; }
+          needBusy = false; var v = needH(); measK = 0; if (!v) { setTimeout(layout, 250); return; }
           needVal = v; needKey = key; kCap = 9; frameFit.n = 0; frameFit.chk = ""; layout();
         }); });
       }
@@ -256,7 +256,7 @@
     sheet.append(shadow, card, nameEl); document.body.append(backdrop, sheet);
     layout(); S = hiddenPose(); paint();
     if (document.fonts) { document.fonts.load("100px Anton").then(layout, function () {}); document.fonts.ready.then(layout); }
-    frame.addEventListener("load", function () { pushPage(); setTimeout(pushPage, 600); paused = null; pauseFrame(!open_); settle(); });
+    frame.addEventListener("load", function () { pushPage(); setTimeout(pushPage, 600); paused = null; pauseFrame(!open_); if (!needKey) frameFit(); settle(); });   /* (a measurement tried before the page had loaded found nothing: it is redone at once rather than on its 0.8 s retry, which restarted the settle wait) */
     addEventListener("resize", function () { var wasTall = TALL; layout(); if (open_ && TALL !== wasTall) { T.x = 0; T.y = restY(); } clampT(); if (open_) run(); else { S = hiddenPose(); T = hiddenPose(); paint(); } });
     addEventListener("storage", function (e) { if (e.key === "site-cms-v1") { contentVer++; nameTxt.textContent = cardName(); layout(); scheduleFit(500); } });
   }
@@ -333,6 +333,9 @@
     /* the About page is a second full page (its own copy of the site runtime): it is loaded only after the entrance has finished, never during it */
     /* the first visit: prepared the moment the Twister has landed (about 1.3 s after the entrance hands over), not after a further quiet moment, so
        a visitor who goes straight to About after the entrance finds it ready instead of an empty card */
-    if (root.classList.contains("intro-on") || root.classList.contains("intro-ui")) addEventListener("intro-done", function () { setTimeout(function () { if (!warmed) (window.requestIdleCallback || function (f) { setTimeout(f, 1); })(function () { if (!warmed) { warmed = true; clearTimeout(quietT); build(); } }, { timeout: 300 }); }, 1300); }, { once: true }); else warm(); }
+    var early = function (ms) { return function () { setTimeout(function () { if (!warmed) (window.requestIdleCallback || function (f) { setTimeout(f, 1); })(function () { if (!warmed) { warmed = true; clearTimeout(quietT); build(); } }, { timeout: 300 }); }, ms); }; };
+    /* the card's page is light to load (no long tasks), so it is built while the ribbon rises and is ready when the navbar appears; the
+       intro-done timer stays as a fallback */
+    if (root.classList.contains("intro-on") || root.classList.contains("intro-ui")) { addEventListener("intro-rise", early(400), { once: true }); addEventListener("intro-done", early(1300), { once: true }); } else warm(); }
   if (document.readyState === "complete") ready(); else addEventListener("load", ready);
 })();

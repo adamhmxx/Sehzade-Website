@@ -276,7 +276,7 @@
     /* the gallery draws its frames on its own clock: wait until it has drawn the ribbon in its starting place (below the screen) before the page
        is shown, or the first visible frame would be the finished ribbon */
     requestAnimationFrame(function () { requestAnimationFrame(function () {
-      s0 = performance.now(); root.classList.remove("intro-on");
+      s0 = performance.now(); root.classList.remove("intro-on"); window.dispatchEvent(new Event("intro-rise")); /* the About card starts loading now, hidden, so it is ready by the time the navbar can be used */
       (function step(now) {
         var k = Math.min(1, (now - s0) / D), v = START * (1 - twist(k)), er = k * k * k * (k * (6 * k - 15) + 10);
         window.__twSp = er;
