@@ -15,7 +15,7 @@
     "uploads/b66a37c41a21cba927b.webp"
    ],
    "client": "Muammar Faiq",
-   "challenge": "Muammar Faiq needed a portfolio for his 2D motion work that converts visitors into clients. It had to stay simple across three main sections without ever looking plain.",
+   "challenge": "Muammar Faiq needed a 2D motion portfolio that turns the people who visit it into clients. It had to stay simple across three main sections without ever looking plain.",
    "approach": "I kept the layout direct, then used an ASCII hover interaction to give it life. A parallax scroll through the works showcase lets the motion pieces take center stage."
   },
   {
@@ -275,6 +275,6 @@
  ],
  "about": {},
  "site": {
-  "updated": 1795779501328
+  "updated": 1795779600752
  }
 }
