@@ -15,7 +15,8 @@
     "uploads/b66a37c41a21cba927b.webp"
    ],
    "client": "Muammar Faiq",
-   "challenge": "The challenge is I have to  create"
+   "challenge": "The challenge is keep the website simple but not plain with high conversion concept that containing 3 main section.",
+   "approach": "While the layout is stay simple and straight forward I use ASCII hover interaction to solve the plain vibes and also using parallax scroll in works showcase. The website goals is achieved as high conversion and simple website but doesn't looks plain"
   },
   {
    "id": "pmw9i0nsi",
@@ -273,6 +274,6 @@
  ],
  "about": {},
  "site": {
-  "updated": 1795778958641
+  "updated": 1795779221679
  }
 }
